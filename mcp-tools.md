@@ -12,6 +12,13 @@ Even though the system runs locally, we enforce MCP principles:
 
 This keeps the system safe, reproducible, and easy to debug.
 
+## See also
+
+- `architecture.md`
+- `rag-indexing.md`
+- `classification-rubric.md`
+- `output-contract.md`
+
 ---
 
 ## 1) Tooling model
@@ -369,8 +376,8 @@ Output:
 {
   "ok": true,
   "outputs_written": {
-    "members_index": "outputs/members/index.json",
-    "parties_index": "outputs/parties/index.json"
+    "members_index": "outputs/members/interventions_index.json",
+    "parties_index": "outputs/parties/interventions_index.json"
   }
 }
 ```

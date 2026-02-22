@@ -9,6 +9,16 @@ A key goal of this project is hands-on learning and practical implementation of:
 
 - **RAG (Retrieval-Augmented Generation)** for grounded classification and topic extraction
 - **MCP (Model Context Protocol)** patterns for structured, auditable tool use
+- clear explanations for each important architectural and implementation decision
+
+## See also
+
+- `goal.md`
+- `input-data.md`
+- `rag-indexing.md`
+- `mcp-tools.md`
+- `classification-rubric.md`
+- `output-contract.md`
 
 ---
 
@@ -37,10 +47,10 @@ Inputs:
 - `input/stenograme/*.json`
 
 Outputs:
-- `outputs/members/index.json`
-- `outputs/members/{memberId}.json`
-- `outputs/parties/index.json`
-- `outputs/parties/{partyId}.json`
+- `outputs/members/interventions_index.json`
+- `outputs/members/interventions_{member_id}.json`
+- `outputs/parties/interventions_index.json`
+- `outputs/parties/interventions_{party_id}.json`
 
 The filesystem is:
 - the source of truth for inputs
@@ -59,7 +69,7 @@ Stored data may include:
 - intervention-level analysis results
 - unmatched speakers
 - run metadata and summaries
-- incremental processing metadata (future)
+- incremental processing metadata (required)
 - evaluation traces
 
 SQLite is chosen because:
@@ -67,6 +77,10 @@ SQLite is chosen because:
 - single file
 - deterministic
 - easy to inspect
+
+Incremental requirement:
+- when new files are added to `input/stenograme/`, the analyzer should process only new or changed files
+- previously processed stenograms should not be reprocessed by default in periodic runs
 
 ---
 
@@ -296,10 +310,10 @@ Responsibilities:
 - Avoid nondeterministic topic ranking
 
 Outputs:
-- outputs/members/index.json
-- outputs/members/{memberId}.json
-- outputs/parties/index.json
-- outputs/parties/{partyId}.json
+- outputs/members/interventions_index.json
+- outputs/members/interventions_{member_id}.json
+- outputs/parties/interventions_index.json
+- outputs/parties/interventions_{party_id}.json
 
 ---
 

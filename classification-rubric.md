@@ -10,6 +10,13 @@ The classification must be:
 - Structured via MCP tool calls
 - Explainable and auditable
 
+## See also
+
+- `architecture.md`
+- `rag-indexing.md`
+- `mcp-tools.md`
+- `output-contract.md`
+
 ---
 
 # 1) Classification Labels

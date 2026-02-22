@@ -16,7 +16,7 @@ Given stenograms of parliamentary sessions, it outputs a dataset that maps each 
 ## Docs
 
 - `goal.md` — what the project targets to achieve (requirements/scope)
-- `tech-brief.md` — current technology & architecture direction (conceptual, evolving)
+- `architecture.md` — current technology and system architecture direction
 
 ## Status
 

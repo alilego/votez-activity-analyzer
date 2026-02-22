@@ -5,6 +5,12 @@ This document defines the structure and expectations of all input files consumed
 
 The analyzer runs locally and reads structured JSON files from the `input/` directory.
 
+## See also
+
+- `goal.md`
+- `architecture.md`
+- `output-contract.md`
+
 ---
 
 # 📂 Directory Structure
@@ -154,7 +160,7 @@ Before matching with registry:
 
 4. Normalize case (case-insensitive comparison)
 
-5. (TBD) Diacritics normalization strategy
+5. Diacritics normalization strategy: transform diacritics to normal letters
 
 ---
 

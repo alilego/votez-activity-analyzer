@@ -1,0 +1,18 @@
+---
+description: Persistent project context and execution priorities
+alwaysApply: true
+---
+
+# Project Context Priorities
+
+## Primary learning objective
+
+- The main purpose of this project is hands-on learning of RAG and MCP.
+- For architecture and implementation decisions, prefer options that make RAG and MCP concepts explicit and practical.
+- Explain each important decision and pipeline step clearly, including why it was chosen and tradeoffs.
+
+## Batch processing requirement
+
+- New stenograms will be added over time to `input/stenograme/`.
+- Do not reprocess already processed stenograms on every run.
+- Prefer incremental processing with persisted run state so only new or changed stenograms are analyzed.

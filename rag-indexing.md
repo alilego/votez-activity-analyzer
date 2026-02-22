@@ -11,6 +11,12 @@ This design is intentionally:
 - Session-scoped (v0)
 - Compatible with MCP tool boundaries
 
+## See also
+
+- `architecture.md`
+- `classification-rubric.md`
+- `mcp-tools.md`
+
 ---
 
 # 1) RAG Scope (v0)

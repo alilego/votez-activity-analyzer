@@ -12,6 +12,13 @@ The frontend will consume this data to display:
 
 This contract is versioned and may evolve.
 
+## See also
+
+- `goal.md`
+- `architecture.md`
+- `classification-rubric.md`
+- `mcp-tools.md`
+
 ---
 
 # Version
@@ -27,23 +34,29 @@ Output contract version: v0
 - Deterministic structure
 - No embedded HTML
 
+Naming convention (v0):
+- All JSON fields use `snake_case`
+- Count fields use `_count` suffix
+- File placeholders use snake_case IDs (e.g., `{member_id}`)
+- Output filenames include `interventions` when the content is intervention-derived
+
 ---
 
 # File Structure (v0)
 
 outputs/
   members/
-    index.json
-    {memberId}.json
+    interventions_index.json
+    interventions_{member_id}.json
   parties/
-    index.json
-    {partyId}.json
+    interventions_index.json
+    interventions_{party_id}.json
 
 ---
 
 # 1. Members Index
 
-File: `outputs/members/index.json`
+File: `outputs/members/interventions_index.json`
 
 Purpose:
 - Lightweight list for frontend listing views
@@ -54,7 +67,8 @@ Structure:
   {
     "member_id": "string",
     "name": "string",
-    "party": "string | null",
+    "party_id": "string | null",
+    "party_name": "string | null",
     "interventions_total": number,
     "relevant_count": number,
     "neutral_count": number,
@@ -76,7 +90,7 @@ Notes:
 
 # 2. Member Detail
 
-File: `outputs/members/{memberId}.json`
+File: `outputs/members/interventions_{member_id}.json`
 
 Purpose:
 - Detailed view for a specific member
@@ -86,13 +100,14 @@ Structure:
 {
   "member_id": "string",
   "name": "string",
-  "party": "string | null",
+  "party_id": "string | null",
+  "party_name": "string | null",
 
   "stats": {
-    "total": number,
-    "relevant": number,
-    "neutral": number,
-    "non_relevant": number
+    "interventions_total": number,
+    "relevant_count": number,
+    "neutral_count": number,
+    "non_relevant_count": number
   },
 
   "top_topics": [
@@ -143,7 +158,7 @@ Structure:
 
 # 3. Parties Index
 
-File: `outputs/parties/index.json`
+File: `outputs/parties/interventions_index.json`
 
 Purpose:
 - Lightweight list for frontend party-level views
@@ -181,7 +196,7 @@ Notes:
 
 # 4. Party Detail
 
-File: `outputs/parties/{partyId}.json`
+File: `outputs/parties/interventions_{party_id}.json`
 
 Purpose:
 - Detailed party view for drill-down pages
@@ -194,10 +209,10 @@ Structure:
 
   "stats": {
     "members_count": number,
-    "total": number,
-    "relevant": number,
-    "neutral": number,
-    "non_relevant": number
+    "interventions_total": number,
+    "relevant_count": number,
+    "neutral_count": number,
+    "non_relevant_count": number
   },
 
   "top_topics": [
@@ -244,6 +259,11 @@ party_id:
 
 party_name:
 - Display name used by the frontend
+
+relevance_label values:
+- `relevant`
+- `neutral`
+- `non_relevant`
 
 ---
 

@@ -6,6 +6,13 @@ Build a local, standalone analyzer that processes Romanian Parliament stenograms
 
 This project is meant to be run periodically on a developer machine to refresh the dataset.
 
+## See also
+
+- `architecture.md`
+- `input-data.md`
+- `classification-rubric.md`
+- `output-contract.md`
+
 ## Target outcome
 
 Given a set of stenograms of parliament activity, generate a dataset that correlates each parliament member with:
@@ -20,6 +27,7 @@ Given a set of stenograms of parliament activity, generate a dataset that correl
 
 - Runs locally on the developer machine
 - Runs periodically (manually or cron job)
+- Processes incrementally (new or changed stenograms only, not full reprocessing by default)
 - Outputs data in a frontend-friendly format so the UI can pick it up and display it
 
 ## Out of scope (for now)
