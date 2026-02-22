@@ -101,6 +101,25 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_interventions_raw_member_id
             ON interventions_raw(member_id);
 
+        CREATE TABLE IF NOT EXISTS intervention_analysis (
+            intervention_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            relevance_label TEXT NOT NULL, -- relevant | neutral | non_relevant | unknown
+            topics_json TEXT NOT NULL, -- JSON array of strings
+            confidence REAL, -- nullable in scaffolding stage
+            evidence_chunk_ids_json TEXT NOT NULL, -- JSON array of strings
+            analysis_version TEXT NOT NULL DEFAULT 'scaffold_v1',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (intervention_id) REFERENCES interventions_raw(intervention_id),
+            FOREIGN KEY (run_id) REFERENCES runs(run_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_intervention_analysis_run_id
+            ON intervention_analysis(run_id);
+        CREATE INDEX IF NOT EXISTS idx_intervention_analysis_label
+            ON intervention_analysis(relevance_label);
+
         CREATE TABLE IF NOT EXISTS unmatched_speakers (
             run_id TEXT NOT NULL,
             session_id TEXT NOT NULL,
@@ -121,7 +140,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '3')
+        VALUES('schema_version', '4')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )

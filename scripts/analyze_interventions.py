@@ -252,6 +252,31 @@ def _persist_run_data(
             ),
         )
 
+        # Scaffolding stage: write placeholder analysis row for matched interventions.
+        if iv["member_id"] is not None:
+            conn.execute(
+                """
+                INSERT INTO intervention_analysis (
+                    intervention_id,
+                    run_id,
+                    relevance_label,
+                    topics_json,
+                    confidence,
+                    evidence_chunk_ids_json,
+                    analysis_version,
+                    updated_at
+                )
+                VALUES (?, ?, 'unknown', '[]', NULL, '[]', 'scaffold_v1', CURRENT_TIMESTAMP)
+                ON CONFLICT(intervention_id) DO UPDATE SET
+                    run_id = excluded.run_id,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (
+                    iv["intervention_id"],
+                    run_id,
+                ),
+            )
+
     for (session_id, stenogram_path, raw_speaker, normalized_speaker), occurrences in unmatched_counts.items():
         conn.execute(
             """

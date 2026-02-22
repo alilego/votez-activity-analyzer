@@ -47,7 +47,7 @@ Naming convention (v0):
 outputs/
   members/
     interventions_index.json
-    interventions_{member_id}.json
+    interventions_{member_id}_{member_name}.json
   parties/
     interventions_index.json
     interventions_{party_id}.json
@@ -90,7 +90,7 @@ Notes:
 
 # 2. Member Detail
 
-File: `outputs/members/interventions_{member_id}.json`
+File: `outputs/members/interventions_{member_id}_{member_name}.json`
 
 Purpose:
 - Detailed view for a specific member

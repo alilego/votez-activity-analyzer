@@ -22,6 +22,7 @@ What this command does:
 - initializes schema if not initialized
 - selects only new/changed files from `input/stenograme/`
 - runs analyzer (speaker normalization + member resolution + raw intervention persistence)
+- exports frontend JSON artifacts to `outputs/`
 - marks successfully processed stenograms in DB state
 - stores run summary in DB table `run_outputs`
 
@@ -35,6 +36,8 @@ Dry run (selection only):
 - Reset local state for a clean rerun: `python scripts/reset_state.py`
 - Show selected files: `python scripts/select_stenograms.py`
 - Mark selected files manually: `python scripts/mark_processed_stenograms.py --run-id <run_id>`
+- Export outputs only: `python scripts/export_outputs.py`
+- Validate exported outputs: `python scripts/validate_outputs.py`
 - Use custom analyzer: `python scripts/run_pipeline.py --analyzer-cmd "<your command>"`
 
 When using a custom analyzer command, these env vars are provided:
@@ -48,6 +51,7 @@ Current SQLite tables:
 - `run_outputs`
 - `members`
 - `interventions_raw`
+- `intervention_analysis` (classification scaffolding table)
 - `unmatched_speakers`
 
 ## Docs

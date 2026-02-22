@@ -5,7 +5,8 @@ Minimal orchestrator for incremental runs.
 Flow:
 1) Select new/changed stenograms
 2) Execute analyzer command
-3) Mark files as processed only if analyzer succeeds
+3) Export frontend artifacts
+4) Mark files as processed only if analyzer + export succeed
 """
 
 from __future__ import annotations
@@ -102,6 +103,11 @@ def main() -> int:
         action="store_true",
         help="Only list selected files and exit.",
     )
+    parser.add_argument(
+        "--skip-export",
+        action="store_true",
+        help="Skip output export step (not recommended).",
+    )
     args = parser.parse_args()
 
     db_path = Path(args.db_path)
@@ -157,11 +163,26 @@ def main() -> int:
             print(f"Analyzer failed with exit code {proc.returncode}. Nothing was marked processed.")
             return proc.returncode
 
+        if not args.skip_export:
+            export_cmd = [sys.executable, "scripts/export_outputs.py", "--db-path", str(db_path)]
+            export_proc = subprocess.run(export_cmd, env=env)
+            if export_proc.returncode != 0:
+                _finish_run(conn, run_id, "failed", 0)
+                conn.commit()
+                print(
+                    f"Export failed with exit code {export_proc.returncode}. "
+                    "Nothing was marked processed."
+                )
+                return export_proc.returncode
+
         marked = mark_candidates(conn, candidates, run_id)
         _finish_run(conn, run_id, "completed", marked)
         conn.commit()
 
-    print(f"Run completed. Marked {marked} stenogram(s) as processed (run_id={run_id}).")
+    print(
+        f"Run completed. Marked {marked} stenogram(s) as processed (run_id={run_id}). "
+        f"{'Export skipped.' if args.skip_export else 'Outputs exported to outputs/.'}"
+    )
     return 0
 
 

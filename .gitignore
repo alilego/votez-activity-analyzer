@@ -211,3 +211,6 @@ input/stenograme/*.json
 
 # Local analyzer state
 state/
+
+# Generated frontend artifacts
+outputs/

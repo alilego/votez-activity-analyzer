@@ -48,7 +48,7 @@ Inputs:
 
 Outputs:
 - `outputs/members/interventions_index.json`
-- `outputs/members/interventions_{member_id}.json`
+- `outputs/members/interventions_{member_id}_{member_name}.json`
 - `outputs/parties/interventions_index.json`
 - `outputs/parties/interventions_{party_id}.json`
 
@@ -311,7 +311,7 @@ Responsibilities:
 
 Outputs:
 - outputs/members/interventions_index.json
-- outputs/members/interventions_{member_id}.json
+- outputs/members/interventions_{member_id}_{member_name}.json
 - outputs/parties/interventions_index.json
 - outputs/parties/interventions_{party_id}.json
 
