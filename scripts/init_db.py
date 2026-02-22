@@ -120,6 +120,19 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_intervention_analysis_label
             ON intervention_analysis(relevance_label);
 
+        CREATE TABLE IF NOT EXISTS session_topics (
+            session_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            stenogram_path TEXT NOT NULL,
+            topics_json TEXT NOT NULL, -- JSON array of session-level topics
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES runs(run_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_session_topics_run_id
+            ON session_topics(run_id);
+
         CREATE TABLE IF NOT EXISTS unmatched_speakers (
             run_id TEXT NOT NULL,
             session_id TEXT NOT NULL,
@@ -135,6 +148,40 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_processed_stenograms_hash
             ON processed_stenograms(content_hash);
+
+        DROP VIEW IF EXISTS interventions_enriched;
+        CREATE VIEW interventions_enriched AS
+        SELECT
+            iv.intervention_id,
+            iv.run_id,
+            iv.session_id,
+            iv.session_date,
+            iv.stenogram_path,
+            iv.speech_index,
+            iv.raw_speaker,
+            iv.normalized_speaker,
+            iv.member_id,
+            m.name AS member_name,
+            m.party_id,
+            iv.text,
+            iv.text_hash,
+            ia.relevance_label,
+            ia.topics_json,
+            ia.confidence,
+            st.topics_json AS session_topics_json,
+            ia.evidence_chunk_ids_json,
+            ia.analysis_version,
+            iv.created_at AS raw_created_at,
+            iv.updated_at AS raw_updated_at,
+            ia.created_at AS analysis_created_at,
+            ia.updated_at AS analysis_updated_at
+        FROM interventions_raw iv
+        LEFT JOIN intervention_analysis ia
+            ON ia.intervention_id = iv.intervention_id
+        LEFT JOIN session_topics st
+            ON st.session_id = iv.session_id
+        LEFT JOIN members m
+            ON m.member_id = iv.member_id;
         """
     )
     conn.execute(

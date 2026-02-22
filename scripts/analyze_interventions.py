@@ -231,17 +231,22 @@ def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
     return topics
 
 
-def _deterministic_analysis(text: str) -> tuple[str, list[str], float]:
+def _deterministic_analysis(
+    text: str,
+    intervention_topics: list[str],
+    session_topics: list[str],
+) -> tuple[str, list[str], float]:
     normalized = _analysis_text(text)
-    topics = _extract_topics(text)
+    session_topic_set = set(session_topics)
+    matched_topics = [topic for topic in intervention_topics if topic in session_topic_set]
 
     if len(normalized) < 40:
-        return "neutral", topics, 0.45
+        return "neutral", matched_topics, 0.45
 
     # Roll-call / attendance blocks are procedural.
     roll_call_hits = sum(1 for token in (" absent", " prezent", "nu votez") if token in normalized)
     if roll_call_hits >= 2:
-        return "neutral", topics, 0.90
+        return "neutral", matched_topics, 0.90
 
     # "proiectul ordinii de zi" is procedural, not substantive legislation.
     adjusted_for_relevance = normalized
@@ -251,20 +256,28 @@ def _deterministic_analysis(text: str) -> tuple[str, list[str], float]:
     non_relevant_hits = sum(1 for k in NON_RELEVANT_KEYWORDS if k in normalized)
     relevant_hits = sum(1 for k in RELEVANT_KEYWORDS if k in adjusted_for_relevance)
     procedural_hits = sum(1 for k in PROCEDURAL_KEYWORDS if k in normalized)
+    has_topic_overlap = len(matched_topics) > 0
 
-    if non_relevant_hits > 0 and relevant_hits == 0 and procedural_hits <= 1:
-        return "non_relevant", topics, 0.78
-    if procedural_hits > 0 and relevant_hits == 0:
-        return "neutral", topics, 0.70
+    # Off-topic rhetoric with no overlap to session discussion.
+    if non_relevant_hits > 0 and not has_topic_overlap and relevant_hits == 0 and procedural_hits <= 1:
+        return "non_relevant", [], 0.80
+
+    # No overlap means likely neutral/procedural in this baseline.
+    if not has_topic_overlap:
+        if procedural_hits > 0:
+            return "neutral", [], 0.72
+        return "neutral", [], 0.58
+
+    # Overlap exists: evaluate likely substantive vs procedural.
     if relevant_hits > 0:
-        # Mixed procedural + weak legislative hints stay neutral unless
-        # strong parliamentary substance appears.
         strong_relevant_tokens = ("motiune", "cenzura", "ordonanta", "amendament", "articol")
         has_strong_relevant = any(t in adjusted_for_relevance for t in strong_relevant_tokens)
         if procedural_hits > 0 and not has_strong_relevant:
-            return "neutral", topics, 0.62
-        return "relevant", topics, 0.72
-    return "neutral", topics, 0.55
+            return "neutral", matched_topics, 0.63
+        return "relevant", matched_topics, 0.75
+
+    # Purely procedural but on session topics.
+    return "neutral", matched_topics, 0.67
 
 
 def _build_intervention_id(stenogram_path: str, speech_index: int) -> str:
@@ -339,6 +352,8 @@ def _persist_run_data(
     members: list[dict],
     interventions: list[dict],
     unmatched_counts: dict[tuple[str, str, str, str], int],
+    session_topics_map: dict[str, list[str]],
+    session_to_stenogram_path: dict[str, str],
 ) -> tuple[int, int]:
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute(
@@ -427,7 +442,11 @@ def _persist_run_data(
 
         # Deterministic baseline analysis (pre-RAG/LLM).
         if iv["member_id"] is not None:
-            relevance_label, topics, confidence = _deterministic_analysis(iv["text"])
+            relevance_label, topics, confidence = _deterministic_analysis(
+                iv["text"],
+                iv.get("candidate_topics", []),
+                session_topics_map.get(iv["session_id"], []),
+            )
             conn.execute(
                 """
                 INSERT INTO intervention_analysis (
@@ -458,6 +477,27 @@ def _persist_run_data(
                     confidence,
                 ),
             )
+
+    for session_id, topics in session_topics_map.items():
+        conn.execute(
+            """
+            INSERT INTO session_topics (
+                session_id, run_id, stenogram_path, topics_json, updated_at
+            )
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(session_id) DO UPDATE SET
+                run_id = excluded.run_id,
+                stenogram_path = excluded.stenogram_path,
+                topics_json = excluded.topics_json,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                session_id,
+                run_id,
+                session_to_stenogram_path.get(session_id, ""),
+                json.dumps(topics, ensure_ascii=True),
+            ),
+        )
 
     for (session_id, stenogram_path, raw_speaker, normalized_speaker), occurrences in unmatched_counts.items():
         conn.execute(
@@ -596,6 +636,7 @@ def main() -> int:
         interventions: list[dict] = []
         unmatched_counts: dict[tuple[str, str, str, str], int] = {}
         session_topic_counters: dict[str, Counter[str]] = defaultdict(Counter)
+        session_to_stenogram_path: dict[str, str] = {}
 
         for rel_path in selected:
             file_path = Path(rel_path)
@@ -609,6 +650,10 @@ def main() -> int:
             session_id = str(data.get("session_id", ""))
             session_date = str(data.get("stenograma_date", ""))
             stenogram_path = file_path.as_posix()
+            session_to_stenogram_path[session_id] = stenogram_path
+            initial_notes = str(data.get("initial_notes", "")).strip()
+            if initial_notes:
+                session_topic_counters[session_id].update(_extract_topics(initial_notes, max_topics=12))
             for idx, speech in enumerate(speeches):
                 if not isinstance(speech, dict):
                     continue
@@ -642,11 +687,20 @@ def main() -> int:
                         "member_id": member_id,
                         "text": text,
                         "text_hash": text_hash,
+                        "candidate_topics": extracted_topics,
                     }
                 )
                 if member_id is None and normalized_speaker:
                     key = (session_id, stenogram_path, raw_speaker, normalized_speaker)
                     unmatched_counts[key] = unmatched_counts.get(key, 0) + 1
+
+        session_topics_map = {
+            session_id: [
+                topic
+                for topic, _count in sorted(counter.items(), key=lambda x: (-x[1], x[0]))[:20]
+            ]
+            for session_id, counter in session_topic_counters.items()
+        }
 
         with sqlite3.connect(db_path) as conn:
             interventions_total, unmatched_total = _persist_run_data(
@@ -655,6 +709,8 @@ def main() -> int:
                 members=members,
                 interventions=interventions,
                 unmatched_counts=unmatched_counts,
+                session_topics_map=session_topics_map,
+                session_to_stenogram_path=session_to_stenogram_path,
             )
             matched_total = interventions_total - unmatched_total
             payload = _build_summary_payload(

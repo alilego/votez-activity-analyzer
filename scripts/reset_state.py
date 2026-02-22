@@ -18,6 +18,8 @@ from init_db import DEFAULT_DB_PATH, init_db
 
 TABLES_IN_DELETE_ORDER = [
     "unmatched_speakers",
+    "session_topics",
+    "intervention_analysis",
     "interventions_raw",
     "processed_stenograms",
     "run_outputs",
