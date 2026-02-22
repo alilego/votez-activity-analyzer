@@ -208,3 +208,6 @@ __marimo__/
 
 # Local input transcripts
 input/stenograme/*.json
+
+# Local analyzer state
+state/
