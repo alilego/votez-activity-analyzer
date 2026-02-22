@@ -1,0 +1,939 @@
+{
+  "metadata": {
+    "build_date": "2026-02-15T18:57:21.944594",
+    "total_count": 133
+  },
+  "members": [
+    {
+      "name": "ABRUDEAN Mircea",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=7ff0cd22-7bbb-4ca8-ada1-0473697459bd",
+      "circumscriptie": "Circumscripţia electorală nr.13 Cluj",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "ALDEA Valentina-Mariana",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=aaa971e5-5110-4c5f-98f5-07c6ee365a1e",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "POT",
+      "party_full_name": "POT"
+    },
+    {
+      "name": "ALEXANDRU Victoria-Violeta",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=4d812c2c-fa19-4834-b1f1-08fedc72161d",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "ANGHEL Razvan-Paul",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e4673fd9-34fd-4b0d-8019-092771f2537e",
+      "circumscriptie": "Circumscripţia electorală nr.02 Arad",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "ANISIE Monica-Cristina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=dad3c5ee-3157-410a-85ff-094a63524104",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "ANTAL István-Loránt",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=de52f6df-260b-4042-9a60-095a0dbfe661",
+      "circumscriptie": "Circumscripţia electorală nr.21 Harghita",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "BARCARI Dorina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=edf20da3-a851-4622-b534-0b3d833a51b9",
+      "circumscriptie": "Circumscripţia electorală nr.08 Braşov",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "BEM Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=00aee4d2-ea00-4484-9a67-0c2f8a0459f8",
+      "circumscriptie": "Circumscripţia electorală nr.39 Vaslui",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "BICĂ Andra",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=b9c904e7-969f-4126-b0e1-0ebd3a003cc5",
+      "circumscriptie": "Circumscripţia electorală nr.40 Vâlcea",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "BLAGA Vasile",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=33d88102-6e65-4934-9ecf-10102445c2c4",
+      "circumscriptie": "Circumscripţia electorală nr.37 Timiş",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "BOCHILEANU George-Cătălin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=bff3c30a-425f-4b6d-8d4f-1285c1bde059",
+      "circumscriptie": "Circumscripţia electorală nr.43 Circumscripţia electorală pentru românii cu domiciliul în afara României",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "BODEA Marius",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=dc8f43fb-e036-477b-b895-12f56a2464c1",
+      "circumscriptie": "Circumscripţia electorală nr.24 Iaşi",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "BOLOJAN Ilie",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=813d6a81-cea1-4ac6-9717-143a859d4bde",
+      "circumscriptie": "Circumscripţia electorală nr.05 Bihor",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "BORȚUN Ștefan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=29201640-de4e-47ff-89b2-18126d2790ae",
+      "circumscriptie": "Circumscripţia electorală nr.38 Tulcea",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "BOTA Gheorghe-Ioan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=86228ca2-986a-40ba-9ed8-1a975ed32f9c",
+      "circumscriptie": "Circumscripţia electorală nr.05 Bihor",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "BUZATU Oana-Constantina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=6a194230-e597-4335-8ce2-1da0b0aae9c4",
+      "circumscriptie": "Circumscripţia electorală nr.27 Mehedinţi",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "CARP Ionel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=65699efd-f7e5-4128-b80f-1ef173563d66",
+      "circumscriptie": "Circumscripţia electorală nr.38 Tulcea",
+      "party": "Neafiliaţi",
+      "party_full_name": "-"
+    },
+    {
+      "name": "CAȘCAVAL Dan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=d7829eb2-a908-43c2-8f3f-1f1ad550b9e6",
+      "circumscriptie": "Circumscripţia electorală nr.24 Iaşi",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "CATANA Claudiu-Daniel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=94afc16b-0d0b-45be-a844-2110c5c3bc0a",
+      "circumscriptie": "Circumscripţia electorală nr.36 Teleorman",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "CAZANCIUC Robert-Marius",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=33c6752d-c2b6-42af-a6b4-233b9f6e9994",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "CERNIC Sebastian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=ce14b3e6-9e25-4840-a0b0-23f33c6db73c",
+      "circumscriptie": "Circumscripţia electorală nr.04 Bacău",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "CERVA Nadia-Cosmina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=31c2cf8c-ba75-4086-9359-6cfed5bb857d",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "CHELARU Mircia",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=9cd64c47-2be4-43ed-8b32-249577fe8c97",
+      "circumscriptie": "Circumscripţia electorală nr.03 Argeş",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "CHERTIF Costache",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=9d98d226-76aa-4dec-9d8d-24a83d344dfb",
+      "circumscriptie": "Circumscripţia electorală nr.26 Maramureş",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "CIBU DEACONU Ruxandra",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0a8b45a7-e661-4c59-9169-281f79ff12eb",
+      "circumscriptie": "Circumscripţia electorală nr.34 Sibiu",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "CIUPERCEANU Ionuț-Ciprian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=801216b9-b47e-419b-bd9f-2da44629e975",
+      "circumscriptie": "Circumscripţia electorală nr.36 Teleorman",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "CÎMPEANU Sorin-Mihai",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e358037e-262e-4bc0-b1d8-30016595005f",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "CONSTANTINESCU Rodica",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=fa667a85-17d1-4cb5-a5db-322d48fcd38d",
+      "circumscriptie": "Circumscripţia electorală nr.18 Galaţi",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "CORLĂŢEAN Titus",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=7aebffad-47e6-4c7e-bdfb-34360e888703",
+      "circumscriptie": "Circumscripţia electorală nr.16 Dîmboviţa",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "COȘA Silviu-Iulian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=c4a7837d-5479-4aad-82bc-34c696b71339",
+      "circumscriptie": "Circumscripţia electorală nr.14 Constanţa",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "COTEȚ Mihai",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5dfb5f9b-9d25-40a4-9145-366ae2b2c04d",
+      "circumscriptie": "Circumscripţia electorală nr.03 Argeş",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "CSÁSZÁR Károly Zsolt",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=827844f4-ed1e-4293-bbe5-3dd527a0d65b",
+      "circumscriptie": "Circumscripţia electorală nr.28 Mureş",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "CSEKE Attila-Zoltan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=2af30f2a-5ad3-45db-a322-4073884fed8f",
+      "circumscriptie": "Circumscripţia electorală nr.05 Bihor",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "CUȘNIR Rodica",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=dd953b01-e89c-481c-88b9-40cbd8e43fec",
+      "circumscriptie": "Circumscripţia electorală nr.35 Suceava",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "DARĂU Ambrozie-Irineu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=37b6de1d-2d61-4475-bb9b-443d4ad9d181",
+      "circumscriptie": "Circumscripţia electorală nr.08 Braşov",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "DÎRLĂU Andrei-Emil",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=a98c83aa-d99d-464b-a5a1-44566f751a51",
+      "circumscriptie": "Circumscripţia electorală nr.01 Alba",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "DOBRA Elena-Adelina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5cb3f164-6f0c-449b-bc2e-457c5e9bf73c",
+      "circumscriptie": "Circumscripţia electorală nr.16 Dîmboviţa",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "DOGARIU Eugen",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=094ef6d8-2e32-4cbd-81ff-46b54ec604f1",
+      "circumscriptie": "Circumscripţia electorală nr.37 Timiş",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "DUMITRESCU Cristina-Gabriella",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=55c19f8c-80f4-4bd1-b112-e363c2b283f1",
+      "circumscriptie": "Circumscripţia electorală nr.24 Iaşi",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "DUNCA Marius-Alexandru",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5582ee24-5017-4462-ad12-49d4bde5d5bb",
+      "circumscriptie": "Circumscripţia electorală nr.08 Braşov",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "FEDEROVICI Doina-Elena",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e695c911-b82f-4af1-a537-4ae1baa991bf",
+      "circumscriptie": "Circumscripţia electorală nr.07 Botoşani",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "FEJÉR László-Ődőn",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=b443bd5d-6ba0-4192-832c-4b502d6ec1a8",
+      "circumscriptie": "Circumscripţia electorală nr.15 Covasna",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "FENECHIU Cătălin-Daniel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=87c4a776-8e64-4e70-a862-4f087aea03e5",
+      "circumscriptie": "Circumscripţia electorală nr.04 Bacău",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "FLOROIU Ionel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=fcdbfb0c-93ca-4aa5-85ba-4f53b21865bd",
+      "circumscriptie": "Circumscripţia electorală nr.04 Bacău",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "FLUTUR Gheorghe",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=58dd0f59-a7e9-44f4-9860-5316735921e1",
+      "circumscriptie": "Circumscripţia electorală nr.35 Suceava",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "FODOCA Liviu-Iulian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=4ecef3dd-1f70-4433-82ba-54975207c4a1",
+      "circumscriptie": "Circumscripţia electorală nr.33 Sălaj",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "GEAMĂNU Ștefan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0a82391d-2ecd-4b88-ac27-57b69d159720",
+      "circumscriptie": "Circumscripţia electorală nr.43 Circumscripţia electorală pentru românii cu domiciliul în afara României",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "GHEORGHE Daniel-Paul-Romeo",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=d2f51e91-d18a-431c-bc9d-6061101ce1d4",
+      "circumscriptie": "Circumscripţia electorală nr.29 Neamţ",
+      "party": "Neafiliaţi",
+      "party_full_name": "-"
+    },
+    {
+      "name": "GHINEA Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=008fd8cb-c069-4f74-b02b-612d1db6a19d",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "GHIȚĂ Robert-Daniel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=ac8c9401-1a0d-478b-b367-62212ecab1c5",
+      "circumscriptie": "Circumscripţia electorală nr.30 Olt",
+      "party": "POT",
+      "party_full_name": "POT"
+    },
+    {
+      "name": "GRAUR Cătălin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=a8ff8991-97dd-4a5b-92a9-63c61a612f75",
+      "circumscriptie": "Circumscripţia electorală nr.41 Vrancea",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "HORGA Maria-Gabriela",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=91a4d099-7162-417b-8f93-645dc31accf0",
+      "circumscriptie": "Circumscripţia electorală nr.19 Giurgiu",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "HUMELNICU Marius",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=d172fe4e-c155-4f46-8859-6665840065a9",
+      "circumscriptie": "Circumscripţia electorală nr.18 Galaţi",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "IACOB Constantin-Ciprian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e4de63cf-394d-49da-844a-6b060a232b35",
+      "circumscriptie": "Circumscripţia electorală nr.16 Dîmboviţa",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "JITARU Ovidiu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=7193aafe-9862-45bf-b876-6f90dfa96616",
+      "circumscriptie": "Circumscripţia electorală nr.07 Botoşani",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "KONDOR Ágota",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=dcb76afd-06d2-4795-9ce4-705231994268",
+      "circumscriptie": "Circumscripţia electorală nr.15 Covasna",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "KOVÁCS Maté",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3b1c3e18-cc5d-46d4-8be7-70ca0566d41f",
+      "circumscriptie": "Circumscripţia electorală nr.32 Satu Mare",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "LAVRIC Sorin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=781af753-0e1a-4820-9926-7191e4eb16df",
+      "circumscriptie": "Circumscripţia electorală nr.29 Neamţ",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "MANEA Dumitru",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e23f34ee-f4f8-4e72-8302-7453373e0cec",
+      "circumscriptie": "Circumscripţia electorală nr.24 Iaşi",
+      "party": "SOS RO",
+      "party_full_name": "SOS RO"
+    },
+    {
+      "name": "MARIAN Călin-Petru",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=509068b6-ecf9-4365-a022-74b77483ce14",
+      "circumscriptie": "Circumscripţia electorală nr.22 Hunedoara",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "MAZILU Liviu-Lucian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3abf38c7-fffe-4f34-b90a-77b5c3219da5",
+      "circumscriptie": "Circumscripţia electorală nr.27 Mehedinţi",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "MĂLĂIESCU Luca",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=b9350519-299b-4572-8d08-7aea22489f39",
+      "circumscriptie": "Circumscripţia electorală nr.11 Caraş-Severin",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "MĂRGINEAN Lucian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=fee99943-2379-4151-8e9a-7b15d1f04a4f",
+      "circumscriptie": "Circumscripţia electorală nr.28 Mureş",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "MIHAI Daniela",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=f640457c-0362-4c02-96d1-7c38b9957bdd",
+      "circumscriptie": "Circumscripţia electorală nr.12 Călăraşi",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "MIRCESCU Ion-Narcis",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=7a6ec680-9075-4fff-97d2-7d556f4d57bc",
+      "circumscriptie": "Circumscripţia electorală nr.03 Argeş",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "MÎNDRU Cătălin-Emil",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=b70cfd7f-7726-4531-99d0-83ff6f6f05b3",
+      "circumscriptie": "Circumscripţia electorală nr.39 Vaslui",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "MOHAN Aurel-George",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0692f467-f93f-4a21-a06a-8431696053a8",
+      "circumscriptie": "Circumscripţia electorală nr.05 Bihor",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "MOISE Sorin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=ad29025b-adcf-4c9d-8f02-851ab171ff91",
+      "circumscriptie": "Circumscripţia electorală nr.09 Brăila",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "NEAGU Nicolae",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=bdd75da8-fc58-45c3-8765-87d17ea22c8d",
+      "circumscriptie": "Circumscripţia electorală nr.34 Sibiu",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "NEGOI Eugen-Remus",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=18f2771e-382a-4809-b1ab-8c8750fc5bf8",
+      "circumscriptie": "Circumscripţia electorală nr.14 Constanţa",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "NEGRU Corneliu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=c6be0951-8179-4ab1-8166-8cac4c1bf4d4",
+      "circumscriptie": "Circumscripţia electorală nr.41 Vrancea",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "NICULA Mircea-Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=cb2ca5b6-ffeb-4fe8-a10c-87c4d61cacb0",
+      "circumscriptie": "Circumscripţia electorală nr.06 Bistriţa-Năsăud",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "NICULESCU-ŢÂGÂRLAŞ Cristian-Augustin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=8e9b590e-eb5b-49a9-a908-8cbe4e43b9fc",
+      "circumscriptie": "Circumscripţia electorală nr.26 Maramureş",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "NOVAK Levente",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=2baeeba9-a861-4355-9c8e-8cebeba4f0d4",
+      "circumscriptie": "Circumscripţia electorală nr.28 Mureş",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "ONEA Olga",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=7f782376-a244-4258-b5a5-911192e5566d",
+      "circumscriptie": "Circumscripţia electorală nr.18 Galaţi",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "OPRINOIU Aurel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5954ccc9-0af9-409f-9b30-91c8b292d60d",
+      "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "ORBAN Carmen",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=86155ce0-9997-464a-ad63-93236f32f972",
+      "circumscriptie": "Circumscripţia electorală nr.10 Buzău",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "PARASCA Teofil",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3953018d-3e06-4028-bc4b-953fb20f88e9",
+      "circumscriptie": "Circumscripţia electorală nr.02 Arad",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "PAULIUC Nicoleta",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=737c18e7-c031-4d78-8808-9588b964e893",
+      "circumscriptie": "Circumscripţia electorală nr.25 Ilfov",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "PĂDURARU Răducu-Adrian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=57a5f4d6-ec10-4020-8424-958ed09fbf37",
+      "circumscriptie": "Circumscripţia electorală nr.29 Neamţ",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "PĂLĂRIE Ștefan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=2a3a96e0-f5d4-4a21-8c10-9606276f5311",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "PĂSCULESCU Veta",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=b236fa71-a4fe-4ee8-b18e-bed743df11d5",
+      "circumscriptie": "Circumscripţia electorală nr.17 Dolj",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "PĂUCEAN-FERNANDES Luminița",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=2b2ea3f2-756e-46d5-acfe-9a41350b7f34",
+      "circumscriptie": "Circumscripţia electorală nr.34 Sibiu",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "PĂUN Ana-Cynthia-Ioana",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=a5b8a0d4-4710-4730-a171-9b78349041f6",
+      "circumscriptie": "Circumscripţia electorală nr.25 Ilfov",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "PEIA Ninel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=007fdd23-b531-407e-a067-9c3796420c8c",
+      "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "PEIU Grigore-Adrian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=8c196354-6157-46a5-8b04-9d394c7b294d",
+      "circumscriptie": "Circumscripţia electorală nr.23 Ialomiţa",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "PEIU Petrișor-Gabriel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=05495ace-0730-44d7-b735-9d97285dccf0",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "PETRE George-Cezar",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=14e542f2-ee04-444e-b539-9e85135da202",
+      "circumscriptie": "Circumscripţia electorală nr.30 Olt",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "PETREA Dorin-Silviu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e49ef80d-fc0b-4ca7-93ef-9ed3840e012a",
+      "circumscriptie": "Circumscripţia electorală nr.09 Brăila",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "PINTEA Paul-Ciprian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=6491a652-0d83-455c-b9a9-a04c0f5194c0",
+      "circumscriptie": "Circumscripţia electorală nr.33 Sălaj",
+      "party": "POT",
+      "party_full_name": "POT"
+    },
+    {
+      "name": "PLĂEȘU Laurențiu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=4ea5e2f9-cd07-4eb4-912e-a1181cc460b1",
+      "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "POTECĂ Vasilică",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=a5a25b95-3452-4d9d-983b-a1c7a033cfcd",
+      "circumscriptie": "Circumscripţia electorală nr.22 Hunedoara",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "PREDOIU Marian-Cătălin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=979f6165-caa2-4568-abe4-a663a37147fd",
+      "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "PRESURĂ Alexandra",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=95133353-e40c-4398-bbac-a6d14fcdad54",
+      "circumscriptie": "Circumscripţia electorală nr.17 Dolj",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "PUIU Ovidiu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=c4af4b08-ccb8-4323-8fb2-a7272aff2123",
+      "circumscriptie": "Circumscripţia electorală nr.03 Argeş",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "RĂCUCI Claudiu-Vasile",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=082c21cd-dcdb-42bb-9bfd-a871139cb9c5",
+      "circumscriptie": "Circumscripţia electorală nr.01 Alba",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "RESMERIŢĂ Cornel-Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e7647515-e32c-4e2d-96ff-ab83e8a93512",
+      "circumscriptie": "Circumscripţia electorală nr.22 Hunedoara",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "ROBE Liviu Sorin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=6e681419-5f69-41cd-85ca-acef5eed2a63",
+      "circumscriptie": "Circumscripţia electorală nr.06 Bistriţa-Năsăud",
+      "party": "POT",
+      "party_full_name": "POT"
+    },
+    {
+      "name": "ROMAN Marius-Valentin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3090f662-69b9-4088-94ea-ad1847401b50",
+      "circumscriptie": "Circumscripţia electorală nr.10 Buzău",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "RUJAN Ion-Cristinel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=400f5737-4844-4c7d-98da-aee69c2428d0",
+      "circumscriptie": "Circumscripţia electorală nr.20 Gorj",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "RUS Vasile-Ciprian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e5da6de6-88cd-468a-b161-b32caac784f3",
+      "circumscriptie": "Circumscripţia electorală nr.13 Cluj",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "RUSU Ioan-Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=d9cf2a62-6109-4d68-9452-b54d6b4e786f",
+      "circumscriptie": "Circumscripţia electorală nr.12 Călăraşi",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "RUSU Petrică Lucian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3f7d19d2-b8d0-4309-894c-b71561f01985",
+      "circumscriptie": "Circumscripţia electorală nr.24 Iaşi",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "SANDU Mircea-Ionuț",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=74a1ca6f-7e3c-49ea-b9d7-b8df00bf7766",
+      "circumscriptie": "Circumscripţia electorală nr.20 Gorj",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "SAVA Clement",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=988c7a7c-2a4e-476d-bcc0-bcc1d6e5b97b",
+      "circumscriptie": "Circumscripţia electorală nr.14 Constanţa",
+      "party": "Neafiliaţi",
+      "party_full_name": ""
+    },
+    {
+      "name": "SILEGEANU Cătălin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=c7757f24-2d04-42a2-833e-c0a9a821ad71",
+      "circumscriptie": "Circumscripţia electorală nr.07 Botoşani",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "SPAU Dumitru",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=f34848d5-327a-4e34-80dd-c28eb44c8d98",
+      "circumscriptie": "Circumscripţia electorală nr.40 Vâlcea",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "SPĂTARU Elena-Simona",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=60bce7c1-fb2b-4f29-9c74-0b37c64a7611",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "STAN Ioan",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=259a81f5-9971-4b56-b1b5-c4230980bcd3",
+      "circumscriptie": "Circumscripţia electorală nr.35 Suceava",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "STĂNESCU Paul",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=cd69820b-804d-42bf-be94-c567a0efd41b",
+      "circumscriptie": "Circumscripţia electorală nr.30 Olt",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "STELEA Niculina",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5aa76a32-f2f8-42c0-a868-c5afa29fc744",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "STOICA Ciprian-Titi",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=1969fbc4-5c74-4b09-afd6-cb64347549de",
+      "circumscriptie": "Circumscripţia electorală nr.37 Timiş",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "STOICIU Victoria",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0317f068-49ad-4541-87d4-cc589aef437f",
+      "circumscriptie": "Circumscripţia electorală nr.39 Vaslui",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "STREINU CERCEL Adrian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=075d383a-42a1-44d5-989f-cc686356d066",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "STROE Felix",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e945e210-e8a5-4e58-8c9f-d144f4a062b5",
+      "circumscriptie": "Circumscripţia electorală nr.14 Constanţa",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "ȘIPOȘ Eugen-Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=aa6ba21b-d06f-4f62-8659-d4e74add85cb",
+      "circumscriptie": "Circumscripţia electorală nr.13 Cluj",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "ȘIPOȘ Sorin-Gheorghe",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=a2987b08-f230-43f8-ab52-d9073851a524",
+      "circumscriptie": "Circumscripţia electorală nr.37 Timiş",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "ȘTEFĂNACHE Gheorghe",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=9a773414-4c8d-41af-bd97-d9834eb23395",
+      "circumscriptie": "Circumscripţia electorală nr.18 Galaţi",
+      "party": "USR",
+      "party_full_name": "Partidul \"Uniunea Salvați România”"
+    },
+    {
+      "name": "ȘTEFĂNESCU Daniela",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=bd44b5a4-e8ab-43c1-8b0e-dc539f57f668",
+      "circumscriptie": "Circumscripţia electorală nr.04 Bacău",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "TÁNCZOS Barna",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=ad82d70d-0286-45a0-a3cc-e1df3fa38144",
+      "circumscriptie": "Circumscripţia electorală nr.21 Harghita",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "TASNADI Istvan-Szilard",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=d7e43180-8a7d-47ce-94dd-e2e6ffb390d1",
+      "circumscriptie": "Circumscripţia electorală nr.13 Cluj",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "TĂNĂSESCU Alina-Elena",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=be0ed528-f7e8-43f5-a47e-e2f52e95a17c",
+      "circumscriptie": "Circumscripţia electorală nr.17 Dolj",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "TUROS Lóránd",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=3354f56c-a3e7-4cea-9dde-e3bd730d7b7f",
+      "circumscriptie": "Circumscripţia electorală nr.32 Satu Mare",
+      "party": "UDMR",
+      "party_full_name": "Uniunea Democrată Maghiară din România"
+    },
+    {
+      "name": "ŢEPELUŞ Laurenţiu-Cristinel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=abde2f69-fbbc-418b-bc27-d979fefd6644",
+      "circumscriptie": "Circumscripţia electorală nr.10 Buzău",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "VARGA Glad-Aurel",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=dac88f11-d51d-43e7-b5c0-e5692e92c4e1",
+      "circumscriptie": "Circumscripţia electorală nr.02 Arad",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "VASILE Marian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0460dbeb-6caa-41f0-aead-ea380a592fde",
+      "circumscriptie": "Circumscripţia electorală nr.17 Dolj",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "VÂNTU Cristian",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=27b719e9-fa14-4f74-a01c-eb955ce9f0ec",
+      "circumscriptie": "Circumscripţia electorală nr.28 Mureş",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "VELA Gheorghe",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=f1658cfa-9aea-415d-8ef2-ec0e6e4046fc",
+      "circumscriptie": "Circumscripţia electorală nr.11 Caraş-Severin",
+      "party": "POT",
+      "party_full_name": "POT"
+    },
+    {
+      "name": "VEŞTEA Mihail",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=70753dde-d7a5-47b2-859d-eee551ce150f",
+      "circumscriptie": "Circumscripţia electorală nr.08 Braşov",
+      "party": "PNL",
+      "party_full_name": "Partidul Naţional Liberal"
+    },
+    {
+      "name": "VLAHU Nicolae",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=f6b7345b-82ca-43bf-9b7e-efe5c038b2a0",
+      "circumscriptie": "Circumscripţia electorală nr.14 Constanţa",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "VLAŞIN Sorin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=e681a8ad-b809-40ae-9075-f0879f10a986",
+      "circumscriptie": "Circumscripţia electorală nr.26 Maramureş",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
+      "name": "VLĂESCU Virgiliu-George",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=aec2401e-7bfd-4c9f-9f67-f418bcdc5be5",
+      "circumscriptie": "Circumscripţia electorală nr.35 Suceava",
+      "party": "AUR",
+      "party_full_name": "Alianţa pentru Unirea Românilor"
+    },
+    {
+      "name": "ZAMFIR Daniel-Cătălin",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=94bb9130-2698-4509-9bea-ffcedf3dac7f",
+      "circumscriptie": "Circumscripţia electorală nr.42 Bucureşti",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    }
+  ]
+}
