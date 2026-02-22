@@ -165,6 +165,8 @@ RETRIEVAL_STOPWORDS = {
     "plen",
 }
 
+SESSION_TOPIC_EARLY_SPEECHES_LIMIT = 30
+
 
 def _load_selected_paths(stenogram_list_path: Path) -> list[str]:
     payload = json.loads(stenogram_list_path.read_text(encoding="utf-8"))
@@ -609,16 +611,18 @@ def _persist_run_data(
                     intervention_id,
                     run_id,
                     relevance_label,
+                    relevance_source,
                     topics_json,
                     confidence,
                     evidence_chunk_ids_json,
                     analysis_version,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, 'baseline_v1', CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, 'session_topics_primary', ?, ?, ?, 'baseline_v1', CURRENT_TIMESTAMP)
                 ON CONFLICT(intervention_id) DO UPDATE SET
                     run_id = excluded.run_id,
                     relevance_label = excluded.relevance_label,
+                    relevance_source = excluded.relevance_source,
                     topics_json = excluded.topics_json,
                     confidence = excluded.confidence,
                     evidence_chunk_ids_json = excluded.evidence_chunk_ids_json,
@@ -845,16 +849,12 @@ def main() -> int:
                 text = _merge_speech_text(speech)
                 extracted_topics = _extract_topics(text)
                 is_substantial = len(_analysis_text(text)) >= 160
-                for topic in extracted_topics:
-                    session_topic_counters[session_id][topic] += 1
-                    # Base signal from all interventions.
-                    session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 1.0
-                    # Early interventions usually frame the session subject.
-                    if idx < 30:
-                        session_topic_scores[session_id][topic] += 1.5
-                    # Longer interventions contribute stronger topical signal.
-                    if is_substantial:
-                        session_topic_scores[session_id][topic] += 1.0
+                if idx < SESSION_TOPIC_EARLY_SPEECHES_LIMIT and is_substantial:
+                    for topic in extracted_topics:
+                        session_topic_counters[session_id][topic] += 1
+                        # Session topics must be independent of each queried intervention;
+                        # only early substantial speeches shape the session context.
+                        session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 2.5
                 intervention_id = _build_intervention_id(stenogram_path, idx)
                 evidence_chunk_ids = _retrieve_evidence_chunk_ids(
                     intervention_text=text,

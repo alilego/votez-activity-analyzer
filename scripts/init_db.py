@@ -105,6 +105,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             intervention_id TEXT PRIMARY KEY,
             run_id TEXT NOT NULL,
             relevance_label TEXT NOT NULL, -- relevant | neutral | non_relevant | unknown
+            relevance_source TEXT NOT NULL DEFAULT 'session_topics_primary',
             topics_json TEXT NOT NULL, -- JSON array of strings
             confidence REAL, -- nullable in scaffolding stage
             evidence_chunk_ids_json TEXT NOT NULL, -- JSON array of strings
@@ -186,6 +187,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             iv.text,
             iv.text_hash,
             ia.relevance_label,
+            ia.relevance_source,
             ia.topics_json,
             ia.confidence,
             st.topics_json AS session_topics_json,
@@ -207,10 +209,17 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '5')
+        VALUES('schema_version', '6')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )
+    try:
+        conn.execute(
+            "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'session_topics_primary'"
+        )
+    except sqlite3.OperationalError:
+        # Column already exists.
+        pass
 
 
 def init_db(db_path: Path) -> Path:

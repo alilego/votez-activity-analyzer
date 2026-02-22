@@ -23,6 +23,10 @@ What this command does:
 - selects only new/changed files from `input/stenograme/`
 - runs analyzer (speaker normalization + member resolution + raw intervention persistence)
 - computes deterministic baseline intervention analysis (labels + topics)
+- computes independent session topics (from initial notes + early substantial speeches)
+- assigns `relevance_label` from intervention-topic vs session-topic overlap
+- stores `relevance_source='session_topics_primary'` for auditability
+- retrieves session-scoped evidence chunks for traceability only (does not set relevance)
 - exports frontend JSON artifacts to `outputs/`
 - marks successfully processed stenograms in DB state
 - stores run summary in DB table `run_outputs`
@@ -52,8 +56,13 @@ Current SQLite tables:
 - `run_outputs`
 - `members`
 - `interventions_raw`
-- `intervention_analysis` (classification scaffolding table)
+- `intervention_analysis` (includes `relevance_source`, topics, confidence, evidence chunks)
 - `unmatched_speakers`
+- `session_topics`
+- `session_chunks`
+
+Current SQLite view:
+- `interventions_enriched` (joins raw interventions + analysis + member metadata + session topics)
 
 ## Docs
 
