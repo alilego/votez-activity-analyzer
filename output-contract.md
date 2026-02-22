@@ -122,7 +122,7 @@ Structure:
       {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
-        "excerpt": "string",
+        "text": "string",
         "topics": ["string"],
         "confidence": number,
         "stenogram_name": "string",
@@ -133,7 +133,7 @@ Structure:
         {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
-        "excerpt": "string",
+        "text": "string",
         "topics": ["string"],
         "confidence": number,
         "stenogram_name": "string",
@@ -144,7 +144,7 @@ Structure:
         {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
-        "excerpt": "string",
+        "text": "string",
         "topics": ["string"],
         "confidence": number,
         "stenogram_name": "string",

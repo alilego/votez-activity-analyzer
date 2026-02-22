@@ -20,6 +20,7 @@ import urllib.parse
 import re
 import sqlite3
 import unicodedata
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,6 +33,112 @@ class SessionStats:
     session_id: str
     stenograma_date: str
     speeches_count: int
+
+
+TOPIC_TAXONOMY: list[tuple[str, tuple[str, ...]]] = [
+    ("costul vietii si inflatie", ("inflatie", "preturi", "scumpiri", "costul vietii")),
+    ("echitate si simplitate fiscala", ("tax", "impozit", "fiscalitate", "tva")),
+    ("eficienta cheltuielilor publice", ("cheltuieli publice", "eficienta bugetara", "risipa")),
+    ("transparenta si responsabilitate bugetara", ("transparenta bugetara", "executie bugetara")),
+    ("sustenabilitate fiscala", ("deficit", "datorie publica", "sustenabilitate fiscala")),
+    ("sustenabilitatea pensiilor", ("pensie", "pensii", "sistem de pensii")),
+    ("salarii si productivitate", ("salariu", "productivitate", "venituri salariale")),
+    ("calitatea ocuparii si protectia muncii", ("contract de munca", "protectia muncii", "somaj")),
+    ("formare profesionala si recalificare", ("formare profesionala", "recalificare", "ucenicie")),
+    ("ocuparea tinerilor si primul loc de munca", ("tineri", "primul loc de munca", "internship")),
+    ("educatie timpurie", ("educatie timpurie", "gradinita", "crese")),
+    ("relevanta curriculumului scolar", ("curriculum", "programa scolara", "manuale")),
+    ("recrutarea si retentia profesorilor", ("cadre didactice", "profesori", "cariera didactica")),
+    ("infrastructura si siguranta scolara", ("infrastructura scolara", "siguranta in scoli")),
+    ("competente digitale in educatie", ("competente digitale", "digitalizare in educatie")),
+    ("calitate universitara si cercetare", ("universitate", "cercetare", "doctorat")),
+    ("reducerea abandonului scolar", ("abandon scolar", "parasire timpurie")),
+    ("acces la educatie rurala", ("educatie rurala", "transport scolar", "scoli rurale")),
+    ("invatare pe tot parcursul vietii", ("invatare continua", "educatia adultilor")),
+    ("sanatatea mintala a elevilor", ("consiliere scolara", "sanatate mintala elevi")),
+    ("asistenta medicala primara", ("medicina de familie", "asistenta primara")),
+    ("reforma managementului spitalicesc", ("spital", "management spitalicesc")),
+    ("preventie si screening", ("preventie", "screening", "vaccinare")),
+    ("acces si accesibilitate la medicamente", ("medicamente", "compensate", "farmacii")),
+    ("retentia personalului medical", ("medici", "asistenti medicali", "exod medical")),
+    ("pregatirea sistemului de urgenta", ("urgenta", "smurd", "upu")),
+    ("servicii de sanatate mintala", ("psihiatrie", "psiholog", "sanatate mintala")),
+    ("interoperabilitatea datelor medicale", ("dosar electronic", "interoperabilitate", "date medicale")),
+    ("ingrijire pe termen lung si imbatranire", ("ingrijire pe termen lung", "varstnici")),
+    ("sanatatea mamei si copilului", ("maternitate", "pediatrie", "sanatate materna")),
+    ("securitate energetica si rezilienta retelei", ("securitate energetica", "sistem energetic", "retea electrica")),
+    ("accesibilitatea energiei", ("facturi energie", "pret energie", "compensare energie")),
+    ("tranzitie catre energie regenerabila", ("energie regenerabila", "eolian", "fotovoltaic")),
+    ("competitivitate industriala si costuri energetice", ("costuri energetice industrie", "competitivitate industriala")),
+    ("infrastructura de apa si rezilienta la seceta", ("apa", "canalizare", "seceta")),
+    ("gestionarea deseurilor si economie circulara", ("deseuri", "reciclare", "economie circulara")),
+    ("calitatea aerului urban", ("calitatea aerului", "poluare urbana")),
+    ("adaptare climatica si pregatire pentru dezastre", ("adaptare climatica", "dezastre", "inundatii")),
+    ("protectia padurilor si biodiversitate", ("paduri", "defrisari", "biodiversitate")),
+    ("agricultura sustenabila si securitate alimentara", ("agricultura", "fermieri", "securitate alimentara")),
+    ("mentenanta infrastructurii de transport", ("drumuri", "intretinere infrastructura", "autostrazi")),
+    ("modernizare feroviara si capacitate de marfa", ("cale ferata", "feroviar", "transport marfa")),
+    ("siguranta rutiera", ("siguranta rutiera", "accidente rutiere")),
+    ("mobilitate urbana si transport public", ("transport public", "mobilitate urbana", "metrou")),
+    ("accesibilitatea locuirii si urbanism", ("locuinte", "chirii", "urbanism")),
+    ("stat de drept si eficienta justitiei", ("stat de drept", "justitie", "instante")),
+    ("aplicarea legislatiei anticoruptie", ("coruptie", "dna", "integritate")),
+    ("integritate in achizitii publice", ("achizitii publice", "licitatii", "seap")),
+    ("simplificare administrativa si guvernare digitala", ("debirocratizare", "digitalizare", "ghiseu unic")),
+    ("securitate nationala si infrastructura critica", ("securitate nationala", "infrastructura critica", "aparare")),
+    ("procedura parlamentara si agenda", ("ordine de zi", "regulament", "procedura de vot", "motiune", "cenzura")),
+    ("cadru constitutional", ("constitutie", "constitutional", "curtea constitutionala")),
+    ("proces legislativ", ("proiect", "lege", "amendament", "ordonanta", "comisie", "articol")),
+    ("dezbatere privind suspendarea presedintelui", ("suspend", "iohannis", "presedinte ilegitim")),
+]
+
+LAW_REFERENCE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\bpl[-\s]?x\s*(?:nr\.?\s*)?(\d+/\d{4})\b"), "plx {ref}"),
+    (re.compile(r"\blegea?\s+nr\.?\s*(\d+/\d{4})\b"), "legea {ref}"),
+    (re.compile(r"\boug\s+nr\.?\s*(\d+/\d{4})\b"), "oug {ref}"),
+    (re.compile(r"\bog\s+nr\.?\s*(\d+/\d{4})\b"), "og {ref}"),
+    (re.compile(r"\bhg\s+nr\.?\s*(\d+/\d{4})\b"), "hg {ref}"),
+    (re.compile(r"\bordonanta(?:\s+de\s+urgenta)?\s+nr\.?\s*(\d+/\d{4})\b"), "ordonanta {ref}"),
+]
+
+PROCEDURAL_KEYWORDS = {
+    "ordine de zi",
+    "supun votului",
+    "vot",
+    "cvorum",
+    "microfon",
+    "cartele",
+    "sedinta",
+    "va rog",
+    "declar deschisa",
+    "regulament",
+}
+
+RELEVANT_KEYWORDS = {
+    "motiune",
+    "cenzura",
+    "proiect",
+    "lege",
+    "amendament",
+    "articol",
+    "ordonanta",
+    "raport",
+    "comisie",
+    "buget",
+}
+
+NON_RELEVANT_KEYWORDS = {
+    "klaus iohannis",
+    "presedinte ilegitim",
+    "uzurpa functia",
+    "impostor",
+    "camarila",
+    "acolitii",
+    "dictatura",
+    "tradare",
+    "tradator",
+    "ruinat tara",
+}
 
 
 def _load_selected_paths(stenogram_list_path: Path) -> list[str]:
@@ -92,6 +199,72 @@ def _merge_speech_text(speech: dict) -> str:
         if isinstance(value, str) and value.strip():
             parts.append(value.strip())
     return " ".join(parts).strip()
+
+
+def _analysis_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text or "")
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = normalized.casefold()
+    normalized = " ".join(normalized.split())
+    return normalized
+
+
+def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
+    normalized = _analysis_text(text)
+    topics: list[str] = []
+
+    # 1) Enrich with explicit law/bill references.
+    for pattern, template in LAW_REFERENCE_PATTERNS:
+        for match in pattern.findall(normalized):
+            topic = template.format(ref=match)
+            if topic not in topics:
+                topics.append(topic)
+            if len(topics) >= max_topics:
+                return topics
+
+    # 2) Add enriched taxonomy topics.
+    for topic, keywords in TOPIC_TAXONOMY:
+        if any(keyword in normalized for keyword in keywords) and topic not in topics:
+            topics.append(topic)
+        if len(topics) >= max_topics:
+            break
+    return topics
+
+
+def _deterministic_analysis(text: str) -> tuple[str, list[str], float]:
+    normalized = _analysis_text(text)
+    topics = _extract_topics(text)
+
+    if len(normalized) < 40:
+        return "neutral", topics, 0.45
+
+    # Roll-call / attendance blocks are procedural.
+    roll_call_hits = sum(1 for token in (" absent", " prezent", "nu votez") if token in normalized)
+    if roll_call_hits >= 2:
+        return "neutral", topics, 0.90
+
+    # "proiectul ordinii de zi" is procedural, not substantive legislation.
+    adjusted_for_relevance = normalized
+    adjusted_for_relevance = adjusted_for_relevance.replace("proiectul ordinii de zi", "ordinii de zi")
+    adjusted_for_relevance = adjusted_for_relevance.replace("proiect de ordine de zi", "ordine de zi")
+
+    non_relevant_hits = sum(1 for k in NON_RELEVANT_KEYWORDS if k in normalized)
+    relevant_hits = sum(1 for k in RELEVANT_KEYWORDS if k in adjusted_for_relevance)
+    procedural_hits = sum(1 for k in PROCEDURAL_KEYWORDS if k in normalized)
+
+    if non_relevant_hits > 0 and relevant_hits == 0 and procedural_hits <= 1:
+        return "non_relevant", topics, 0.78
+    if procedural_hits > 0 and relevant_hits == 0:
+        return "neutral", topics, 0.70
+    if relevant_hits > 0:
+        # Mixed procedural + weak legislative hints stay neutral unless
+        # strong parliamentary substance appears.
+        strong_relevant_tokens = ("motiune", "cenzura", "ordonanta", "amendament", "articol")
+        has_strong_relevant = any(t in adjusted_for_relevance for t in strong_relevant_tokens)
+        if procedural_hits > 0 and not has_strong_relevant:
+            return "neutral", topics, 0.62
+        return "relevant", topics, 0.72
+    return "neutral", topics, 0.55
 
 
 def _build_intervention_id(stenogram_path: str, speech_index: int) -> str:
@@ -252,8 +425,9 @@ def _persist_run_data(
             ),
         )
 
-        # Scaffolding stage: write placeholder analysis row for matched interventions.
+        # Deterministic baseline analysis (pre-RAG/LLM).
         if iv["member_id"] is not None:
+            relevance_label, topics, confidence = _deterministic_analysis(iv["text"])
             conn.execute(
                 """
                 INSERT INTO intervention_analysis (
@@ -266,14 +440,22 @@ def _persist_run_data(
                     analysis_version,
                     updated_at
                 )
-                VALUES (?, ?, 'unknown', '[]', NULL, '[]', 'scaffold_v1', CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, '[]', 'baseline_v1', CURRENT_TIMESTAMP)
                 ON CONFLICT(intervention_id) DO UPDATE SET
                     run_id = excluded.run_id,
+                    relevance_label = excluded.relevance_label,
+                    topics_json = excluded.topics_json,
+                    confidence = excluded.confidence,
+                    evidence_chunk_ids_json = excluded.evidence_chunk_ids_json,
+                    analysis_version = excluded.analysis_version,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 (
                     iv["intervention_id"],
                     run_id,
+                    relevance_label,
+                    json.dumps(topics, ensure_ascii=True),
+                    confidence,
                 ),
             )
 
@@ -309,6 +491,7 @@ def _build_summary_payload(
     interventions_total: int,
     matched_total: int,
     unmatched_total: int,
+    session_topic_counters: dict[str, Counter[str]],
 ) -> dict:
     return {
         "run_id": run_id,
@@ -323,6 +506,13 @@ def _build_summary_payload(
                 "session_id": s.session_id,
                 "session_date": s.stenograma_date,
                 "speeches_count": s.speeches_count,
+                "top_topics": [
+                    {"topic": topic, "count": count}
+                    for topic, count in sorted(
+                        session_topic_counters.get(s.session_id, Counter()).items(),
+                        key=lambda x: (-x[1], x[0]),
+                    )[:10]
+                ],
             }
             for s in sessions
         ],
@@ -405,6 +595,7 @@ def main() -> int:
         sessions: list[SessionStats] = []
         interventions: list[dict] = []
         unmatched_counts: dict[tuple[str, str, str, str], int] = {}
+        session_topic_counters: dict[str, Counter[str]] = defaultdict(Counter)
 
         for rel_path in selected:
             file_path = Path(rel_path)
@@ -435,6 +626,8 @@ def main() -> int:
                         member_id = token_ids[0] if len(token_ids) == 1 else None
 
                 text = _merge_speech_text(speech)
+                extracted_topics = _extract_topics(text)
+                session_topic_counters[session_id].update(extracted_topics)
                 intervention_id = _build_intervention_id(stenogram_path, idx)
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 interventions.append(
@@ -470,6 +663,7 @@ def main() -> int:
                 interventions_total=interventions_total,
                 matched_total=matched_total,
                 unmatched_total=unmatched_total,
+                session_topic_counters=session_topic_counters,
             )
             _store_summary_in_db(conn, payload)
         summary_path = _write_summary_file(args.run_id, payload)

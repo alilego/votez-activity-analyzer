@@ -22,6 +22,7 @@ What this command does:
 - initializes schema if not initialized
 - selects only new/changed files from `input/stenograme/`
 - runs analyzer (speaker normalization + member resolution + raw intervention persistence)
+- computes deterministic baseline intervention analysis (labels + topics)
 - exports frontend JSON artifacts to `outputs/`
 - marks successfully processed stenograms in DB state
 - stores run summary in DB table `run_outputs`

@@ -44,13 +44,6 @@ def _top_topics(counter: Counter[str], limit: int = 20) -> list[dict]:
     return [{"topic": topic, "count": count} for topic, count in ranked[:limit]]
 
 
-def _excerpt(text: str, max_len: int = 280) -> str:
-    text = " ".join((text or "").split())
-    if len(text) <= max_len:
-        return text
-    return text[: max_len - 1].rstrip() + "..."
-
-
 def _clear_json_files(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
     for f in path.glob("*.json"):
@@ -144,7 +137,7 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             {
                 "session_id": session_id,
                 "session_date": session_date,
-                "excerpt": _excerpt(text),
+                "text": text or "",
                 "topics": topics,
                 "confidence": confidence_value,
                 "stenogram_name": stenogram_name,
