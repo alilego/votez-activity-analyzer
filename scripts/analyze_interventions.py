@@ -231,6 +231,16 @@ def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
     return topics
 
 
+def _is_law_reference_topic(topic: str) -> bool:
+    return topic.startswith(("plx ", "legea ", "oug ", "og ", "hg ", "ordonanta "))
+
+
+def _topic_sort_key(item: tuple[str, float]) -> tuple[int, float, str]:
+    topic, score = item
+    law_priority = 1 if _is_law_reference_topic(topic) else 0
+    return (law_priority, score, topic)
+
+
 def _deterministic_analysis(
     text: str,
     intervention_topics: list[str],
@@ -550,7 +560,8 @@ def _build_summary_payload(
                     {"topic": topic, "count": count}
                     for topic, count in sorted(
                         session_topic_counters.get(s.session_id, Counter()).items(),
-                        key=lambda x: (-x[1], x[0]),
+                        key=lambda x: _topic_sort_key((x[0], x[1])),
+                        reverse=True,
                     )[:10]
                 ],
             }
@@ -636,6 +647,7 @@ def main() -> int:
         interventions: list[dict] = []
         unmatched_counts: dict[tuple[str, str, str, str], int] = {}
         session_topic_counters: dict[str, Counter[str]] = defaultdict(Counter)
+        session_topic_scores: dict[str, dict[str, float]] = defaultdict(dict)
         session_to_stenogram_path: dict[str, str] = {}
 
         for rel_path in selected:
@@ -653,7 +665,9 @@ def main() -> int:
             session_to_stenogram_path[session_id] = stenogram_path
             initial_notes = str(data.get("initial_notes", "")).strip()
             if initial_notes:
-                session_topic_counters[session_id].update(_extract_topics(initial_notes, max_topics=12))
+                for topic in _extract_topics(initial_notes, max_topics=12):
+                    session_topic_counters[session_id][topic] += 1
+                    session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 4.0
             for idx, speech in enumerate(speeches):
                 if not isinstance(speech, dict):
                     continue
@@ -672,7 +686,17 @@ def main() -> int:
 
                 text = _merge_speech_text(speech)
                 extracted_topics = _extract_topics(text)
-                session_topic_counters[session_id].update(extracted_topics)
+                is_substantial = len(_analysis_text(text)) >= 160
+                for topic in extracted_topics:
+                    session_topic_counters[session_id][topic] += 1
+                    # Base signal from all interventions.
+                    session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 1.0
+                    # Early interventions usually frame the session subject.
+                    if idx < 30:
+                        session_topic_scores[session_id][topic] += 1.5
+                    # Longer interventions contribute stronger topical signal.
+                    if is_substantial:
+                        session_topic_scores[session_id][topic] += 1.0
                 intervention_id = _build_intervention_id(stenogram_path, idx)
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 interventions.append(
@@ -694,13 +718,14 @@ def main() -> int:
                     key = (session_id, stenogram_path, raw_speaker, normalized_speaker)
                     unmatched_counts[key] = unmatched_counts.get(key, 0) + 1
 
-        session_topics_map = {
-            session_id: [
-                topic
-                for topic, _count in sorted(counter.items(), key=lambda x: (-x[1], x[0]))[:20]
-            ]
-            for session_id, counter in session_topic_counters.items()
-        }
+        session_topics_map: dict[str, list[str]] = {}
+        for session_id, counter in session_topic_counters.items():
+            scored = []
+            for topic, count in counter.items():
+                score = session_topic_scores[session_id].get(topic, 0.0) + (count * 0.1)
+                scored.append((topic, score))
+            top = [topic for topic, _score in sorted(scored, key=_topic_sort_key, reverse=True)[:20]]
+            session_topics_map[session_id] = top
 
         with sqlite3.connect(db_path) as conn:
             interventions_total, unmatched_total = _persist_run_data(
