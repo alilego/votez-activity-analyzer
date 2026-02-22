@@ -133,6 +133,26 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_session_topics_run_id
             ON session_topics(run_id);
 
+        CREATE TABLE IF NOT EXISTS session_chunks (
+            chunk_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            stenogram_path TEXT NOT NULL,
+            chunk_type TEXT NOT NULL, -- session_notes | speech
+            chunk_index INTEGER NOT NULL,
+            source_speech_index INTEGER,
+            text TEXT NOT NULL,
+            tokens_json TEXT NOT NULL, -- normalized token list for deterministic retrieval
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES runs(run_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_session_chunks_session_id
+            ON session_chunks(session_id);
+        CREATE INDEX IF NOT EXISTS idx_session_chunks_run_id
+            ON session_chunks(run_id);
+
         CREATE TABLE IF NOT EXISTS unmatched_speakers (
             run_id TEXT NOT NULL,
             session_id TEXT NOT NULL,
@@ -187,7 +207,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '4')
+        VALUES('schema_version', '5')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )

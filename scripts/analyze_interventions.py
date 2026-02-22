@@ -140,6 +140,31 @@ NON_RELEVANT_KEYWORDS = {
     "ruinat tara",
 }
 
+RETRIEVAL_STOPWORDS = {
+    "si",
+    "sau",
+    "in",
+    "la",
+    "cu",
+    "de",
+    "din",
+    "pe",
+    "ca",
+    "este",
+    "sunt",
+    "fi",
+    "fost",
+    "va",
+    "vot",
+    "rog",
+    "domnul",
+    "doamna",
+    "stima",
+    "colegi",
+    "sedinta",
+    "plen",
+}
+
 
 def _load_selected_paths(stenogram_list_path: Path) -> list[str]:
     payload = json.loads(stenogram_list_path.read_text(encoding="utf-8"))
@@ -207,6 +232,94 @@ def _analysis_text(text: str) -> str:
     normalized = normalized.casefold()
     normalized = " ".join(normalized.split())
     return normalized
+
+
+def _tokenize_for_retrieval(text: str) -> list[str]:
+    normalized = _analysis_text(text)
+    tokens = re.findall(r"[a-z0-9]+", normalized)
+    out = []
+    for tok in tokens:
+        if len(tok) < 3:
+            continue
+        if tok in RETRIEVAL_STOPWORDS:
+            continue
+        out.append(tok)
+    return out
+
+
+def _build_session_chunks(
+    session_id: str,
+    run_id: str,
+    stenogram_path: str,
+    initial_notes: str,
+    speeches: list[dict],
+) -> list[dict]:
+    chunks: list[dict] = []
+    chunk_index = 0
+    if initial_notes.strip():
+        tokens = _tokenize_for_retrieval(initial_notes)
+        chunks.append(
+            {
+                "chunk_id": f"ch:{session_id}:{chunk_index}",
+                "run_id": run_id,
+                "session_id": session_id,
+                "stenogram_path": stenogram_path,
+                "chunk_type": "session_notes",
+                "chunk_index": chunk_index,
+                "source_speech_index": None,
+                "text": initial_notes.strip(),
+                "tokens": tokens,
+            }
+        )
+        chunk_index += 1
+
+    for speech_idx, speech in enumerate(speeches):
+        if not isinstance(speech, dict):
+            continue
+        speech_text = _merge_speech_text(speech)
+        if len(_analysis_text(speech_text)) < 80:
+            continue
+        tokens = _tokenize_for_retrieval(speech_text)
+        chunks.append(
+            {
+                "chunk_id": f"ch:{session_id}:{chunk_index}",
+                "run_id": run_id,
+                "session_id": session_id,
+                "stenogram_path": stenogram_path,
+                "chunk_type": "speech",
+                "chunk_index": chunk_index,
+                "source_speech_index": speech_idx,
+                "text": speech_text,
+                "tokens": tokens,
+            }
+        )
+        chunk_index += 1
+    return chunks
+
+
+def _retrieve_evidence_chunk_ids(intervention_text: str, session_chunks: list[dict], top_k: int = 3) -> list[str]:
+    query_tokens = set(_tokenize_for_retrieval(intervention_text))
+    if not session_chunks:
+        return []
+    if not query_tokens:
+        return [session_chunks[0]["chunk_id"]]
+
+    scored: list[tuple[float, str]] = []
+    for chunk in session_chunks:
+        chunk_tokens = set(chunk.get("tokens", []))
+        if not chunk_tokens:
+            score = 0.0
+        else:
+            inter = len(query_tokens.intersection(chunk_tokens))
+            union = len(query_tokens.union(chunk_tokens))
+            score = inter / union if union else 0.0
+        scored.append((score, chunk["chunk_id"]))
+
+    ranked = sorted(scored, key=lambda x: (-x[0], x[1]))
+    top = [chunk_id for score, chunk_id in ranked if score > 0.0][:top_k]
+    if top:
+        return top
+    return [session_chunks[0]["chunk_id"]]
 
 
 def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
@@ -360,6 +473,7 @@ def _persist_run_data(
     conn: sqlite3.Connection,
     run_id: str,
     members: list[dict],
+    session_chunks: list[dict],
     interventions: list[dict],
     unmatched_counts: dict[tuple[str, str, str, str], int],
     session_topics_map: dict[str, list[str]],
@@ -411,6 +525,38 @@ def _persist_run_data(
                 member["party_id"],
                 member["profile_url"],
                 member["circumscriptie"],
+            ),
+        )
+
+    for chunk in session_chunks:
+        conn.execute(
+            """
+            INSERT INTO session_chunks (
+                chunk_id, run_id, session_id, stenogram_path, chunk_type, chunk_index,
+                source_speech_index, text, tokens_json, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(chunk_id) DO UPDATE SET
+                run_id = excluded.run_id,
+                session_id = excluded.session_id,
+                stenogram_path = excluded.stenogram_path,
+                chunk_type = excluded.chunk_type,
+                chunk_index = excluded.chunk_index,
+                source_speech_index = excluded.source_speech_index,
+                text = excluded.text,
+                tokens_json = excluded.tokens_json,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                chunk["chunk_id"],
+                chunk["run_id"],
+                chunk["session_id"],
+                chunk["stenogram_path"],
+                chunk["chunk_type"],
+                chunk["chunk_index"],
+                chunk["source_speech_index"],
+                chunk["text"],
+                json.dumps(chunk["tokens"], ensure_ascii=True),
             ),
         )
 
@@ -469,7 +615,7 @@ def _persist_run_data(
                     analysis_version,
                     updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, '[]', 'baseline_v1', CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?, ?, 'baseline_v1', CURRENT_TIMESTAMP)
                 ON CONFLICT(intervention_id) DO UPDATE SET
                     run_id = excluded.run_id,
                     relevance_label = excluded.relevance_label,
@@ -485,6 +631,7 @@ def _persist_run_data(
                     relevance_label,
                     json.dumps(topics, ensure_ascii=True),
                     confidence,
+                    json.dumps(iv.get("evidence_chunk_ids", []), ensure_ascii=True),
                 ),
             )
 
@@ -644,6 +791,8 @@ def main() -> int:
         members, normalized_to_ids, token_to_ids, alias_to_ids = _load_registry_members()
 
         sessions: list[SessionStats] = []
+        session_chunks: list[dict] = []
+        session_chunks_by_session: dict[str, list[dict]] = {}
         interventions: list[dict] = []
         unmatched_counts: dict[tuple[str, str, str, str], int] = {}
         session_topic_counters: dict[str, Counter[str]] = defaultdict(Counter)
@@ -664,6 +813,15 @@ def main() -> int:
             stenogram_path = file_path.as_posix()
             session_to_stenogram_path[session_id] = stenogram_path
             initial_notes = str(data.get("initial_notes", "")).strip()
+            built_chunks = _build_session_chunks(
+                session_id=session_id,
+                run_id=args.run_id,
+                stenogram_path=stenogram_path,
+                initial_notes=initial_notes,
+                speeches=speeches,
+            )
+            session_chunks.extend(built_chunks)
+            session_chunks_by_session[session_id] = built_chunks
             if initial_notes:
                 for topic in _extract_topics(initial_notes, max_topics=12):
                     session_topic_counters[session_id][topic] += 1
@@ -698,6 +856,11 @@ def main() -> int:
                     if is_substantial:
                         session_topic_scores[session_id][topic] += 1.0
                 intervention_id = _build_intervention_id(stenogram_path, idx)
+                evidence_chunk_ids = _retrieve_evidence_chunk_ids(
+                    intervention_text=text,
+                    session_chunks=session_chunks_by_session.get(session_id, []),
+                    top_k=3,
+                )
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 interventions.append(
                     {
@@ -712,6 +875,7 @@ def main() -> int:
                         "text": text,
                         "text_hash": text_hash,
                         "candidate_topics": extracted_topics,
+                        "evidence_chunk_ids": evidence_chunk_ids,
                     }
                 )
                 if member_id is None and normalized_speaker:
@@ -732,6 +896,7 @@ def main() -> int:
                 conn=conn,
                 run_id=args.run_id,
                 members=members,
+                session_chunks=session_chunks,
                 interventions=interventions,
                 unmatched_counts=unmatched_counts,
                 session_topics_map=session_topics_map,
