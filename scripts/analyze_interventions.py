@@ -806,7 +806,10 @@ def main() -> int:
         session_topic_scores: dict[str, dict[str, float]] = defaultdict(dict)
         session_to_stenogram_path: dict[str, str] = {}
 
-        for rel_path in selected:
+        n_selected = len(selected)
+        print(f"Baseline: processing {n_selected} stenogram(s)...")
+
+        for file_idx, rel_path in enumerate(selected, 1):
             file_path = Path(rel_path)
             if not file_path.exists():
                 raise FileNotFoundError(f"Selected stenogram path not found: {file_path}")
@@ -820,6 +823,13 @@ def main() -> int:
             stenogram_path = file_path.as_posix()
             session_to_stenogram_path[session_id] = stenogram_path
             initial_notes = str(data.get("initial_notes", "")).strip()
+
+            print(
+                f"\n[{file_idx}/{n_selected}] {file_path.name}"
+                f"  session={session_id}  date={session_date}"
+                f"  speeches={len(speeches)}"
+            )
+
             built_chunks = _build_session_chunks(
                 session_id=session_id,
                 run_id=args.run_id,
@@ -829,12 +839,19 @@ def main() -> int:
             )
             session_chunks.extend(built_chunks)
             session_chunks_by_session[session_id] = built_chunks
-            # Build (or reuse cached) session-scoped RAG vector index.
+
+            print(f"  Building RAG index: {len(built_chunks)} chunk(s)...")
             rag_store.build_session_index(session_id, built_chunks)
+            print(f"  RAG index ready.")
+
             if initial_notes:
                 for topic in _extract_topics(initial_notes, max_topics=12):
                     session_topic_counters[session_id][topic] += 1
                     session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 4.0
+
+            session_matched = 0
+            session_unmatched = 0
+
             for idx, speech in enumerate(speeches):
                 if not isinstance(speech, dict):
                     continue
@@ -860,6 +877,7 @@ def main() -> int:
                         # Session topics must be independent of each queried intervention;
                         # only early substantial speeches shape the session context.
                         session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 2.5
+
                 intervention_id = _build_intervention_id(stenogram_path, idx)
                 retrieved = rag_store.retrieve_chunks(
                     session_id=session_id,
@@ -869,6 +887,12 @@ def main() -> int:
                 )
                 evidence_chunk_ids = [r.chunk_id for r in retrieved]
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+                if member_id:
+                    session_matched += 1
+                else:
+                    session_unmatched += 1
+
                 interventions.append(
                     {
                         "intervention_id": intervention_id,
@@ -889,6 +913,11 @@ def main() -> int:
                     key = (session_id, stenogram_path, raw_speaker, normalized_speaker)
                     unmatched_counts[key] = unmatched_counts.get(key, 0) + 1
 
+            print(
+                f"  Done: {len(speeches)} speeches,"
+                f" {session_matched} matched, {session_unmatched} unmatched."
+            )
+
         session_topics_map: dict[str, list[str]] = {}
         for session_id, counter in session_topic_counters.items():
             scored = []
@@ -898,6 +927,7 @@ def main() -> int:
             top = [topic for topic, _score in sorted(scored, key=_topic_sort_key, reverse=True)[:20]]
             session_topics_map[session_id] = top
 
+        print(f"\nSaving to DB: {len(members)} members, {len(session_chunks)} chunks, {len(interventions)} interventions...")
         with sqlite3.connect(db_path) as conn:
             interventions_total, unmatched_total = _persist_run_data(
                 conn=conn,
@@ -910,6 +940,10 @@ def main() -> int:
                 session_to_stenogram_path=session_to_stenogram_path,
             )
             matched_total = interventions_total - unmatched_total
+            print(
+                f"  DB saved: {interventions_total} interventions total, "
+                f"{matched_total} matched, {unmatched_total} unmatched."
+            )
             payload = _build_summary_payload(
                 run_id=args.run_id,
                 sessions=sessions,
@@ -919,7 +953,9 @@ def main() -> int:
                 session_topic_counters=session_topic_counters,
             )
             _store_summary_in_db(conn, payload)
+            print(f"  Run summary saved to DB table: run_outputs")
         summary_path = _write_summary_file(args.run_id, payload)
+        print(f"  Run summary written to: {summary_path}")
     except (ValueError, json.JSONDecodeError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}")
         return 1

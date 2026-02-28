@@ -77,7 +77,9 @@ def _load_session_links() -> dict[str, str]:
 
 def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
     init_db(db_path)
+    print(f"Export: loading data from {db_path}...")
     session_links = _load_session_links()
+    print(f"  Loaded {len(session_links)} session source links.")
     with sqlite3.connect(db_path) as conn:
         rows = conn.execute(
             """
@@ -100,6 +102,7 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             """
         ).fetchall()
 
+    print(f"  Loaded {len(rows)} intervention rows for {len({r[0] for r in rows})} member(s).")
     member_data: dict[str, dict] = {}
     for row in rows:
         (
@@ -147,9 +150,11 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
 
     members_dir = output_dir / "members"
     parties_dir = output_dir / "parties"
+    print(f"  Clearing output dirs: {members_dir}, {parties_dir}")
     _clear_json_files(members_dir)
     _clear_json_files(parties_dir)
 
+    print(f"  Writing {len(member_data)} member file(s)...")
     members_index = []
     for member_id in sorted(member_data.keys()):
         md = member_data[member_id]
@@ -185,9 +190,17 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             "interventions": md["interventions"],
         }
         member_name_slug = _slugify_name(md["name"])
-        (members_dir / f"interventions_{member_id}_{member_name_slug}.json").write_text(
+        member_file = members_dir / f"interventions_{member_id}_{member_name_slug}.json"
+        member_file.write_text(
             json.dumps(member_detail, ensure_ascii=True, indent=2),
             encoding="utf-8",
+        )
+        print(
+            f"    {member_file.name}  "
+            f"total={interventions_total}  "
+            f"constructive={counts['constructive']}  "
+            f"neutral={counts['neutral']}  "
+            f"non_constructive={counts['non_constructive']}"
         )
 
     members_index = sorted(members_index, key=lambda x: (-x["interventions_total"], x["member_id"]))
@@ -195,12 +208,14 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         json.dumps(members_index, ensure_ascii=True, indent=2),
         encoding="utf-8",
     )
+    print(f"  Written: {members_dir / 'interventions_index.json'}")
 
     party_to_members: dict[str, list[dict]] = defaultdict(list)
     for member_entry in members_index:
         party_key = member_entry["party_id"] if member_entry["party_id"] else "unknown"
         party_to_members[party_key].append(member_entry)
 
+    print(f"  Writing {len(party_to_members)} party file(s)...")
     parties_index = []
     for party_id in sorted(party_to_members.keys()):
         members = party_to_members[party_id]
@@ -255,9 +270,18 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 for m in sorted(members, key=lambda x: (-x["interventions_total"], x["member_id"]))
             ],
         }
-        (parties_dir / f"interventions_{party_id}.json").write_text(
+        party_file = parties_dir / f"interventions_{party_id}.json"
+        party_file.write_text(
             json.dumps(party_detail, ensure_ascii=True, indent=2),
             encoding="utf-8",
+        )
+        print(
+            f"    {party_file.name}  "
+            f"members={len(members)}  "
+            f"total={interventions_total}  "
+            f"constructive={counts['constructive']}  "
+            f"neutral={counts['neutral']}  "
+            f"non_constructive={counts['non_constructive']}"
         )
 
     parties_index = sorted(parties_index, key=lambda x: (-x["interventions_total"], x["party_id"]))
@@ -265,6 +289,7 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         json.dumps(parties_index, ensure_ascii=True, indent=2),
         encoding="utf-8",
     )
+    print(f"  Written: {parties_dir / 'interventions_index.json'}")
     return len(members_index), len(parties_index)
 
 

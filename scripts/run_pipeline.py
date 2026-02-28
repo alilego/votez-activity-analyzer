@@ -142,11 +142,25 @@ def main() -> int:
     repo_root = Path.cwd()
     run_id = args.run_id
 
+    print(f"\n{'='*60}")
+    print(f"Pipeline start  run_id={run_id}")
+    print(f"  DB:        {db_path}")
+    print(f"  Input dir: {input_dir}")
+    print(f"  Mode:      {args.analyzer_mode}")
+    if args.analyzer_mode == "llm":
+        provider = args.llm_provider
+        model_hint = args.llm_model or ("llama3.1:8b" if provider == "ollama" else "gpt-4o-mini")
+        print(f"  Provider:  {provider}  model={model_hint}")
+    print(f"{'='*60}\n")
+
     # Always bootstrap DB on pipeline start:
     # - creates file if missing
     # - creates schema if missing/uninitialized
+    print("Step 1/4  Initializing database...")
     init_db(db_path)
+    print(f"  DB ready: {db_path}")
 
+    print("\nStep 2/4  Selecting stenograms...")
     try:
         candidates = select_candidates(db_path=db_path, input_dir=input_dir, repo_root=repo_root)
     except RuntimeError as exc:
@@ -154,13 +168,15 @@ def main() -> int:
         return 1
 
     if not candidates:
-        print("No new/changed stenograms found. Nothing to process.")
+        print("  No new/changed stenograms found. Nothing to process.")
         return 0
 
+    print(f"  {len(candidates)} stenogram(s) selected:")
+    for c in candidates:
+        print(f"    {c.path}  [{c.reason}]")
+
     if args.dry_run:
-        print(f"Dry run: {len(candidates)} file(s) selected.")
-        for item in candidates:
-            print(f"- {item.path} [{item.reason}]")
+        print("\nDry run: exiting without processing.")
         return 0
 
     candidate_paths = [c.path for c in candidates]
@@ -175,7 +191,7 @@ def main() -> int:
         _insert_running_run(conn, run_id)
         conn.commit()
 
-    print(f"Running analyzer for {len(candidates)} file(s) (run_id={run_id})...")
+    print(f"\nStep 3/4  Running baseline analyzer ({len(candidates)} file(s))...")
     if args.analyzer_cmd.strip():
         proc = subprocess.run(args.analyzer_cmd, shell=True, env=env)
     else:
@@ -187,7 +203,7 @@ def main() -> int:
         if proc.returncode != 0:
             _finish_run(conn, run_id, "failed", 0)
             conn.commit()
-            print(f"Analyzer failed with exit code {proc.returncode}. Nothing was marked processed.")
+            print(f"\nBaseline analyzer failed (exit code {proc.returncode}). Nothing was marked processed.")
             return proc.returncode
 
     # Optional LLM agent pass (runs outside the above conn context to avoid lock contention).
@@ -197,38 +213,41 @@ def main() -> int:
             llm_cmd += ["--model", args.llm_model.strip()]
         if args.llm_limit > 0:
             llm_cmd += ["--limit", str(args.llm_limit)]
-        print(f"Running LLM agent (run_id={run_id})...")
+            print(f"\nStep 3b/4  Running LLM agent (limit={args.llm_limit})...")
+        else:
+            print(f"\nStep 3b/4  Running LLM agent (all interventions)...")
         llm_proc = subprocess.run(llm_cmd, env=env)
         if llm_proc.returncode != 0:
             with sqlite3.connect(db_path) as conn:
                 conn.execute("PRAGMA foreign_keys = ON;")
                 _finish_run(conn, run_id, "failed", 0)
                 conn.commit()
-            print(f"LLM agent failed with exit code {llm_proc.returncode}. Nothing was marked processed.")
+            print(f"\nLLM agent failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
             return llm_proc.returncode
 
     with sqlite3.connect(db_path) as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
         if not args.skip_export:
+            print("\nStep 4/4  Exporting frontend JSON artifacts...")
             export_cmd = [sys.executable, "scripts/export_outputs.py", "--db-path", str(db_path)]
             export_proc = subprocess.run(export_cmd, env=env)
             if export_proc.returncode != 0:
                 _finish_run(conn, run_id, "failed", 0)
                 conn.commit()
-                print(
-                    f"Export failed with exit code {export_proc.returncode}. "
-                    "Nothing was marked processed."
-                )
+                print(f"\nExport failed (exit code {export_proc.returncode}). Nothing was marked processed.")
                 return export_proc.returncode
+        else:
+            print("\nStep 4/4  Export skipped (--skip-export).")
 
         marked = mark_candidates(conn, candidates, run_id)
         _finish_run(conn, run_id, "completed", marked)
         conn.commit()
 
-    print(
-        f"Run completed. Marked {marked} stenogram(s) as processed (run_id={run_id}). "
-        f"{'Export skipped.' if args.skip_export else 'Outputs exported to outputs/.'}"
-    )
+    print(f"\n{'='*60}")
+    print(f"Pipeline complete  run_id={run_id}")
+    print(f"  Stenograms processed: {marked}")
+    print(f"  Outputs: {'skipped' if args.skip_export else 'outputs/'}")
+    print(f"{'='*60}\n")
     return 0
 
 

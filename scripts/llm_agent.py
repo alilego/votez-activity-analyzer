@@ -271,6 +271,15 @@ def classify_intervention(
         context_chunks = ctx_result["context"]
     retrieved_chunk_ids = {c["chunk_id"] for c in context_chunks}
 
+    # Log what we're about to send to the LLM
+    speaker = iv.get("raw_speaker", "(unknown)")
+    text_preview = iv.get("text", "")[:120].replace("\n", " ")
+    print(
+        f"  LLM call: speaker={speaker!r}  "
+        f"context_chunks={len(context_chunks)}  "
+        f"text_preview={text_preview!r}..."
+    )
+
     # Step 5: call LLM (with retries)
     user_msg = _build_user_message(iv, session, context_chunks)
     last_exc: Exception | None = None
@@ -281,16 +290,32 @@ def classify_intervention(
             break
         except Exception as exc:
             last_exc = exc
+            print(f"  LLM attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY_S)
 
     if llm_data is None:
+        print(f"  LLM error (all retries exhausted): {last_exc}")
         return {"ok": False, "error": {"code": "LLM_ERROR", "message": str(last_exc)}}
+
+    # Log raw LLM response
+    label_raw = llm_data.get("constructiveness_label", "?")
+    confidence_raw = llm_data.get("confidence", "?")
+    topics_raw = llm_data.get("topics", [])
+    reasoning = llm_data.get("reasoning", "")
+    evidence_raw = llm_data.get("evidence_chunk_ids", [])
+    print(
+        f"  LLM response: label={label_raw}  confidence={confidence_raw}  "
+        f"topics={topics_raw}  evidence={evidence_raw}"
+    )
+    if reasoning:
+        print(f"  reasoning: {reasoning}")
 
     # Validate and clean LLM output
     try:
         payload = _validate_llm_response(llm_data, config, retrieved_chunk_ids)
     except ValueError as exc:
+        print(f"  Validation error: {exc}")
         return {"ok": False, "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)}}
 
     # Step 6: store via MCP
@@ -369,6 +394,7 @@ def run_agent(
         config = config_result["config"]
 
         for i, intervention_id in enumerate(intervention_ids, 1):
+            print(f"\n[{i}/{total}] {intervention_id}")
             result = classify_intervention(
                 server=server,
                 intervention_id=intervention_id,
@@ -379,18 +405,19 @@ def run_agent(
             )
             if result.get("ok"):
                 classified += 1
-                label = result.get("stored", {}).get("constructiveness_label", "?")
-                confidence = result.get("stored", {}).get("confidence", 0.0)
+                stored = result.get("stored", {})
+                label = stored.get("constructiveness_label", "?")
+                confidence = stored.get("confidence", 0.0)
+                topics = stored.get("topics", [])
                 print(
-                    f"[{i}/{total}] {intervention_id}  →  {label}  "
-                    f"(confidence={confidence:.2f})"
+                    f"  → stored: label={label}  confidence={confidence:.2f}  "
+                    f"topics={topics}"
                 )
             else:
                 errors += 1
                 err_info = result.get("error", {})
                 print(
-                    f"[{i}/{total}] {intervention_id}  ✗  "
-                    f"{err_info.get('code')}: {err_info.get('message')}"
+                    f"  ✗ error: {err_info.get('code')}: {err_info.get('message')}"
                 )
                 error_log.append({"intervention_id": intervention_id, "error": err_info})
 

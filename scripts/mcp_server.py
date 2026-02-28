@@ -459,6 +459,12 @@ class MCPServer:
             ),
         )
         self._conn.commit()
+        action = "updated" if existing is not None else "inserted"
+        print(
+            f"  DB {action}: {intervention_id}  label={label}  "
+            f"confidence={confidence:.2f}  topics={topics}  "
+            f"evidence={evidence_ids}"
+        )
 
         return _ok(
             stored={
