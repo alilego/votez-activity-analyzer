@@ -54,7 +54,7 @@ An intervention is **neutral** if:
 
 - It is procedural (e.g., voting instructions, agenda management, quorum checks).
 - It concerns technical session logistics (microphones, breaks, seating).
-- It includes formal announcements (e.g., resignations, oath-taking, reading of official communications).
+- It includes formal announcements (e.g., resignations, oath-taking, reading of official communications, greetings).
 - It is a short interjection that does not meaningfully engage in either direction.
 - It includes respectful but non-substantive remarks.
 
