@@ -114,7 +114,7 @@ PROCEDURAL_KEYWORDS = {
     "regulament",
 }
 
-RELEVANT_KEYWORDS = {
+CONSTRUCTIVE_KEYWORDS = {
     "motiune",
     "cenzura",
     "proiect",
@@ -127,7 +127,7 @@ RELEVANT_KEYWORDS = {
     "buget",
 }
 
-NON_RELEVANT_KEYWORDS = {
+NON_CONSTRUCTIVE_KEYWORDS = {
     "klaus iohannis",
     "presedinte ilegitim",
     "uzurpa functia",
@@ -378,14 +378,14 @@ def _deterministic_analysis(
     adjusted_for_relevance = adjusted_for_relevance.replace("proiectul ordinii de zi", "ordinii de zi")
     adjusted_for_relevance = adjusted_for_relevance.replace("proiect de ordine de zi", "ordine de zi")
 
-    non_relevant_hits = sum(1 for k in NON_RELEVANT_KEYWORDS if k in normalized)
-    relevant_hits = sum(1 for k in RELEVANT_KEYWORDS if k in adjusted_for_relevance)
+    non_constructive_hits = sum(1 for k in NON_CONSTRUCTIVE_KEYWORDS if k in normalized)
+    constructive_hits = sum(1 for k in CONSTRUCTIVE_KEYWORDS if k in adjusted_for_relevance)
     procedural_hits = sum(1 for k in PROCEDURAL_KEYWORDS if k in normalized)
     has_topic_overlap = len(matched_topics) > 0
 
-    # Off-topic rhetoric with no overlap to session discussion.
-    if non_relevant_hits > 0 and not has_topic_overlap and relevant_hits == 0 and procedural_hits <= 1:
-        return "non_relevant", [], 0.80
+    # Purely rhetorical attacks with no substantive engagement.
+    if non_constructive_hits > 0 and not has_topic_overlap and constructive_hits == 0 and procedural_hits <= 1:
+        return "non_constructive", [], 0.80
 
     # No overlap means likely neutral/procedural in this baseline.
     if not has_topic_overlap:
@@ -394,12 +394,12 @@ def _deterministic_analysis(
         return "neutral", [], 0.58
 
     # Overlap exists: evaluate likely substantive vs procedural.
-    if relevant_hits > 0:
-        strong_relevant_tokens = ("motiune", "cenzura", "ordonanta", "amendament", "articol")
-        has_strong_relevant = any(t in adjusted_for_relevance for t in strong_relevant_tokens)
-        if procedural_hits > 0 and not has_strong_relevant:
+    if constructive_hits > 0:
+        strong_constructive_tokens = ("motiune", "cenzura", "ordonanta", "amendament", "articol")
+        has_strong_constructive = any(t in adjusted_for_relevance for t in strong_constructive_tokens)
+        if procedural_hits > 0 and not has_strong_constructive:
             return "neutral", matched_topics, 0.63
-        return "relevant", matched_topics, 0.75
+        return "constructive", matched_topics, 0.75
 
     # Purely procedural but on session topics.
     return "neutral", matched_topics, 0.67
@@ -600,7 +600,7 @@ def _persist_run_data(
 
         # Deterministic baseline analysis (pre-RAG/LLM).
         if iv["member_id"] is not None:
-            relevance_label, topics, confidence = _deterministic_analysis(
+            constructiveness_label, topics, confidence = _deterministic_analysis(
                 iv["text"],
                 iv.get("candidate_topics", []),
                 session_topics_map.get(iv["session_id"], []),
@@ -618,7 +618,7 @@ def _persist_run_data(
                     analysis_version,
                     updated_at
                 )
-                VALUES (?, ?, ?, 'session_topics_primary', ?, ?, ?, 'baseline_v1', CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, 'constructiveness_baseline_v1', ?, ?, ?, 'baseline_v1', CURRENT_TIMESTAMP)
                 ON CONFLICT(intervention_id) DO UPDATE SET
                     run_id = excluded.run_id,
                     relevance_label = excluded.relevance_label,
@@ -632,7 +632,7 @@ def _persist_run_data(
                 (
                     iv["intervention_id"],
                     run_id,
-                    relevance_label,
+                    constructiveness_label,
                     json.dumps(topics, ensure_ascii=True),
                     confidence,
                     json.dumps(iv.get("evidence_chunk_ids", []), ensure_ascii=True),

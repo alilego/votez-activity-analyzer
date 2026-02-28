@@ -82,7 +82,7 @@ Output:
     "contract_version": "v0",
     "max_topics_per_intervention": 5,
     "max_topic_length": 64,
-    "relevance_labels": ["relevant", "neutral", "non_relevant"],
+    "constructiveness_labels": ["constructive", "neutral", "non_constructive"],
     "rag": {
       "top_k": 8,
       "min_score": 0.0
@@ -254,7 +254,7 @@ Input:
 ```json
 {
   "intervention_id": "STRING",
-  "relevance_label": "relevant | neutral | non_relevant",
+  "constructiveness_label": "constructive | neutral | non_constructive",
   "topics": ["STRING"],
   "confidence": 0.0,
   "evidence_chunk_ids": ["STRING"]
@@ -267,7 +267,7 @@ Output:
   "ok": true,
   "stored": {
     "intervention_id": "STRING",
-    "relevance_label": "relevant | neutral | non_relevant",
+    "constructiveness_label": "constructive | neutral | non_constructive",
     "topics": ["STRING"],
     "confidence": 0.0,
     "evidence_chunk_ids": ["STRING"]
@@ -276,7 +276,7 @@ Output:
 ```
 
 Validation rules:
-- `relevance_label` must be one of: `relevant`, `neutral`, `non_relevant`.
+- `constructiveness_label` must be one of: `constructive`, `neutral`, `non_constructive`.
 - `topics` length must be `0..max_topics_per_intervention` (from `get_run_config`).
 - Each topic:
   - must be non-empty after trimming

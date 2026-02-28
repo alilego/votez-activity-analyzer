@@ -4,7 +4,7 @@ AI-powered analysis of parliamentary activity, classifying interventions and ext
 ## What it does
 
 Given stenograms of parliamentary sessions, it outputs a dataset that maps each parliament member to:
-- interventions classified as relevant / neutral / non-relevant to the session topic
+- interventions classified as constructive / neutral / non-constructive
 - top 20 debate subjects (topics) where the member intervened
 
 ## How it runs
@@ -24,9 +24,9 @@ What this command does:
 - runs analyzer (speaker normalization + member resolution + raw intervention persistence)
 - computes deterministic baseline intervention analysis (labels + topics)
 - computes independent session topics (from initial notes + early substantial speeches)
-- assigns `relevance_label` from intervention-topic vs session-topic overlap
-- stores `relevance_source='session_topics_primary'` for auditability
-- retrieves session-scoped evidence chunks for traceability only (does not set relevance)
+- assigns `constructiveness_label` from intervention-topic vs session-topic overlap
+- stores `constructiveness_source='constructiveness_baseline_v1'` for auditability
+- retrieves session-scoped evidence chunks for traceability only (does not set label)
 - exports frontend JSON artifacts to `outputs/`
 - marks successfully processed stenograms in DB state
 - stores run summary in DB table `run_outputs`
@@ -56,7 +56,7 @@ Current SQLite tables:
 - `run_outputs`
 - `members`
 - `interventions_raw`
-- `intervention_analysis` (includes `relevance_source`, topics, confidence, evidence chunks)
+- `intervention_analysis` (includes `constructiveness_source`, topics, confidence, evidence chunks)
 - `unmatched_speakers`
 - `session_topics`
 - `session_chunks`

@@ -23,26 +23,28 @@ The classification must be:
 
 Each intervention must be classified into one of the following:
 
-- `relevant`
+- `constructive`
 - `neutral`
-- `non_relevant`
+- `non_constructive`
 
 ---
 
-# 2) Definition of "Relevant"
+# 2) Definition of "Constructive"
 
-An intervention is **relevant** if:
+An intervention is **constructive** if:
 
-- It directly addresses the main topic(s) of the session or agenda item.
-- It contributes arguments, explanations, objections, or clarifications related to the debated subject.
-- It proposes amendments, policy ideas, or positions tied to the session’s legislative focus.
-- It responds substantively to another intervention about the same debated topic.
+- It directly engages with the session topic AND genuinely tries to advance the public good.
+- It proposes or supports concrete solutions, amendments, or improvements to legislation.
+- It contributes substantive arguments, analysis, or evidence aimed at better outcomes for citizens.
+- It responds meaningfully to another speaker in a way that advances the debate.
+- The primary intent is to find common ground, clarify facts, or improve policy — not to score political points.
 
 Examples:
 
-- Arguing for or against a bill under discussion.
-- Explaining economic impact of a proposed law.
-- Responding to a criticism related to the legislative topic.
+- Proposing a specific amendment that improves the bill under discussion.
+- Explaining the practical impact of a law on citizens with concrete data.
+- Raising a well-founded concern about a bill's implementation and suggesting a fix.
+- Responding to a criticism with substantive counter-argument and new information.
 
 ---
 
@@ -50,10 +52,10 @@ Examples:
 
 An intervention is **neutral** if:
 
-- It is procedural (e.g., voting instructions, agenda management).
-- It concerns technical session logistics (microphones, breaks, quorum).
-- It includes formal announcements (e.g., resignations, oath-taking).
-- It is a short interjection that does not meaningfully engage with the session topic.
+- It is procedural (e.g., voting instructions, agenda management, quorum checks).
+- It concerns technical session logistics (microphones, breaks, seating).
+- It includes formal announcements (e.g., resignations, oath-taking, reading of official communications).
+- It is a short interjection that does not meaningfully engage in either direction.
 - It includes respectful but non-substantive remarks.
 
 Examples:
@@ -65,45 +67,67 @@ Examples:
 
 ---
 
-# 4) Definition of "Non-Relevant"
+# 4) Definition of "Non-Constructive"
 
-An intervention is **non_relevant** if:
+An intervention is **non_constructive** if:
 
-- It introduces unrelated political accusations or unrelated topics.
-- It diverts discussion away from the session's legislative subject.
-- It consists primarily of rhetorical attacks unrelated to the agenda item.
-- It intentionally shifts focus to an external issue not under debate.
+- It is primarily aimed at serving narrow interests: own party, own political career, a sponsor, or a specific entity — rather than citizens broadly.
+- It intentionally blocks or derails the debate without offering an alternative.
+- It consists primarily of rhetorical attacks, accusations, or insults — whether or not the target is related to the session topic.
+- It introduces unrelated political narratives or conspiracy claims.
+- It is filibustering: speaking at length to waste time rather than contribute substance.
+- It is on-topic but purely partisan positioning with no intent to find solutions.
+
+Note: An intervention can be topically on-point yet still `non_constructive`. Being on-topic is not sufficient for `constructive`.
 
 Examples:
 
-- Attacking a political figure unrelated to the bill under discussion.
-- Discussing a different law not on the agenda.
-- Introducing conspiracy claims unrelated to the current debate.
+- Attacking a political opponent by name, with no substantive connection to the bill.
+- Making a speech that repeats talking points without engaging with the debate.
+- Raising a procedural objection purely to delay a vote, with no legal or substantive basis.
+- Defending a policy change that primarily benefits a sponsor or party donor, with no public interest framing.
+- Filibustering through repetition or reading unrelated text.
 
 ---
 
 # 5) Edge Case Handling
 
-## A) Mixed Content
+## A) On-Topic but Self-Serving
 
-If an intervention contains both relevant and irrelevant parts:
+If an intervention addresses the session topic but its primary purpose is partisan positioning or narrow interest:
 
-- Classify as `relevant` if the dominant portion engages with the debated topic.
-- Classify as `non_relevant` if the majority of the speech is diversionary.
+- Classify as `non_constructive`.
+- The topic match alone does not elevate an intervention to `constructive`.
 
-## B) Procedural but Politically Charged
+## B) Mixed Content
+
+If an intervention contains both constructive and non-constructive parts:
+
+- Classify as `constructive` if the dominant portion genuinely advances the public interest.
+- Classify as `non_constructive` if the majority is partisan, self-serving, or blocking.
+
+## C) Procedural but Politically Charged
 
 If procedural language includes politically charged commentary:
 
-- If commentary meaningfully connects to the debated subject → `relevant`
-- If commentary is unrelated to session topic → `non_relevant`
-- If primarily procedural → `neutral`
+- If the commentary meaningfully advances the debate → `constructive`
+- If the commentary is partisan or diversionary → `non_constructive`
+- If primarily procedural with no substantive impact → `neutral`
 
-## C) Very Short Interventions
+## D) Very Short Interventions
 
 If extremely short and lacking semantic substance:
 
-- Default to `neutral` unless clearly diversionary.
+- Default to `neutral` unless clearly adversarial or self-serving.
+
+## E) Legitimate Opposition
+
+Opposing a bill is not inherently `non_constructive`. Opposition is `constructive` when:
+
+- It raises substantive concerns grounded in evidence or legal analysis.
+- It proposes alternatives or amendments.
+
+Opposition is `non_constructive` when it is purely rhetorical, partisan, or blocking without substance.
 
 ---
 
@@ -113,7 +137,7 @@ For every classification:
 
 The system must store:
 
-- `relevance_label`
+- `constructiveness_label`
 - `confidence` (0.0 – 1.0)
 - `evidence_chunk_ids[]` (retrieved chunks supporting the decision)
 
@@ -142,7 +166,7 @@ If topic cannot be clearly identified:
 
 Confidence should be:
 
-- High (0.8–1.0) if session topic clearly matches intervention content.
+- High (0.8–1.0) if session context clearly supports the classification decision.
 - Medium (0.5–0.79) if partial match or mixed signals.
 - Low (0.0–0.49) if weak contextual alignment.
 
@@ -157,9 +181,9 @@ The classifier is NOT:
 - A sentiment analyzer.
 - A truth verifier.
 - A fact-checking system.
-- A political bias detector.
+- A political bias detector between parties.
 
-It strictly evaluates contextual relevance to session topic.
+It evaluates whether the intervention serves the public good and advances the debate, grounded in the session context.
 
 ---
 

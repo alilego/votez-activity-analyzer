@@ -69,9 +69,9 @@ def validate_outputs(output_dir: Path) -> list[str]:
         "party_id",
         "party_name",
         "interventions_total",
-        "relevant_count",
+        "constructive_count",
         "neutral_count",
-        "non_relevant_count",
+        "non_constructive_count",
         "top_topics",
     }
     for m in members_index:
@@ -79,7 +79,7 @@ def validate_outputs(output_dir: Path) -> list[str]:
             errors.append(f"Member index entry missing keys: {m.get('member_id', '<unknown>')}")
             continue
         total = int(m["interventions_total"])
-        parts_sum = int(m["relevant_count"]) + int(m["neutral_count"]) + int(m["non_relevant_count"])
+        parts_sum = int(m["constructive_count"]) + int(m["neutral_count"]) + int(m["non_constructive_count"])
         if total != parts_sum:
             errors.append(f"Member index count mismatch for {m['member_id']}: total != label sum")
         topics = m["top_topics"]
@@ -100,13 +100,13 @@ def validate_outputs(output_dir: Path) -> list[str]:
         interventions = detail.get("interventions", {})
         if int(stats.get("interventions_total", -1)) != total:
             errors.append(f"Member detail total mismatch for {m['member_id']}")
-        if int(stats.get("relevant_count", -1)) != int(m["relevant_count"]):
-            errors.append(f"Member detail relevant_count mismatch for {m['member_id']}")
+        if int(stats.get("constructive_count", -1)) != int(m["constructive_count"]):
+            errors.append(f"Member detail constructive_count mismatch for {m['member_id']}")
         if int(stats.get("neutral_count", -1)) != int(m["neutral_count"]):
             errors.append(f"Member detail neutral_count mismatch for {m['member_id']}")
-        if int(stats.get("non_relevant_count", -1)) != int(m["non_relevant_count"]):
-            errors.append(f"Member detail non_relevant_count mismatch for {m['member_id']}")
-        for label in ("relevant", "neutral", "non_relevant"):
+        if int(stats.get("non_constructive_count", -1)) != int(m["non_constructive_count"]):
+            errors.append(f"Member detail non_constructive_count mismatch for {m['member_id']}")
+        for label in ("constructive", "neutral", "non_constructive"):
             if not isinstance(interventions.get(label, []), list):
                 errors.append(f"Member detail interventions.{label} is not list for {m['member_id']}")
             elif len(interventions[label]) != int(m[f"{label}_count"]):
@@ -126,9 +126,9 @@ def validate_outputs(output_dir: Path) -> list[str]:
         "party_name",
         "members_count",
         "interventions_total",
-        "relevant_count",
+        "constructive_count",
         "neutral_count",
-        "non_relevant_count",
+        "non_constructive_count",
         "top_topics",
     }
     by_party = {}
@@ -138,16 +138,16 @@ def validate_outputs(output_dir: Path) -> list[str]:
             by_party[key] = {
                 "members_count": 0,
                 "interventions_total": 0,
-                "relevant_count": 0,
+                "constructive_count": 0,
                 "neutral_count": 0,
-                "non_relevant_count": 0,
+                "non_constructive_count": 0,
             }
         agg = by_party[key]
         agg["members_count"] += 1
         agg["interventions_total"] += int(m["interventions_total"])
-        agg["relevant_count"] += int(m["relevant_count"])
+        agg["constructive_count"] += int(m["constructive_count"])
         agg["neutral_count"] += int(m["neutral_count"])
-        agg["non_relevant_count"] += int(m["non_relevant_count"])
+        agg["non_constructive_count"] += int(m["non_constructive_count"])
 
     for p in parties_index:
         if set(required_party_keys) - set(p.keys()):
@@ -158,7 +158,7 @@ def validate_outputs(output_dir: Path) -> list[str]:
         if agg is None:
             errors.append(f"Party index contains unknown party_id with no members: {pid}")
             continue
-        for key in ("members_count", "interventions_total", "relevant_count", "neutral_count", "non_relevant_count"):
+        for key in ("members_count", "interventions_total", "constructive_count", "neutral_count", "non_constructive_count"):
             if int(p[key]) != int(agg[key]):
                 errors.append(f"Party index mismatch for {pid} on {key}")
         if len(p["top_topics"]) > 20:
@@ -172,7 +172,7 @@ def validate_outputs(output_dir: Path) -> list[str]:
             continue
         detail = _load_json(detail_path)
         stats = detail.get("stats", {})
-        for key in ("members_count", "interventions_total", "relevant_count", "neutral_count", "non_relevant_count"):
+        for key in ("members_count", "interventions_total", "constructive_count", "neutral_count", "non_constructive_count"):
             if int(stats.get(key, -1)) != int(p[key]):
                 errors.append(f"Party detail mismatch for {pid} on {key}")
         members_list = detail.get("members", [])

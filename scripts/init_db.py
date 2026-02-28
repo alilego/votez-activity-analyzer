@@ -104,8 +104,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS intervention_analysis (
             intervention_id TEXT PRIMARY KEY,
             run_id TEXT NOT NULL,
-            relevance_label TEXT NOT NULL, -- relevant | neutral | non_relevant | unknown
-            relevance_source TEXT NOT NULL DEFAULT 'session_topics_primary',
+            relevance_label TEXT NOT NULL, -- constructive | neutral | non_constructive | unknown
+            relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1',
             topics_json TEXT NOT NULL, -- JSON array of strings
             confidence REAL, -- nullable in scaffolding stage
             evidence_chunk_ids_json TEXT NOT NULL, -- JSON array of strings
@@ -215,7 +215,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     )
     try:
         conn.execute(
-            "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'session_topics_primary'"
+            "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'"
         )
     except sqlite3.OperationalError:
         # Column already exists.

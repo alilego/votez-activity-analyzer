@@ -17,7 +17,7 @@ from init_db import DEFAULT_DB_PATH, init_db
 
 
 def _map_label(label: str) -> str:
-    if label in {"relevant", "neutral", "non_relevant"}:
+    if label in {"constructive", "neutral", "non_constructive"}:
         return label
     # Scaffolding fallback until classifier is integrated.
     return "neutral"
@@ -110,11 +110,11 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             session_date,
             stenogram_path,
             text,
-            relevance_label_raw,
-            topics_json,
-            confidence,
+        constructiveness_label_raw,
+        topics_json,
+        confidence,
         ) = row
-        relevance_label = _map_label(relevance_label_raw)
+        constructiveness_label = _map_label(constructiveness_label_raw)
         topics = _safe_topics(topics_json)
         confidence_value = float(confidence) if confidence is not None else 0.0
         stenogram_name = Path(stenogram_path).name
@@ -125,15 +125,15 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "name": member_name,
                 "party_id": party_id,
                 "party_name": party_id,
-                "counts": {"relevant": 0, "neutral": 0, "non_relevant": 0},
+                "counts": {"constructive": 0, "neutral": 0, "non_constructive": 0},
                 "topics_counter": Counter(),
-                "interventions": {"relevant": [], "neutral": [], "non_relevant": []},
+                "interventions": {"constructive": [], "neutral": [], "non_constructive": []},
             }
 
         md = member_data[member_id]
-        md["counts"][relevance_label] += 1
+        md["counts"][constructiveness_label] += 1
         md["topics_counter"].update(topics)
-        md["interventions"][relevance_label].append(
+        md["interventions"][constructiveness_label].append(
             {
                 "session_id": session_id,
                 "session_date": session_date,
@@ -154,7 +154,7 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
     for member_id in sorted(member_data.keys()):
         md = member_data[member_id]
         counts = md["counts"]
-        interventions_total = counts["relevant"] + counts["neutral"] + counts["non_relevant"]
+        interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
         top_topics = _top_topics(md["topics_counter"])
         members_index.append(
             {
@@ -163,9 +163,9 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "party_id": md["party_id"],
                 "party_name": md["party_name"],
                 "interventions_total": interventions_total,
-                "relevant_count": counts["relevant"],
+                "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
-                "non_relevant_count": counts["non_relevant"],
+                "non_constructive_count": counts["non_constructive"],
                 "top_topics": top_topics,
             }
         )
@@ -177,9 +177,9 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             "party_name": md["party_name"],
             "stats": {
                 "interventions_total": interventions_total,
-                "relevant_count": counts["relevant"],
+                "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
-                "non_relevant_count": counts["non_relevant"],
+                "non_constructive_count": counts["non_constructive"],
             },
             "top_topics": top_topics,
             "interventions": md["interventions"],
@@ -207,11 +207,11 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         party_name = party_id if party_id != "unknown" else "Unknown"
 
         counts = {
-            "relevant": sum(m["relevant_count"] for m in members),
+            "constructive": sum(m["constructive_count"] for m in members),
             "neutral": sum(m["neutral_count"] for m in members),
-            "non_relevant": sum(m["non_relevant_count"] for m in members),
+            "non_constructive": sum(m["non_constructive_count"] for m in members),
         }
-        interventions_total = counts["relevant"] + counts["neutral"] + counts["non_relevant"]
+        interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
 
         topic_counter: Counter[str] = Counter()
         for m in members:
@@ -224,9 +224,9 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             "party_name": party_name,
             "members_count": len(members),
             "interventions_total": interventions_total,
-            "relevant_count": counts["relevant"],
+            "constructive_count": counts["constructive"],
             "neutral_count": counts["neutral"],
-            "non_relevant_count": counts["non_relevant"],
+            "non_constructive_count": counts["non_constructive"],
             "top_topics": top_topics,
         }
         parties_index.append(party_index_entry)
@@ -237,9 +237,9 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             "stats": {
                 "members_count": len(members),
                 "interventions_total": interventions_total,
-                "relevant_count": counts["relevant"],
+                "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
-                "non_relevant_count": counts["non_relevant"],
+                "non_constructive_count": counts["non_constructive"],
             },
             "top_topics": top_topics,
             "members": [
@@ -247,9 +247,9 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                     "member_id": m["member_id"],
                     "name": m["name"],
                     "interventions_total": m["interventions_total"],
-                    "relevant_count": m["relevant_count"],
+                    "constructive_count": m["constructive_count"],
                     "neutral_count": m["neutral_count"],
-                    "non_relevant_count": m["non_relevant_count"],
+                    "non_constructive_count": m["non_constructive_count"],
                     "top_topics": m["top_topics"],
                 }
                 for m in sorted(members, key=lambda x: (-x["interventions_total"], x["member_id"]))

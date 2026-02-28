@@ -18,9 +18,9 @@ This project is meant to be run periodically on a developer machine to refresh t
 Given a set of stenograms of parliament activity, generate a dataset that correlates each parliament member with:
 
 - A list of interventions classified as:
-  - relevant to the session topic
-  - neutral
-  - non-relevant (off-topic) to the session topic
+  - constructive (genuinely serves the public good and advances the debate)
+  - neutral (procedural, logistical, or non-substantive)
+  - non-constructive (serves narrow interests, blocks debate, or is purely rhetorical)
 - The top 20 debate subjects (topics) where the member intervened
 
 ## Operating mode

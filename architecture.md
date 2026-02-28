@@ -270,13 +270,13 @@ The tool server:
 For each intervention:
 
 1. Retrieve context (RAG)
-2. Classify relevance (relevant / neutral / non_relevant)
+2. Classify constructiveness (constructive / neutral / non_constructive)
 3. Extract topics
 4. Call MCP tool to store structured result
 
 Stored per intervention:
 
-- relevance_label
+- constructiveness_label
 - topics[]
 - confidence (optional)
 - evidence_chunk_ids[]

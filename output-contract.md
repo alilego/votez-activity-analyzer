@@ -7,7 +7,7 @@ Define the structured output produced by votez-activity-analyzer.
 The frontend will consume this data to display:
 
 - Per-member intervention statistics
-- Lists of interventions categorized by relevance
+- Lists of interventions categorized by constructiveness
 - Top 20 debate topics per member
 
 This contract is versioned and may evolve.
@@ -70,9 +70,9 @@ Structure:
     "party_id": "string | null",
     "party_name": "string | null",
     "interventions_total": number,
-    "relevant_count": number,
+    "constructive_count": number,
     "neutral_count": number,
-    "non_relevant_count": number,
+    "non_constructive_count": number,
     "top_topics": [
       {
         "topic": "string",
@@ -105,9 +105,9 @@ Structure:
 
   "stats": {
     "interventions_total": number,
-    "relevant_count": number,
+    "constructive_count": number,
     "neutral_count": number,
-    "non_relevant_count": number
+    "non_constructive_count": number
   },
 
   "top_topics": [
@@ -118,7 +118,7 @@ Structure:
   ],
 
   "interventions": {
-    "relevant": [
+    "constructive": [
       {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
@@ -140,7 +140,7 @@ Structure:
         "stenogram_link": "string"
       }
     ],
-    "non_relevant": [
+    "non_constructive": [
         {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
@@ -174,9 +174,9 @@ Structure:
     "members_count": number,
 
     "interventions_total": number,
-    "relevant_count": number,
+    "constructive_count": number,
     "neutral_count": number,
-    "non_relevant_count": number,
+    "non_constructive_count": number,
 
     "top_topics": [
       {
@@ -210,9 +210,9 @@ Structure:
   "stats": {
     "members_count": number,
     "interventions_total": number,
-    "relevant_count": number,
+    "constructive_count": number,
     "neutral_count": number,
-    "non_relevant_count": number
+    "non_constructive_count": number
   },
 
   "top_topics": [
@@ -227,9 +227,9 @@ Structure:
       "member_id": "string",
       "name": "string",
       "interventions_total": number,
-      "relevant_count": number,
+      "constructive_count": number,
       "neutral_count": number,
-      "non_relevant_count": number,
+      "non_constructive_count": number,
       "top_topics": [
         { "topic": "string", "count": number }
       ]
@@ -260,10 +260,10 @@ party_id:
 party_name:
 - Display name used by the frontend
 
-relevance_label values:
-- `relevant`
+constructiveness_label values:
+- `constructive`
 - `neutral`
-- `non_relevant`
+- `non_constructive`
 
 ---
 
