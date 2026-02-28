@@ -7,6 +7,8 @@ Current slice:
 - normalize speakers
 - resolve speakers to members using registry snapshots
 - persist raw interventions + unmatched speakers
+- build session-scoped RAG vector index (sentence-transformers + FAISS)
+- retrieve evidence chunks via hybrid strategy (session_notes + neighbors + similarity)
 - store per-run summary in state DB and JSON artifact
 """
 
@@ -25,6 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from init_db import DEFAULT_DB_PATH, init_db
+import rag_store
 
 
 @dataclass(frozen=True)
@@ -826,6 +829,8 @@ def main() -> int:
             )
             session_chunks.extend(built_chunks)
             session_chunks_by_session[session_id] = built_chunks
+            # Build (or reuse cached) session-scoped RAG vector index.
+            rag_store.build_session_index(session_id, built_chunks)
             if initial_notes:
                 for topic in _extract_topics(initial_notes, max_topics=12):
                     session_topic_counters[session_id][topic] += 1
@@ -856,11 +861,13 @@ def main() -> int:
                         # only early substantial speeches shape the session context.
                         session_topic_scores[session_id][topic] = session_topic_scores[session_id].get(topic, 0.0) + 2.5
                 intervention_id = _build_intervention_id(stenogram_path, idx)
-                evidence_chunk_ids = _retrieve_evidence_chunk_ids(
+                retrieved = rag_store.retrieve_chunks(
+                    session_id=session_id,
                     intervention_text=text,
-                    session_chunks=session_chunks_by_session.get(session_id, []),
-                    top_k=3,
+                    intervention_speech_index=idx,
+                    top_k=rag_store.DEFAULT_TOP_K,
                 )
+                evidence_chunk_ids = [r.chunk_id for r in retrieved]
                 text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 interventions.append(
                     {

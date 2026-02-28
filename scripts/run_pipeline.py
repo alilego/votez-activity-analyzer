@@ -4,9 +4,10 @@ Minimal orchestrator for incremental runs.
 
 Flow:
 1) Select new/changed stenograms
-2) Execute analyzer command
-3) Export frontend artifacts
-4) Mark files as processed only if analyzer + export succeed
+2) Execute analyzer command  (speaker resolution, chunking, RAG index, baseline labels)
+3) Optionally run LLM agent  (LLM classification via MCP, when --analyzer-mode=llm)
+4) Export frontend artifacts
+5) Mark files as processed only if all steps succeed
 """
 
 from __future__ import annotations
@@ -99,6 +100,32 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--analyzer-mode",
+        choices=["baseline", "llm"],
+        default="baseline",
+        help=(
+            "baseline (default): keyword/RAG baseline only. "
+            "llm: run baseline first, then classify via LLM agent."
+        ),
+    )
+    parser.add_argument(
+        "--llm-provider",
+        choices=["openai", "ollama"],
+        default="ollama",
+        help="LLM provider for llm mode (default: ollama).",
+    )
+    parser.add_argument(
+        "--llm-model",
+        default="",
+        help="Model name for LLM mode (default: llama3.1:8b for ollama, gpt-4o-mini for openai).",
+    )
+    parser.add_argument(
+        "--llm-limit",
+        type=int,
+        default=0,
+        help="Classify at most N interventions in LLM mode (0 = all). Useful for testing.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Only list selected files and exit.",
@@ -163,6 +190,25 @@ def main() -> int:
             print(f"Analyzer failed with exit code {proc.returncode}. Nothing was marked processed.")
             return proc.returncode
 
+    # Optional LLM agent pass (runs outside the above conn context to avoid lock contention).
+    if args.analyzer_mode == "llm":
+        llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
+        if args.llm_model.strip():
+            llm_cmd += ["--model", args.llm_model.strip()]
+        if args.llm_limit > 0:
+            llm_cmd += ["--limit", str(args.llm_limit)]
+        print(f"Running LLM agent (run_id={run_id})...")
+        llm_proc = subprocess.run(llm_cmd, env=env)
+        if llm_proc.returncode != 0:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                _finish_run(conn, run_id, "failed", 0)
+                conn.commit()
+            print(f"LLM agent failed with exit code {llm_proc.returncode}. Nothing was marked processed.")
+            return llm_proc.returncode
+
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA foreign_keys = ON;")
         if not args.skip_export:
             export_cmd = [sys.executable, "scripts/export_outputs.py", "--db-path", str(db_path)]
             export_proc = subprocess.run(export_cmd, env=env)

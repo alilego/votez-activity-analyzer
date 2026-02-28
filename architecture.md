@@ -267,19 +267,53 @@ The tool server:
 
 # 6) Intelligence Layer (Agent Loop)
 
+Implemented in `scripts/llm_agent.py`.
+
+## Two-pass classification
+
+The pipeline supports two modes:
+
+| Mode | `--analyzer-mode` | Script | Source |
+|------|-------------------|--------|--------|
+| Baseline | `baseline` (default) | `analyze_interventions.py` | `constructiveness_baseline_v1` |
+| LLM | `llm` | `llm_agent.py` | `llm_agent_v1` |
+
+Baseline runs first in both modes. In `llm` mode the agent loop then reclassifies interventions that have only a baseline label.
+
+## LLM agent loop (per intervention)
+
 For each intervention:
 
-1. Retrieve context (RAG)
-2. Classify constructiveness (constructive / neutral / non_constructive)
-3. Extract topics
-4. Call MCP tool to store structured result
+1. **`get_run_config`** — load the runtime config (valid labels, topic constraints, RAG budget)
+2. **`get_intervention`** — fetch the intervention text, session ID, raw speaker
+3. **`get_session`** — fetch session notes for framing context
+4. **`retrieve_context`** — hybrid RAG retrieval (session_notes + neighbors + similarity, top_k=10)
+5. **LLM call** — send `system: classification rubric` + `user: intervention + context chunks` to OpenAI; receive JSON
+6. **`store_intervention_analysis`** — persist validated label, topics, confidence, evidence_chunk_ids via MCP
 
-Stored per intervention:
+## LLM prompt design
 
-- constructiveness_label
-- topics[]
-- confidence (optional)
-- evidence_chunk_ids[]
+- **System prompt**: the full classification rubric (labels, definitions, edge cases)
+- **User message**: session notes, speaker identity, intervention text, retrieved context chunks with scores
+- **Model**: `gpt-4o-mini` by default (configurable via `OPENAI_MODEL` env var or `--llm-model`)
+- **Temperature**: 0.0 (deterministic)
+- **Response format**: `json_object` (forced JSON mode)
+
+## Validation (post-LLM)
+
+The agent validates and coerces the LLM response before storing:
+- Label must be in the valid set from run config
+- Topics are deduplicated and truncated to policy limits
+- Confidence clamped to [0.0, 1.0]
+- Evidence chunk IDs filtered to only IDs actually retrieved in this call (prevents hallucination)
+
+## Stored per intervention
+
+- `constructiveness_label` — constructive / neutral / non_constructive
+- `topics[]` — up to 5 concise policy-area strings
+- `confidence` — 0.0–1.0
+- `evidence_chunk_ids[]` — chunk IDs that grounded the decision
+- `relevance_source='llm_agent_v1'` — audit trail
 
 This enables traceability and auditability.
 

@@ -421,4 +421,33 @@ The rest can be added as needed.
 
 ---
 
+## 8) Implementation
+
+The tool contract is implemented in `scripts/mcp_server.py` as the `MCPServer` class.
+
+All tools are dispatched through a single entry point:
+
+```python
+from mcp_server import MCPServer
+with MCPServer(db_path=Path("state/state.sqlite"), run_id="run_xyz") as server:
+    result = server.call("get_run_config", {})
+    result = server.call("retrieve_context", {"intervention_id": "iv:abc:5"})
+    result = server.call("store_intervention_analysis", {
+        "intervention_id": "iv:abc:5",
+        "constructiveness_label": "constructive",
+        "topics": ["proces legislativ"],
+        "confidence": 0.85,
+        "evidence_chunk_ids": ["ch:8846:3", "ch:8846:5"],
+    })
+```
+
+To exercise all tools interactively:
+
+```bash
+python3 scripts/demo_mcp.py --session-id 8846 --speech-index 10
+python3 scripts/demo_mcp.py --dry-run   # skip the write step
+```
+
+---
+
 End of MCP tools contract.

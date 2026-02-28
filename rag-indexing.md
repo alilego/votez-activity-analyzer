@@ -205,13 +205,14 @@ All evidence_chunk_ids must:
 
 # 8) Performance Considerations
 
-v0:
-- Rebuild index per run (acceptable for learning phase)
+v0 (implemented):
+- Index is persisted per session under `state/vectorstore/{session_id}.index`
+- Rebuild skipped if chunk content hash matches (incremental by default)
+- Index rebuilt only when a session is reprocessed or state is reset
 
 v1+:
-- Persist embeddings
-- Only embed new sessions
-- Incremental indexing
+- Incremental embedding of new sessions only (already works via hash check)
+- Batch embedding for faster initial index build across many sessions
 
 ---
 
@@ -243,20 +244,51 @@ Possible upgrades after stable baseline:
 
 ---
 
-# 11) Minimal v0 RAG Setup
+# 11) v0 Implementation
 
-To have a working RAG system that still teaches the core concepts:
+## Embedding model
 
-Required:
+- `paraphrase-multilingual-MiniLM-L12-v2` (via `sentence-transformers`)
+- Chosen for: multilingual support (Romanian), small size, fast inference
+- Embeddings are L2-normalised; inner product = cosine similarity
 
-- One chunk per speech
-- One session_notes chunk
-- Local embedding model
-- Vector similarity search
-- retrieve_context MCP tool
-- Evidence linking
+## Vector index
 
-Anything beyond that is optimization, not requirement.
+- One FAISS `IndexFlatIP` per session (exact search, no approximation)
+- Stored at `state/vectorstore/{session_id}.index`
+- Companion metadata at `state/vectorstore/{session_id}.meta.json`
+- Metadata includes chunk texts, types, and source speech indexes
+
+## Retrieval strategy (hybrid)
+
+For each intervention, chunks are selected in priority order:
+
+1. **session_notes** (always included) — provides session framing
+2. **Neighbors** (always included) — 3 speech chunks before and after the
+   intervention's speech index (6 slots total) — provides local debate context
+3. **Similarity** (fill remaining slots up to top_k=10) — cosine similarity
+   search for semantic context (typically 3 slots)
+
+Budget: 1 session_notes + 6 neighbors + 3 similarity = 10 chunks ≈ 2,500 tokens.
+
+Rationale: parliamentary debate is highly sequential — a speaker almost always
+responds to what was said in the preceding 3–5 speeches. Using 3 neighbors on
+each side captures that context reliably. The 3 remaining similarity slots can
+still surface thematically relevant content from earlier in the session (e.g.
+the rapporteur's opening speech on the bill being debated).
+
+## Why not send the full session
+
+Sessions average ~18,000 tokens (median), up to ~65,000 tokens at P90.
+With ~130 speeches per session, sending the full session per intervention
+would cost tens to hundreds of millions of tokens per pipeline run.
+RAG selects the ~8 most relevant chunks (~1,000–2,000 tokens), eliminating
+noise while preserving the critical context.
+
+## Files
+
+- `scripts/rag_store.py` — embedding, index build/load/query
+- `scripts/inspect_retrieval.py` — CLI tool to inspect retrieval for any intervention
 
 ---
 
