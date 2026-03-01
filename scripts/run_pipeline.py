@@ -65,12 +65,68 @@ def _finish_run(conn: sqlite3.Connection, run_id: str, status: str, sessions_pro
     )
 
 
+def _has_pending_llm_work(db_path: Path, model: str, reprocess_topics: bool) -> bool:
+    """Return True if there are sessions or interventions still waiting for LLM processing."""
+    model_source = f"llm_v1:{model}"
+    skip_condition = "st.topics_source LIKE 'llm_v1:%'" if not reprocess_topics else f"st.topics_source = '{model_source}'"
+    with sqlite3.connect(db_path) as conn:
+        pending_topics = conn.execute(
+            f"""
+            SELECT COUNT(DISTINCT sc.session_id)
+            FROM session_chunks sc
+            WHERE NOT EXISTS (
+                SELECT 1 FROM session_topics st
+                WHERE st.session_id = sc.session_id
+                  AND {skip_condition}
+            )
+            """
+        ).fetchone()[0]
+        pending_interventions = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM interventions_raw iv
+            WHERE NOT EXISTS (
+                SELECT 1 FROM intervention_analysis ia
+                WHERE ia.intervention_id = iv.intervention_id
+                  AND ia.relevance_source = 'llm_agent_v1'
+            )
+            """
+        ).fetchone()[0]
+    return (pending_topics + pending_interventions) > 0
+
+
 def _write_candidate_file(run_id: str, candidates: list[str]) -> Path:
     run_inputs_dir = Path("state/run_inputs")
     run_inputs_dir.mkdir(parents=True, exist_ok=True)
     out_path = run_inputs_dir / f"{run_id}_stenograms.json"
     out_path.write_text(json.dumps({"run_id": run_id, "files": candidates}, indent=2), encoding="utf-8")
     return out_path
+
+
+def _check_ollama_model(model: str) -> None:
+    """Warn if the requested Ollama model doesn't exist, with setup instructions."""
+    import urllib.request, urllib.error, json as _json
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+    try:
+        with urllib.request.urlopen(f"{host}/api/tags", timeout=3) as resp:
+            tags = _json.loads(resp.read())
+        available = [m["name"] for m in tags.get("models", [])]
+        # Normalise: ollama may return "llama3.1:8b-8k" or "llama3.1:8b-8k:latest"
+        available_base = [n.split(":")[0] + ":" + n.split(":")[1] if n.count(":") >= 1 else n for n in available]
+        if model not in available and model not in available_base:
+            print(f"\n  WARNING: model '{model}' not found in Ollama.")
+            if model == "llama3.1:8b-8k":
+                print("  Run these commands once to create it:")
+                print("    ollama pull llama3.1:8b")
+                print("    ollama create llama3.1:8b-8k -f - << 'EOF'")
+                print("    FROM llama3.1:8b")
+                print("    PARAMETER num_ctx 8192")
+                print("    EOF")
+            else:
+                print(f"  Run: ollama pull {model}")
+            print()
+    except urllib.error.URLError:
+        pass  # Ollama not running yet — llm_session_topics.py will catch this.
 
 
 def main() -> int:
@@ -117,13 +173,27 @@ def main() -> int:
     parser.add_argument(
         "--llm-model",
         default="",
-        help="Model name for LLM mode (default: llama3.1:8b for ollama, gpt-4o-mini for openai).",
+        help="Model name for LLM mode (default: llama3.1:8b-8k for ollama, gpt-4o-mini for openai).",
     )
     parser.add_argument(
-        "--llm-limit",
+        "--llm-sessions-limit",
+        type=int,
+        default=0,
+        help="Extract topics for at most N sessions in LLM mode (0 = all). Useful for testing.",
+    )
+    parser.add_argument(
+        "--llm-speech-limit",
         type=int,
         default=0,
         help="Classify at most N interventions in LLM mode (0 = all). Useful for testing.",
+    )
+    parser.add_argument(
+        "--reprocess-session-topics",
+        action="store_true",
+        help=(
+            "In llm mode: re-extract session topics even for sessions already processed "
+            "by any LLM. By default, sessions with any llm_v1:* topics_source are skipped."
+        ),
     )
     parser.add_argument(
         "--dry-run",
@@ -149,9 +219,11 @@ def main() -> int:
     print(f"  Mode:      {args.analyzer_mode}")
     if args.analyzer_mode == "llm":
         provider = args.llm_provider
-        model_hint = args.llm_model or ("llama3.1:8b" if provider == "ollama" else "gpt-4o-mini")
+        model_hint = args.llm_model or ("llama3.1:8b-8k" if provider == "ollama" else "gpt-4o-mini")
         print(f"  Provider:  {provider}  model={model_hint}")
         print(f"  LLM steps: 3b) session topics  3c) intervention classification")
+        if provider == "ollama":
+            _check_ollama_model(model_hint)
     print(f"{'='*60}\n")
 
     # Always bootstrap DB on pipeline start:
@@ -169,8 +241,16 @@ def main() -> int:
         return 1
 
     if not candidates:
-        print("  No new/changed stenograms found. Nothing to process.")
-        return 0
+        print("  No new/changed stenograms found.")
+        if args.analyzer_mode == "llm":
+            model = args.llm_model.strip() or ("llama3.1:8b-8k" if args.llm_provider == "ollama" else "gpt-4o-mini")
+            if _has_pending_llm_work(db_path, model, args.reprocess_session_topics):
+                print("  Pending LLM work detected — skipping baseline, proceeding to LLM steps.")
+            else:
+                print("  No pending LLM work either. Nothing to do.")
+                return 0
+        else:
+            return 0
 
     print(f"  {len(candidates)} stenogram(s) selected:")
     for c in candidates:
@@ -192,39 +272,45 @@ def main() -> int:
         _insert_running_run(conn, run_id)
         conn.commit()
 
-    print(f"\nStep 3/4  Running baseline analyzer ({len(candidates)} file(s))...")
-    if args.analyzer_cmd.strip():
-        proc = subprocess.run(args.analyzer_cmd, shell=True, env=env)
-    else:
-        default_cmd = [sys.executable, "scripts/analyze_interventions.py"]
-        proc = subprocess.run(default_cmd, env=env)
+    # Only run baseline when there are new stenograms — skip when resuming LLM-only work.
+    if candidates:
+        if args.analyzer_cmd.strip():
+            proc = subprocess.run(args.analyzer_cmd, shell=True, env=env)
+        else:
+            default_cmd = [sys.executable, "scripts/analyze_interventions.py"]
+            proc = subprocess.run(default_cmd, env=env)
 
-    with sqlite3.connect(db_path) as conn:
-        conn.execute("PRAGMA foreign_keys = ON;")
-        if proc.returncode != 0:
-            _finish_run(conn, run_id, "failed", 0)
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON;")
+            if proc.returncode != 0:
+                _finish_run(conn, run_id, "failed", 0)
+                conn.commit()
+                print(f"\nBaseline analyzer failed (exit code {proc.returncode}). Nothing was marked processed.")
+                return proc.returncode
+
+            # Mark stenograms as processed right after baseline succeeds.
+            # This ensures that if LLM steps are interrupted, re-running won't redo the baseline.
+            # LLM steps have their own per-item skip logic (topics_source, relevance_source).
+            marked = mark_candidates(conn, candidates, run_id)
             conn.commit()
-            print(f"\nBaseline analyzer failed (exit code {proc.returncode}). Nothing was marked processed.")
-            return proc.returncode
-
-        # Mark stenograms as processed right after baseline succeeds.
-        # This ensures that if LLM steps are interrupted, re-running won't redo the baseline.
-        # LLM steps have their own per-item skip logic (topics_source, relevance_source).
-        marked = mark_candidates(conn, candidates, run_id)
-        conn.commit()
-        print(f"  Stenograms marked as processed: {marked}")
+            print(f"  Stenograms marked as processed: {marked}")
 
     # Optional LLM passes (run outside conn context to avoid lock contention).
     if args.analyzer_mode == "llm":
         # Step 3b: LLM session topic extraction (runs before intervention classification
         # so that LLM-derived session topics are available as grounding context).
-        print(f"\nStep 3b/4  Running LLM session topic extraction...")
+        limit_note = f" (limit={args.llm_sessions_limit})" if args.llm_sessions_limit > 0 else ""
+        print(f"\nStep 3b/4  Running LLM session topic extraction{limit_note}...")
         topics_cmd = [
             sys.executable, "scripts/llm_session_topics.py",
             "--provider", args.llm_provider,
         ]
         if args.llm_model.strip():
             topics_cmd += ["--model", args.llm_model.strip()]
+        if args.reprocess_session_topics:
+            topics_cmd += ["--reprocess-session-topics"]
+        if args.llm_sessions_limit > 0:
+            topics_cmd += ["--limit", str(args.llm_sessions_limit)]
         topics_proc = subprocess.run(topics_cmd, env=env)
         if topics_proc.returncode != 0:
             with sqlite3.connect(db_path) as conn:
@@ -238,9 +324,9 @@ def main() -> int:
         llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
         if args.llm_model.strip():
             llm_cmd += ["--model", args.llm_model.strip()]
-        if args.llm_limit > 0:
-            llm_cmd += ["--limit", str(args.llm_limit)]
-            print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_limit})...")
+        if args.llm_speech_limit > 0:
+            llm_cmd += ["--limit", str(args.llm_speech_limit)]
+            print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_speech_limit})...")
         else:
             print(f"\nStep 3c/4  Running LLM intervention classification (all interventions)...")
         llm_proc = subprocess.run(llm_cmd, env=env)

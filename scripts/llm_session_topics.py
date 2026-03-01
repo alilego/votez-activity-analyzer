@@ -48,7 +48,7 @@ from mcp_server import MCPServer
 
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "llama3.1:8b"
+DEFAULT_MODEL_OLLAMA = "llama3.1:8b-8k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 # How many chunks to sample for topic extraction.
@@ -61,7 +61,13 @@ MAX_TOPICS_PER_SESSION = 20
 MAX_TOPIC_LENGTH = 64
 
 MAX_RETRIES = 3
-RETRY_DELAY_S = 5
+RETRY_DELAY_S = 10
+# Hard timeout per LLM request. If Ollama hangs this raises httpx.ReadTimeout
+# which the retry loop catches. 180s gives headroom for slow M1 inference.
+LLM_REQUEST_TIMEOUT_S = 180
+# Ollama's default runtime context is 4096 tokens — too small for session prompts
+# (~5k tokens). 8192 is sufficient and allocates much faster than 16384 on M1.
+OLLAMA_NUM_CTX = 8192
 
 # ---------------------------------------------------------------------------
 # Prompt
@@ -149,6 +155,7 @@ def _build_client(provider: str, model: str):
         print(f"Provider: OpenAI  |  Model: {model}")
         client = openai_module.OpenAI(api_key=api_key)
         client._model = model
+        client._provider = "openai"
         return client
 
     if provider == "ollama":
@@ -166,6 +173,7 @@ def _build_client(provider: str, model: str):
             )
         client = openai_module.OpenAI(api_key="ollama", base_url=base_url)
         client._model = model
+        client._provider = "ollama"
         return client
 
     raise SystemExit(f"Unknown provider: {provider!r}. Choose 'openai' or 'ollama'.")
@@ -176,13 +184,20 @@ def _chat(client, system: str, user: str, json_mode: bool = False) -> str:
     extra_kwargs: dict = {}
     if json_mode:
         extra_kwargs["response_format"] = {"type": "json_object"}
+    # For Ollama, explicitly set num_ctx so large session prompts are not
+    # silently truncated (Ollama's default runtime context is only 4096 tokens).
+    # Ollama's /v1/chat/completions endpoint reads num_ctx at the top level of the
+    # request body, not nested under "options". extra_body merges into the top level.
+    if getattr(client, "_provider", "") == "ollama":
+        extra_kwargs["extra_body"] = {"num_ctx": OLLAMA_NUM_CTX}
     response = client.chat.completions.create(
-        model=client._model,  # stored below by _build_client
+        model=client._model,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
         temperature=0.0,
+        timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
     )
     return response.choices[0].message.content or ""
@@ -336,20 +351,40 @@ def _load_session_ids(
     db_path: Path,
     stenogram_list_path: Path | None,
     model: str,
+    reprocess: bool = False,
 ) -> list[str]:
     """
-    Return session IDs that need LLM topic extraction with the given model:
-    - sessions from the selected stenograms (if list provided)
-    - that have no topics, only keyword_baseline_v1 topics, or topics from a
-      *different* model (topics_source != 'llm_v1:{model}').
+    Return session IDs that need LLM topic extraction.
+
+    Default (reprocess=False): skip any session already processed by *any* LLM
+      (topics_source LIKE 'llm_v1:%'), regardless of which model was used.
+      This is the safe default — don't redo expensive LLM work unless asked.
+
+    reprocess=True: only skip sessions processed by the *same* model
+      (topics_source = 'llm_v1:{model}'). Use --reprocess-session-topics to
+      force re-extraction with a different or updated model.
     """
-    model_source = f"llm_v1:{model}"
     with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
+        if reprocess:
+            # Skip only exact model match — reprocess sessions from other models.
+            skip_condition = "st.topics_source = ?"
+            skip_param: str | None = f"llm_v1:{model}"
+        else:
+            # Skip any LLM-processed session.
+            skip_condition = "st.topics_source LIKE 'llm_v1:%'"
+            skip_param = None
+
+        paths: list[str] = []
         if stenogram_list_path:
             data = json.loads(stenogram_list_path.read_text(encoding="utf-8"))
             paths = [str(p) for p in data.get("files", [])]
+
+        # When paths is non-empty, restrict to sessions from those stenograms.
+        # When empty (no new stenograms, resuming LLM work), scan all sessions.
+        if paths:
             placeholders = ",".join("?" * len(paths))
+            params: list = [*paths] + ([skip_param] if skip_param is not None else [])
             rows = conn.execute(
                 f"""
                 SELECT DISTINCT sc.session_id
@@ -358,25 +393,26 @@ def _load_session_ids(
                   AND NOT EXISTS (
                       SELECT 1 FROM session_topics st
                       WHERE st.session_id = sc.session_id
-                        AND st.topics_source = ?
+                        AND {skip_condition}
                   )
                 ORDER BY sc.session_id
                 """,
-                [*paths, model_source],
+                params,
             ).fetchall()
         else:
+            params = [skip_param] if skip_param is not None else []
             rows = conn.execute(
-                """
+                f"""
                 SELECT DISTINCT sc.session_id
                 FROM session_chunks sc
                 WHERE NOT EXISTS (
                     SELECT 1 FROM session_topics st
                     WHERE st.session_id = sc.session_id
-                      AND st.topics_source = ?
+                      AND {skip_condition}
                 )
                 ORDER BY sc.session_id
                 """,
-                (model_source,),
+                params,
             ).fetchall()
     return [r["session_id"] for r in rows]
 
@@ -387,6 +423,7 @@ def run_session_topics(
     session_ids: list[str],
     model: str,
     provider: str,
+    reprocess: bool = False,
 ) -> dict:
     client = _build_client(provider, model)
 
@@ -446,6 +483,21 @@ def main() -> int:
         "--session-id",
         help="Extract topics for a single session (for debugging).",
     )
+    parser.add_argument(
+        "--reprocess-session-topics",
+        action="store_true",
+        default=os.environ.get("VOTEZ_REPROCESS_SESSION_TOPICS", "").lower() in ("1", "true"),
+        help=(
+            "Re-extract topics even for sessions already processed by any LLM. "
+            "By default, any session with topics_source LIKE 'llm_v1:%%' is skipped."
+        ),
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Process at most N sessions (0 = all). Useful for testing.",
+    )
     args = parser.parse_args()
 
     if not args.run_id:
@@ -463,13 +515,18 @@ def main() -> int:
         session_ids = [args.session_id]
     else:
         list_path = Path(args.stenogram_list_path) if args.stenogram_list_path else None
-        session_ids = _load_session_ids(db_path, list_path, model)
+        session_ids = _load_session_ids(db_path, list_path, model, reprocess=args.reprocess_session_topics)
 
     if not session_ids:
         print("No sessions need LLM topic extraction. Nothing to do.")
         return 0
 
-    print(f"Session topic extraction: {len(session_ids)} session(s) (run_id={args.run_id})")
+    if args.limit > 0:
+        session_ids = session_ids[: args.limit]
+
+    reprocess_note = "  (reprocess=True — overwriting existing LLM topics)" if args.reprocess_session_topics else ""
+    limit_note = f"  (limit={args.limit})" if args.limit > 0 else ""
+    print(f"Session topic extraction: {len(session_ids)} session(s) (run_id={args.run_id}){reprocess_note}{limit_note}")
 
     summary = run_session_topics(
         db_path=db_path,
@@ -477,6 +534,7 @@ def main() -> int:
         session_ids=session_ids,
         model=model,
         provider=args.provider,
+        reprocess=args.reprocess_session_topics,
     )
 
     print(

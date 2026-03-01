@@ -67,12 +67,18 @@ from mcp_server import MCPServer
 
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "llama3.1:8b"
+DEFAULT_MODEL_OLLAMA = "llama3.1:8b-8k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 # Retry on transient API errors
 MAX_RETRIES = 3
-RETRY_DELAY_S = 5
+RETRY_DELAY_S = 10
+# Hard timeout per LLM request. If Ollama hangs this raises httpx.ReadTimeout
+# which the retry loop catches. 180s gives headroom for slow M1 inference.
+LLM_REQUEST_TIMEOUT_S = 180
+# Ollama's default runtime context is 4096 tokens — too small for intervention prompts
+# (~2-3k tokens with context chunks). 8192 is sufficient and faster to allocate than 16384.
+OLLAMA_NUM_CTX = 8192
 
 # ---------------------------------------------------------------------------
 # System prompt (the full classification rubric, compact form)
@@ -162,6 +168,12 @@ def _call_llm(model: str, user_message: str, client, provider: str) -> dict:
     extra_kwargs: dict = {}
     if provider in ("openai", "ollama"):
         extra_kwargs["response_format"] = {"type": "json_object"}
+    # For Ollama, explicitly set num_ctx so large prompts are not
+    # silently truncated (Ollama's default runtime context is only 4096 tokens).
+    # Ollama's /v1/chat/completions endpoint reads num_ctx at the top level of the
+    # request body, not nested under "options". extra_body merges into the top level.
+    if provider == "ollama":
+        extra_kwargs["extra_body"] = {"num_ctx": OLLAMA_NUM_CTX}
 
     response = client.chat.completions.create(
         model=model,
@@ -170,6 +182,7 @@ def _call_llm(model: str, user_message: str, client, provider: str) -> dict:
             {"role": "user", "content": user_message},
         ],
         temperature=0.0,  # deterministic
+        timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
     )
     content = response.choices[0].message.content
@@ -441,9 +454,14 @@ def _load_intervention_ids(
     Skips interventions already classified by the LLM in this run.
     """
     with sqlite3.connect(db_path) as conn:
+        paths: list[str] = []
         if stenogram_list_path:
             data = json.loads(stenogram_list_path.read_text(encoding="utf-8"))
             paths = [str(p) for p in data.get("files", [])]
+
+        # When paths is non-empty, restrict to interventions from those stenograms.
+        # When empty (no new stenograms, resuming LLM work), scan all interventions.
+        if paths:
             placeholders = ",".join("?" * len(paths))
             rows = conn.execute(
                 f"""

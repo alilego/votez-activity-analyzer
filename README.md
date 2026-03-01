@@ -27,11 +27,21 @@ Download from [ollama.com](https://ollama.com) or via Homebrew:
 brew install ollama
 ```
 
-Pull the model (one-time, ~4.9 GB):
+Pull the base model (one-time, ~4.9 GB) and create the 8k-context variant used by the pipeline:
 
 ```bash
 ollama pull llama3.1:8b
+
+ollama create llama3.1:8b-8k -f - << 'EOF'
+FROM llama3.1:8b
+PARAMETER num_ctx 8192
+EOF
 ```
+
+> **Why `llama3.1:8b-8k`?** Ollama's default runtime context is 4096 tokens, which is too
+> small for session topic prompts (~5k tokens). The `-8k` variant bakes in `num_ctx=8192`
+> so the model always loads with the correct context window. No extra disk space is used —
+> it references the same weights with a different manifest.
 
 ---
 
@@ -55,8 +65,20 @@ This processes only new/changed stenograms, classifies every intervention via LL
 
 > **First time?** Test on a small batch before running the full set:
 > ```bash
-> python3 scripts/run_pipeline.py --analyzer-mode llm --llm-limit 10
+> # Extract topics for 3 sessions + classify 10 speeches — good end-to-end smoke test
+> python3 scripts/run_pipeline.py --analyzer-mode llm --llm-sessions-limit 3 --llm-speech-limit 10
+>
+> # Extract topics only (no intervention classification)
+> python3 scripts/run_pipeline.py --analyzer-mode llm --llm-sessions-limit 3 --llm-speech-limit 0
+>
+> # Classify speeches only (sessions already have LLM topics)
+> python3 scripts/run_pipeline.py --analyzer-mode llm --llm-speech-limit 10
 > ```
+>
+> | Flag | Limits | Default |
+> |------|--------|---------|
+> | `--llm-sessions-limit N` | Session topic extraction (step 3b) | 0 = all |
+> | `--llm-speech-limit N` | Intervention classification (step 3c) | 0 = all |
 
 ### Run baseline only (no LLM, no Ollama needed)
 
@@ -89,21 +111,30 @@ python3 scripts/run_pipeline.py --dry-run
 ### LLM pass (`--analyzer-mode llm`, runs after baseline — two sub-steps)
 
 **Step 3b — Session topic extraction** (`llm_session_topics.py`):
-- For each session, sends `initial_notes` + first 12 early speeches to the LLM
-- Extracts the real legislative/policy topics (e.g. "reforma pensiilor", "PL-x 123/2025")
-- Replaces the keyword-taxonomy topics from baseline
-- Stored with `topics_source='llm_v1'` for auditability
+- For each session, samples 20 chunks evenly across the full session timeline (filtering out short procedural lines)
+- Uses a two-step LLM call: first extracts free-form bullet list of subjects, then distils into structured JSON — this produces better quality topics than asking directly for JSON on small models
+- Skips sessions already processed by **any** LLM (any `topics_source LIKE 'llm_v1:%'`) by default
+- Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:llama3.1:8b`) for auditability
 
 **Step 3c — Intervention classification** (`llm_agent.py`):
 - For each intervention, retrieves grounded context via hybrid RAG (session notes + neighbors + similarity)
 - Sends intervention + LLM session topics + classification rubric to the LLM
 - Stores label, topics, confidence, and evidence chunk IDs via MCP
 - Source is stamped as `llm_agent_v1` for auditability
+- Baseline labels (`constructiveness_baseline_v1`) are **never overwritten** by a re-run of the baseline — only LLM can upgrade them
 
 Run session topic extraction alone (useful for debugging):
 
 ```bash
 python3 scripts/llm_session_topics.py --session-id 8846 --run-id <run_id>
+```
+
+Force re-extraction of session topics (e.g. after switching models):
+
+```bash
+python3 scripts/run_pipeline.py --analyzer-mode llm --reprocess-session-topics
+# or with a specific model:
+python3 scripts/run_pipeline.py --analyzer-mode llm --llm-model mistral --reprocess-session-topics
 ```
 
 ---
@@ -181,7 +212,7 @@ When using `--analyzer-cmd`, these env vars are injected:
 | `interventions_raw` | All parsed interventions |
 | `intervention_analysis` | Labels, topics, confidence, evidence chunk IDs, source |
 | `session_chunks` | RAG chunks per session |
-| `session_topics` | Derived session topics |
+| `session_topics` | Derived session topics (`topics_source`: `keyword_baseline_v1` or `llm_v1:{model}`) |
 | `unmatched_speakers` | Speakers that could not be resolved |
 | `run_outputs` | Run summary stats |
 
