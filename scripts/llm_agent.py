@@ -482,13 +482,35 @@ def run_agent(
 # ---------------------------------------------------------------------------
 
 def _load_intervention_ids(
-    db_path: Path, run_id: str, stenogram_list_path: Path | None
+    db_path: Path,
+    run_id: str,
+    stenogram_list_path: Path | None,
+    session_id: str | None = None,
 ) -> list[str]:
     """
     Return all intervention IDs for matched members in the selected stenograms.
     Skips interventions already classified by the LLM in this run.
+    If session_id is given, restrict to that session regardless of stenogram list.
     """
     with sqlite3.connect(db_path) as conn:
+        if session_id:
+            rows = conn.execute(
+                """
+                SELECT ir.intervention_id
+                FROM interventions_raw ir
+                WHERE ir.member_id IS NOT NULL
+                  AND ir.session_id = ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM intervention_analysis ia
+                      WHERE ia.intervention_id = ir.intervention_id
+                        AND ia.relevance_source = 'llm_agent_v1'
+                  )
+                ORDER BY ir.session_date, ir.session_id, ir.speech_index
+                """,
+                (session_id,),
+            ).fetchall()
+            return [r[0] for r in rows]
+
         paths: list[str] = []
         if stenogram_list_path:
             data = json.loads(stenogram_list_path.read_text(encoding="utf-8"))
@@ -556,6 +578,10 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--session-id",
+        help="Classify all interventions for a single session. Skips the stenogram list.",
+    )
+    parser.add_argument(
         "--intervention-id",
         help="Classify a single intervention (for debugging). Skips the stenogram list.",
     )
@@ -586,7 +612,7 @@ def main() -> int:
         intervention_ids = [args.intervention_id]
     else:
         list_path = Path(args.stenogram_list_path) if args.stenogram_list_path else None
-        intervention_ids = _load_intervention_ids(db_path, args.run_id, list_path)
+        intervention_ids = _load_intervention_ids(db_path, args.run_id, list_path, session_id=args.session_id)
 
     if args.limit > 0:
         intervention_ids = intervention_ids[: args.limit]

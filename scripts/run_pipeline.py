@@ -23,7 +23,7 @@ from pathlib import Path
 
 from init_db import init_db
 from mark_processed_stenograms import mark_candidates
-from select_stenograms import DEFAULT_DB_PATH, DEFAULT_INPUT_DIR, select_candidates
+from select_stenograms import DEFAULT_DB_PATH, DEFAULT_INPUT_DIR, StenogramCandidate, select_candidates
 
 
 def _default_run_id() -> str:
@@ -196,6 +196,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--stenogram",
+        default="",
+        help=(
+            "Path to a single stenogram file to (re)process. "
+            "Bypasses the file-selection step and forces the full LLM pipeline "
+            "for that file only. Implies --reprocess-session-topics for that session."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Only list selected files and exit.",
@@ -233,28 +242,62 @@ def main() -> int:
     init_db(db_path)
     print(f"  DB ready: {db_path}")
 
-    print("\nStep 2/4  Selecting stenograms...")
-    try:
-        candidates = select_candidates(db_path=db_path, input_dir=input_dir, repo_root=repo_root)
-    except RuntimeError as exc:
-        print(f"ERROR: {exc}")
-        return 1
+    # --stenogram: bypass file selection, force a single file through the pipeline.
+    forced_session_id: str | None = None
+    if args.stenogram.strip():
+        forced_path = str(Path(args.stenogram.strip()))
+        print(f"\nStep 2/4  Forced stenogram: {forced_path}")
+        # Resolve session_id for this stenogram from the DB.
+        with sqlite3.connect(db_path) as conn:
+            row = conn.execute(
+                "SELECT DISTINCT session_id FROM session_chunks WHERE stenogram_path = ? LIMIT 1",
+                (forced_path,),
+            ).fetchone()
+        if row is None:
+            print(f"  ERROR: stenogram '{forced_path}' not found in DB. Run the baseline first.")
+            return 1
+        forced_session_id = row[0]
+        print(f"  session_id={forced_session_id}")
+        # Reset LLM analysis for this session so it is fully reprocessed.
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON;")
+            n_ia = conn.execute(
+                """DELETE FROM intervention_analysis
+                   WHERE intervention_id IN (
+                       SELECT intervention_id FROM interventions_raw WHERE session_id = ?
+                   ) AND relevance_source = 'llm_agent_v1'""",
+                (forced_session_id,),
+            ).rowcount
+            conn.execute(
+                "UPDATE session_topics SET topics_source='keyword_baseline_v1', updated_at=CURRENT_TIMESTAMP WHERE session_id=?",
+                (forced_session_id,),
+            )
+            conn.commit()
+        print(f"  Reset: {n_ia} intervention_analysis rows + session_topics for session {forced_session_id}")
+        candidates = [StenogramCandidate(path=str(forced_path), content_hash="", file_mtime_ns=0, reason="forced")]
+    else:
+        print("\nStep 2/4  Selecting stenograms...")
+        try:
+            candidates = select_candidates(db_path=db_path, input_dir=input_dir, repo_root=repo_root)
+        except RuntimeError as exc:
+            print(f"ERROR: {exc}")
+            return 1
 
-    if not candidates:
-        print("  No new/changed stenograms found.")
-        if args.analyzer_mode == "llm":
-            model = args.llm_model.strip() or ("llama3.1:8b-8k" if args.llm_provider == "ollama" else "gpt-4o-mini")
-            if _has_pending_llm_work(db_path, model, args.reprocess_session_topics):
-                print("  Pending LLM work detected — skipping baseline, proceeding to LLM steps.")
+        if not candidates:
+            print("  No new/changed stenograms found.")
+            if args.analyzer_mode == "llm":
+                model = args.llm_model.strip() or ("llama3.1:8b-8k" if args.llm_provider == "ollama" else "gpt-4o-mini")
+                if _has_pending_llm_work(db_path, model, args.reprocess_session_topics):
+                    print("  Pending LLM work detected — skipping baseline, proceeding to LLM steps.")
+                else:
+                    print("  No pending LLM work either. Nothing to do.")
+                    return 0
             else:
-                print("  No pending LLM work either. Nothing to do.")
                 return 0
-        else:
-            return 0
 
-    print(f"  {len(candidates)} stenogram(s) selected:")
-    for c in candidates:
-        print(f"    {c.path}  [{c.reason}]")
+        print(f"  {len(candidates)} stenogram(s) selected:")
+        for c in candidates:
+            print(f"    {c.path}  [{c.reason}]")
 
     if args.dry_run:
         print("\nDry run: exiting without processing.")
@@ -307,7 +350,9 @@ def main() -> int:
         ]
         if args.llm_model.strip():
             topics_cmd += ["--model", args.llm_model.strip()]
-        if args.reprocess_session_topics:
+        if forced_session_id:
+            topics_cmd += ["--session-id", forced_session_id, "--reprocess-session-topics"]
+        elif args.reprocess_session_topics:
             topics_cmd += ["--reprocess-session-topics"]
         if args.llm_sessions_limit > 0:
             topics_cmd += ["--limit", str(args.llm_sessions_limit)]
@@ -324,6 +369,8 @@ def main() -> int:
         llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
         if args.llm_model.strip():
             llm_cmd += ["--model", args.llm_model.strip()]
+        if forced_session_id:
+            llm_cmd += ["--session-id", forced_session_id]
         if args.llm_speech_limit > 0:
             llm_cmd += ["--limit", str(args.llm_speech_limit)]
             print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_speech_limit})...")

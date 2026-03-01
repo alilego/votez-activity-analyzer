@@ -75,6 +75,41 @@ def _load_session_links() -> dict[str, str]:
     return mapping
 
 
+def _export_session_topics(conn: sqlite3.Connection, topics_dir: Path, session_links: dict[str, str]) -> int:
+    """Write one JSON file per session to outputs/session_topics/."""
+    topics_dir.mkdir(parents=True, exist_ok=True)
+    rows = conn.execute(
+        """
+        SELECT st.session_id, st.topics_json, st.topics_source, st.updated_at,
+               MIN(sc.stenogram_path) AS stenogram_path
+        FROM session_topics st
+        JOIN session_chunks sc ON sc.session_id = st.session_id
+        GROUP BY st.session_id
+        ORDER BY st.session_id
+        """
+    ).fetchall()
+    written = 0
+    for row in rows:
+        session_id, topics_json_raw, topics_source, updated_at, stenogram_path = row
+        try:
+            topics = json.loads(topics_json_raw or "[]")
+        except json.JSONDecodeError:
+            topics = []
+        stenogram_name = Path(stenogram_path).stem if stenogram_path else session_id
+        out = {
+            "session_id": session_id,
+            "stenogram": stenogram_name,
+            "source_url": session_links.get(str(session_id), ""),
+            "topics_source": topics_source,
+            "updated_at": updated_at,
+            "topics": topics,
+        }
+        out_file = topics_dir / f"topics_for_{stenogram_name}.json"
+        out_file.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+        written += 1
+    return written
+
+
 def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
     init_db(db_path)
     print(f"Export: loading data from {db_path}...")
@@ -147,6 +182,13 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "stenogram_link": session_links.get(str(session_id), ""),
             }
         )
+
+    # Session topics — one file per stenogram, always overwrite.
+    topics_dir = output_dir / "session_topics"
+    print(f"  Exporting session topics to {topics_dir}...")
+    with sqlite3.connect(db_path) as topics_conn:
+        n_topics = _export_session_topics(topics_conn, topics_dir, session_links)
+    print(f"  Written: {n_topics} session topic file(s) → {topics_dir}")
 
     members_dir = output_dir / "members"
     parties_dir = output_dir / "parties"
