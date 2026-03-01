@@ -27,21 +27,26 @@ Download from [ollama.com](https://ollama.com) or via Homebrew:
 brew install ollama
 ```
 
-Pull the base model (one-time, ~4.9 GB) and create the 8k-context variant used by the pipeline:
+Pull the model (one-time, ~4.7 GB) and create the 32k-context variant used by the pipeline:
 
 ```bash
-ollama pull llama3.1:8b
+ollama pull qwen2.5:7b
 
-ollama create llama3.1:8b-8k -f - << 'EOF'
-FROM llama3.1:8b
-PARAMETER num_ctx 8192
+ollama create qwen2.5:7b-32k -f - << 'EOF'
+FROM qwen2.5:7b
+PARAMETER num_ctx 32768
 EOF
 ```
 
-> **Why `llama3.1:8b-8k`?** Ollama's default runtime context is 4096 tokens, which is too
-> small for session topic prompts (~5k tokens). The `-8k` variant bakes in `num_ctx=8192`
-> so the model always loads with the correct context window. No extra disk space is used —
-> it references the same weights with a different manifest.
+> **Why `qwen2.5:7b-32k`?** Ollama's default runtime context is 4096 tokens. The `-32k`
+> variant bakes in `num_ctx=32768`, giving the model enough context to receive an entire
+> parliamentary session (~15–20k tokens) in a **single call** for topic extraction — no
+> map-reduce splitting needed. No extra disk space is used; it references the same weights
+> with a different manifest.
+>
+> **Legacy model** (`llama3.1:8b-8k`) still works if already set up — pass
+> `--llm-model llama3.1:8b-8k` to use it. The pipeline will automatically fall back to
+> map-reduce for any model with `num_ctx < 32768`.
 
 ---
 
@@ -65,6 +70,9 @@ This processes only new/changed stenograms, classifies every intervention via LL
 
 > **First time?** Test on a small batch before running the full set:
 > ```bash
+> # Run a single stenogram end-to-end (topics + interventions) — fastest feedback loop
+> python3 scripts/run_pipeline.py --analyzer-mode llm --stenogram input/stenograme/stenograma_2025-02-19_1.json
+>
 > # Extract topics for 3 sessions + classify 10 speeches — good end-to-end smoke test
 > python3 scripts/run_pipeline.py --analyzer-mode llm --llm-sessions-limit 3 --llm-speech-limit 10
 >
@@ -74,6 +82,8 @@ This processes only new/changed stenograms, classifies every intervention via LL
 > # Classify speeches only (sessions already have LLM topics)
 > python3 scripts/run_pipeline.py --analyzer-mode llm --llm-speech-limit 10
 > ```
+>
+> `--stenogram` resets and fully reprocesses that session's topics and interventions on every run — useful when iterating on prompts.
 >
 > | Flag | Limits | Default |
 > |------|--------|---------|
@@ -111,10 +121,10 @@ python3 scripts/run_pipeline.py --dry-run
 ### LLM pass (`--analyzer-mode llm`, runs after baseline — two sub-steps)
 
 **Step 3b — Session topic extraction** (`llm_session_topics.py`):
-- For each session, samples 20 chunks evenly across the full session timeline (filtering out short procedural lines)
-- Uses a two-step LLM call: first extracts free-form bullet list of subjects, then distils into structured JSON — this produces better quality topics than asking directly for JSON on small models
+- **Single-pass mode** (default with `qwen2.5:7b-32k`): sends the entire session to the LLM in one call for higher coverage and quality
+- **Map-reduce fallback**: used automatically for small-context models (`llama3.1:8b-8k`) or sessions > 80k chars — splits into windows, extracts bullet lists per window, then merges into structured topics
 - Skips sessions already processed by **any** LLM (any `topics_source LIKE 'llm_v1:%'`) by default
-- Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:llama3.1:8b`) for auditability
+- Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:qwen2.5:7b-32k`) for auditability
 
 **Step 3c — Intervention classification** (`llm_agent.py`):
 - For each intervention, retrieves grounded context via hybrid RAG (session notes + neighbors + similarity)

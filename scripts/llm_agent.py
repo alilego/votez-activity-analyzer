@@ -67,7 +67,7 @@ from mcp_server import MCPServer
 
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "llama3.1:8b-8k"
+DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 # Retry on transient API errors
@@ -76,9 +76,10 @@ RETRY_DELAY_S = 10
 # Hard timeout per LLM request. If Ollama hangs this raises httpx.ReadTimeout
 # which the retry loop catches. 180s gives headroom for slow M1 inference.
 LLM_REQUEST_TIMEOUT_S = 180
-# Ollama's default runtime context is 4096 tokens — too small for intervention prompts
-# (~2-3k tokens with context chunks). 8192 is sufficient and faster to allocate than 16384.
-OLLAMA_NUM_CTX = 8192
+# num_ctx for qwen2.5:7b-32k. Intervention prompts are ~2–4k tokens so 8k was
+# sufficient, but 32k allows the full session topics block to be injected without
+# risk of truncation on longer sessions.
+OLLAMA_NUM_CTX = 32768
 
 # ---------------------------------------------------------------------------
 # System prompt (the full classification rubric, compact form)
@@ -268,11 +269,14 @@ def _validate_llm_response(data: dict, config: dict, retrieved_chunk_ids: set[st
         evidence_raw = []
     evidence = [str(cid) for cid in evidence_raw if str(cid) in retrieved_chunk_ids]
 
+    reasoning = str(data.get("reasoning", "")).strip()
+
     return {
         "constructiveness_label": label,
         "topics": topics,
         "confidence": confidence,
         "evidence_chunk_ids": evidence,
+        "reasoning": reasoning,
     }
 
 

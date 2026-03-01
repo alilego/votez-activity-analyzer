@@ -443,6 +443,7 @@ class MCPServer:
         topics_raw = params.get("topics", [])
         confidence = params.get("confidence")
         evidence_ids_raw = params.get("evidence_chunk_ids", [])
+        reasoning = str(params.get("reasoning") or "").strip() or None
 
         # --- Validate: required fields ---
         if not intervention_id:
@@ -523,7 +524,7 @@ class MCPServer:
         # --- Idempotency: check if identical payload already stored ---
         existing = self._conn.execute(
             """
-            SELECT relevance_label, topics_json, confidence, evidence_chunk_ids_json
+            SELECT relevance_label, topics_json, confidence, evidence_chunk_ids_json, reasoning
             FROM intervention_analysis
             WHERE intervention_id = ?
             """,
@@ -539,6 +540,7 @@ class MCPServer:
                 and existing["topics_json"] == new_topics_json
                 and abs((existing["confidence"] or 0.0) - confidence) < 1e-9
                 and existing["evidence_chunk_ids_json"] == new_evidence_json
+                and (existing["reasoning"] or None) == reasoning
             )
             if same:
                 # Exact match — idempotent no-op.
@@ -559,9 +561,9 @@ class MCPServer:
             INSERT INTO intervention_analysis (
                 intervention_id, run_id, relevance_label, relevance_source,
                 topics_json, confidence, evidence_chunk_ids_json,
-                analysis_version, updated_at
+                analysis_version, reasoning, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(intervention_id) DO UPDATE SET
                 run_id                 = excluded.run_id,
                 relevance_label        = excluded.relevance_label,
@@ -570,6 +572,7 @@ class MCPServer:
                 confidence             = excluded.confidence,
                 evidence_chunk_ids_json = excluded.evidence_chunk_ids_json,
                 analysis_version       = excluded.analysis_version,
+                reasoning              = excluded.reasoning,
                 updated_at             = excluded.updated_at
             """,
             (
@@ -581,6 +584,7 @@ class MCPServer:
                 confidence,
                 new_evidence_json,
                 ANALYSIS_VERSION,
+                reasoning,
                 now,
             ),
         )

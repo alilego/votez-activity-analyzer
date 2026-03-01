@@ -110,6 +110,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             confidence REAL, -- nullable in scaffolding stage
             evidence_chunk_ids_json TEXT NOT NULL, -- JSON array of strings
             analysis_version TEXT NOT NULL DEFAULT 'scaffold_v1',
+            reasoning TEXT, -- one-sentence explanation from the LLM (NULL for baseline)
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (intervention_id) REFERENCES interventions_raw(intervention_id),
@@ -194,6 +195,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             st.topics_json AS session_topics_json,
             ia.evidence_chunk_ids_json,
             ia.analysis_version,
+            ia.reasoning,
             iv.created_at AS raw_created_at,
             iv.updated_at AS raw_updated_at,
             ia.created_at AS analysis_created_at,
@@ -218,6 +220,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     for migration in [
         "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'",
         "ALTER TABLE session_topics ADD COLUMN topics_source TEXT NOT NULL DEFAULT 'keyword_baseline_v1'",
+        "ALTER TABLE intervention_analysis ADD COLUMN reasoning TEXT",
     ]:
         try:
             conn.execute(migration)

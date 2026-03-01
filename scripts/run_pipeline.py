@@ -18,8 +18,13 @@ import os
 import sqlite3
 import subprocess
 import sys
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Suppress urllib3's LibreSSL warning on macOS — the system Python ships with
+# LibreSSL instead of OpenSSL; the warning is cosmetic and not actionable.
+warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 
 from init_db import init_db
 from mark_processed_stenograms import mark_candidates

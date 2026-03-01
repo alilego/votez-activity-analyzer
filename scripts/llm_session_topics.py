@@ -53,14 +53,25 @@ from mcp_server import MCPServer
 
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "llama3.1:8b-8k"
+DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
-# Map-reduce parameters.
-# Consecutive substantive chunks are grouped greedily up to MAX_WINDOW_CHARS total.
+# Single-pass mode: each chunk is capped at this length before being concatenated
+# into one large prompt. This is different from MAP_CHUNK_CHARS (used in map-reduce)
+# because single-pass needs to fit the ENTIRE session in one context window.
+# qwen2.5:7b-32k: 32,768 tokens × 80% = ~26,200 usable tokens.
+# Reserve ~600 tokens for the system prompt and ~2,048 for output → ~23,500 tokens for session text.
+# 23,500 tokens × 3.5 chars/token (Romanian text is denser than English) ≈ 82,000 chars budget.
+# Divide by max observed substantive chunks (142) → ~578 chars/chunk cap.
+# Use 600 chars as a round number — enough for most speech summaries while fitting the budget.
+SINGLE_PASS_CHUNK_CHARS = 600  # per-chunk cap in single-pass mode
+# Total budget for single-pass: if capped total > this, fall back to map-reduce.
+LARGE_CTX_THRESHOLD_CHARS = 82_000  # ~23k tokens — 80% of qwen2.5:7b-32k's 32k context
+
+# Map-reduce parameters (used for small-context models or very large sessions).
 # Budget: 8,192 ctx × 80% = 6,554 usable tokens × ~4 chars/token ≈ 26,000 chars.
 # Subtract system prompt (~400 tokens = ~1,600 chars) and map output (~512 tokens = ~2,000 chars).
-# Net window budget: ~22,000 chars ≈ 5,500 tokens — safely within 80% of the ctx window.
+# Net window budget: ~22,000 chars ≈ 5,500 tokens — safely within 80% of the 8k ctx window.
 MAX_WINDOW_CHARS = 22000
 # Individual chunk text is capped so one very long speech cannot monopolise a window.
 # 4,000 chars ≈ 1,000 tokens — enough to capture a speech's full argument while still
@@ -79,11 +90,13 @@ MAX_REDUCE_BATCH_CHARS = 19000
 MAX_RETRIES = 3
 RETRY_DELAY_S = 10
 # Hard timeout per LLM request. If Ollama hangs this raises httpx.ReadTimeout
-# which the retry loop catches. 180s gives headroom for slow M1 inference.
-LLM_REQUEST_TIMEOUT_S = 180
-# Ollama's default runtime context is 4096 tokens — too small for session prompts
-# (~5k tokens). 8192 is sufficient and allocates much faster than 16384 on M1.
-OLLAMA_NUM_CTX = 8192
+# which the retry loop catches. 300s gives extra headroom for the large single-pass call.
+LLM_REQUEST_TIMEOUT_S = 300
+# num_ctx for large-context models (qwen2.5:7b-32k). Ollama reads this at the
+# top level of the request body so it is passed via extra_body.
+OLLAMA_NUM_CTX = 32768
+# Fallback num_ctx for small-context models (llama3.1:8b-8k).
+OLLAMA_NUM_CTX_SMALL = 8192
 
 # ---------------------------------------------------------------------------
 # Prompts — map-reduce
@@ -344,6 +357,63 @@ def _reduce(client, session_header: str, window_results: list[str]) -> dict:
     return {"topics": final_topics, "session_summary": ""}
 
 
+SINGLE_PASS_SYSTEM = """You are an expert analyst of Romanian Parliament plenary sessions.
+
+You will receive the full transcript of one session as a numbered list of speech fragments.
+Your task: read the entire text and produce a structured list of up to 20 specific topics debated.
+
+Output format — respond with ONLY valid JSON, no prose, no markdown fences:
+{
+  "topics": [
+    {"label": "LABEL_MAX_10_WORDS_IN_ROMANIAN", "description": "ONE_SENTENCE_IN_ROMANIAN_WITH_ALL_DETAILS", "law_id": "IDENTIFIER_OR_NULL"},
+    ...
+  ],
+  "session_summary": "ONE_SENTENCE_OVERVIEW"
+}
+
+Rules:
+- label: maximum 10 words in Romanian. If a law/bill is the topic include its identifier (e.g. "Reforma pensiilor PL-x 45/2025"). Never cut a label mid-phrase.
+- description: one sentence in Romanian. Must include: (a) what the topic is actually about, (b) all specific details from the text — amounts, ALL locations, institutions, percentages. If a law is mentioned, state what it regulates.
+- law_id: bill/law/ordinance identifier if present (e.g. "PL-x 45/2025", "OUG 114/2018"), otherwise null.
+- COMBINING: if multiple speeches cover the same subject with different locations or amounts, COMBINE into ONE entry listing ALL details.
+- CRITICAL: every label, description and law_id MUST be grounded in the text. Do NOT invent details.
+- Drop generic entries like "buget", "legislație", "procedură" unless paired with a specific amount/date/institution.
+- Keep up to 20 topics. Prefer specificity over quantity."""
+
+
+def _build_single_pass_message(session_header: str, chunks: list[dict]) -> str:
+    """Build a single large user message containing all session chunks."""
+    parts = [session_header, "Full session transcript (all fragments):"]
+    for i, chunk in enumerate(chunks, 1):
+        parts.append(f"[{i}] {chunk['text'].strip()}")
+    parts.append("Extract the structured topic list from the full transcript above.")
+    return "\n\n".join(parts)
+
+
+def _call_single_pass(client, session_header: str, chunks: list[dict]) -> dict:
+    """Single-pass topic extraction for large-context models.
+
+    Sends the entire session in one LLM call. Only used when the model's
+    context window is large enough (signalled by OLLAMA_NUM_CTX >= 32768)
+    and the session text fits within LARGE_CTX_THRESHOLD_CHARS.
+    """
+    user_msg = _build_single_pass_message(session_header, chunks)
+    total_chars = len(user_msg)
+    print(f"  Single-pass: {len(chunks)} chunks, {total_chars:,} chars in one call")
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            raw = _chat(client, SINGLE_PASS_SYSTEM, user_msg, json_mode=True, max_tokens=2048)
+            topics = _parse_topics(raw)
+            print(f"  Single-pass result: {len(topics)} topics  (first 120 chars: {raw[:120]!r})")
+            return {"topics": topics, "session_summary": ""}
+        except (json.JSONDecodeError, ValueError) as exc:
+            print(f"  Single-pass attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    return {"topics": [], "session_summary": ""}
+
+
 def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]) -> dict:
     """
     Map-reduce topic extraction.
@@ -446,17 +516,50 @@ def extract_session_topics(
         f"substantive={len(speech_pool)}/{len(all_rows)} chunks"
     )
 
-    # Cap each chunk to MAX_CHUNK_CHARS so no single long speech overflows a window.
-    # Long speeches are truncated with an ellipsis marker so the model knows more follows.
-    substantive_chunks = [
-        {
-            "chunk_id": r["chunk_id"],
-            "chunk_type": r["chunk_type"],
-            "text": r["text"][:MAX_CHUNK_CHARS] + ("…" if len(r["text"]) > MAX_CHUNK_CHARS else ""),
-        }
-        for r in speech_pool
-    ]
-    llm_data = _call_map_reduce(client, session_header, substantive_chunks)
+    # For large-context models (OLLAMA_NUM_CTX >= 32768) send the full session in
+    # one call when the total text fits within LARGE_CTX_THRESHOLD_CHARS.
+    # For small-context models or very large sessions fall back to map-reduce.
+    is_large_ctx = getattr(client, "_provider", "") != "ollama" or OLLAMA_NUM_CTX >= 32768
+    full_text_chars = sum(len(r["text"]) for r in speech_pool)
+
+    if is_large_ctx:
+        # Single-pass: cap each chunk at SINGLE_PASS_CHUNK_CHARS so the whole session
+        # fits in the 32k context window, then check the capped total.
+        single_pass_chunks = [
+            {
+                "chunk_id": r["chunk_id"],
+                "chunk_type": r["chunk_type"],
+                "text": r["text"][:SINGLE_PASS_CHUNK_CHARS] + ("…" if len(r["text"]) > SINGLE_PASS_CHUNK_CHARS else ""),
+            }
+            for r in speech_pool
+        ]
+        capped_total = sum(len(c["text"]) for c in single_pass_chunks)
+        if capped_total <= LARGE_CTX_THRESHOLD_CHARS:
+            print(f"  Mode: single-pass (large-ctx model, capped total {capped_total:,} chars ≤ {LARGE_CTX_THRESHOLD_CHARS:,})")
+            llm_data = _call_single_pass(client, session_header, single_pass_chunks)
+        else:
+            print(f"  Mode: map-reduce (capped total {capped_total:,} chars > {LARGE_CTX_THRESHOLD_CHARS:,}, too many chunks)")
+            substantive_chunks = [
+                {
+                    "chunk_id": r["chunk_id"],
+                    "chunk_type": r["chunk_type"],
+                    "text": r["text"][:MAX_CHUNK_CHARS] + ("…" if len(r["text"]) > MAX_CHUNK_CHARS else ""),
+                }
+                for r in speech_pool
+            ]
+            llm_data = _call_map_reduce(client, session_header, substantive_chunks)
+    else:
+        # Map-reduce: small-context model.
+        print(f"  Mode: map-reduce (small-ctx model)")
+        substantive_chunks = [
+            {
+                "chunk_id": r["chunk_id"],
+                "chunk_type": r["chunk_type"],
+                "text": r["text"][:MAX_CHUNK_CHARS] + ("…" if len(r["text"]) > MAX_CHUNK_CHARS else ""),
+            }
+            for r in speech_pool
+        ]
+        llm_data = _call_map_reduce(client, session_header, substantive_chunks)
 
     topics = llm_data.get("topics", [])
     session_summary = llm_data.get("session_summary", "")
