@@ -151,6 +151,7 @@ def main() -> int:
         provider = args.llm_provider
         model_hint = args.llm_model or ("llama3.1:8b" if provider == "ollama" else "gpt-4o-mini")
         print(f"  Provider:  {provider}  model={model_hint}")
+        print(f"  LLM steps: 3b) session topics  3c) intervention classification")
     print(f"{'='*60}\n")
 
     # Always bootstrap DB on pipeline start:
@@ -206,29 +207,56 @@ def main() -> int:
             print(f"\nBaseline analyzer failed (exit code {proc.returncode}). Nothing was marked processed.")
             return proc.returncode
 
-    # Optional LLM agent pass (runs outside the above conn context to avoid lock contention).
+        # Mark stenograms as processed right after baseline succeeds.
+        # This ensures that if LLM steps are interrupted, re-running won't redo the baseline.
+        # LLM steps have their own per-item skip logic (topics_source, relevance_source).
+        marked = mark_candidates(conn, candidates, run_id)
+        conn.commit()
+        print(f"  Stenograms marked as processed: {marked}")
+
+    # Optional LLM passes (run outside conn context to avoid lock contention).
     if args.analyzer_mode == "llm":
+        # Step 3b: LLM session topic extraction (runs before intervention classification
+        # so that LLM-derived session topics are available as grounding context).
+        print(f"\nStep 3b/4  Running LLM session topic extraction...")
+        topics_cmd = [
+            sys.executable, "scripts/llm_session_topics.py",
+            "--provider", args.llm_provider,
+        ]
+        if args.llm_model.strip():
+            topics_cmd += ["--model", args.llm_model.strip()]
+        topics_proc = subprocess.run(topics_cmd, env=env)
+        if topics_proc.returncode != 0:
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                _finish_run(conn, run_id, "failed", 0)
+                conn.commit()
+            print(f"\nLLM session topic extraction failed (exit code {topics_proc.returncode}). Nothing was marked processed.")
+            return topics_proc.returncode
+
+        # Step 3c: LLM intervention classification.
         llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
         if args.llm_model.strip():
             llm_cmd += ["--model", args.llm_model.strip()]
         if args.llm_limit > 0:
             llm_cmd += ["--limit", str(args.llm_limit)]
-            print(f"\nStep 3b/4  Running LLM agent (limit={args.llm_limit})...")
+            print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_limit})...")
         else:
-            print(f"\nStep 3b/4  Running LLM agent (all interventions)...")
+            print(f"\nStep 3c/4  Running LLM intervention classification (all interventions)...")
         llm_proc = subprocess.run(llm_cmd, env=env)
         if llm_proc.returncode != 0:
             with sqlite3.connect(db_path) as conn:
                 conn.execute("PRAGMA foreign_keys = ON;")
                 _finish_run(conn, run_id, "failed", 0)
                 conn.commit()
-            print(f"\nLLM agent failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
+            print(f"\nLLM intervention classification failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
             return llm_proc.returncode
 
     with sqlite3.connect(db_path) as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
         if not args.skip_export:
-            print("\nStep 4/4  Exporting frontend JSON artifacts...")
+            step_label = "Step 4/4" if args.analyzer_mode == "baseline" else "Step 4/4"
+            print(f"\n{step_label}  Exporting frontend JSON artifacts...")
             export_cmd = [sys.executable, "scripts/export_outputs.py", "--db-path", str(db_path)]
             export_proc = subprocess.run(export_cmd, env=env)
             if export_proc.returncode != 0:
@@ -239,13 +267,12 @@ def main() -> int:
         else:
             print("\nStep 4/4  Export skipped (--skip-export).")
 
-        marked = mark_candidates(conn, candidates, run_id)
-        _finish_run(conn, run_id, "completed", marked)
+        _finish_run(conn, run_id, "completed", len(candidates))
         conn.commit()
 
     print(f"\n{'='*60}")
     print(f"Pipeline complete  run_id={run_id}")
-    print(f"  Stenograms processed: {marked}")
+    print(f"  Stenograms processed: {len(candidates)}")
     print(f"  Outputs: {'skipped' if args.skip_export else 'outputs/'}")
     print(f"{'='*60}\n")
     return 0

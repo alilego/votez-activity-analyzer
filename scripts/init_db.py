@@ -126,6 +126,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             run_id TEXT NOT NULL,
             stenogram_path TEXT NOT NULL,
             topics_json TEXT NOT NULL, -- JSON array of session-level topics
+            topics_source TEXT NOT NULL DEFAULT 'keyword_baseline_v1', -- keyword_baseline_v1 | llm_v1
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (run_id) REFERENCES runs(run_id)
@@ -209,17 +210,25 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '6')
+        VALUES('schema_version', '8')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )
-    try:
-        conn.execute(
-            "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'"
-        )
-    except sqlite3.OperationalError:
-        # Column already exists.
-        pass
+    # Migrations for existing DBs — safe to run repeatedly.
+    for migration in [
+        "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'",
+        "ALTER TABLE session_topics ADD COLUMN topics_source TEXT NOT NULL DEFAULT 'keyword_baseline_v1'",
+    ]:
+        try:
+            conn.execute(migration)
+        except sqlite3.OperationalError:
+            pass  # Column already exists.
+
+    # Migrate old 'llm_v1' (no model suffix) to 'llm_v1:llama3.1:8b'.
+    # topics_source format changed to 'llm_v1:{model}' to track which model produced each result.
+    conn.execute(
+        "UPDATE session_topics SET topics_source = 'llm_v1:llama3.1:8b' WHERE topics_source = 'llm_v1'"
+    )
 
 
 def init_db(db_path: Path) -> Path:

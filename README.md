@@ -86,11 +86,25 @@ python3 scripts/run_pipeline.py --dry-run
 - Exports frontend JSON artifacts to `outputs/`
 - Marks processed stenograms in DB
 
-### LLM pass (`--analyzer-mode llm`, runs after baseline)
+### LLM pass (`--analyzer-mode llm`, runs after baseline — two sub-steps)
+
+**Step 3b — Session topic extraction** (`llm_session_topics.py`):
+- For each session, sends `initial_notes` + first 12 early speeches to the LLM
+- Extracts the real legislative/policy topics (e.g. "reforma pensiilor", "PL-x 123/2025")
+- Replaces the keyword-taxonomy topics from baseline
+- Stored with `topics_source='llm_v1'` for auditability
+
+**Step 3c — Intervention classification** (`llm_agent.py`):
 - For each intervention, retrieves grounded context via hybrid RAG (session notes + neighbors + similarity)
-- Sends intervention + context + classification rubric to the LLM
-- Stores LLM-assigned label, topics, confidence, and evidence chunk IDs via MCP
+- Sends intervention + LLM session topics + classification rubric to the LLM
+- Stores label, topics, confidence, and evidence chunk IDs via MCP
 - Source is stamped as `llm_agent_v1` for auditability
+
+Run session topic extraction alone (useful for debugging):
+
+```bash
+python3 scripts/llm_session_topics.py --session-id 8846 --run-id <run_id>
+```
 
 ---
 
@@ -148,7 +162,8 @@ When using `--analyzer-cmd`, these env vars are injected:
 |--------|---------|
 | `scripts/run_pipeline.py` | Main orchestrator — incremental, handles baseline + LLM + export |
 | `scripts/analyze_interventions.py` | Baseline classifier (keyword + RAG index build) |
-| `scripts/llm_agent.py` | LLM agent loop — the main intelligence layer |
+| `scripts/llm_session_topics.py` | LLM session topic extraction — runs before intervention classification |
+| `scripts/llm_agent.py` | LLM intervention classification — the main intelligence layer |
 | `scripts/rag_store.py` | Vector index build and retrieval (`sentence-transformers` + FAISS) |
 | `scripts/mcp_server.py` | MCP tool server (all read, RAG, and write tools) |
 | `scripts/inspect_retrieval.py` | Inspect retrieved chunks for any intervention |

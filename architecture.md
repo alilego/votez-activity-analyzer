@@ -269,18 +269,33 @@ The tool server:
 
 Implemented in `scripts/llm_agent.py`.
 
-## Two-pass classification
+## Pipeline modes
 
-The pipeline supports two modes:
+| Mode | `--analyzer-mode` | Steps | Notes |
+|------|-------------------|-------|-------|
+| Baseline | `baseline` (default) | 1: keyword analysis | Fast, no LLM |
+| LLM | `llm` | 1: keyword baseline → 2: LLM session topics → 3: LLM intervention classification | Requires Ollama or OpenAI |
 
-| Mode | `--analyzer-mode` | Script | Source |
-|------|-------------------|--------|--------|
-| Baseline | `baseline` (default) | `analyze_interventions.py` | `constructiveness_baseline_v1` |
-| LLM | `llm` | `llm_agent.py` | `llm_agent_v1` |
+## LLM step 1 — Session topic extraction (`llm_session_topics.py`)
 
-Baseline runs first in both modes. In `llm` mode the agent loop then reclassifies interventions that have only a baseline label.
+For each session that has only keyword-baseline topics:
 
-## LLM agent loop (per intervention)
+1. **`get_session`** — fetch `initial_notes` and session date
+2. Fetch first 12 chunks from `session_chunks` (session_notes + early speeches)
+3. **LLM call** — "What are the main legislative/policy topics of this session?"
+4. **`store_session_topics`** — persist topics with `topics_source='llm_v1'`
+
+This replaces the keyword-taxonomy topics that the baseline builds with free-form,
+context-aware labels extracted directly from the session content.
+
+## LLM step 2 — Intervention classification (`llm_agent.py`)
+
+For each intervention (runs after session topic extraction):
+
+1. **`get_run_config`** — load the runtime config (valid labels, topic constraints, RAG budget)
+2. **`get_intervention`** — fetch the intervention text, session ID, raw speaker
+3. **`get_session`** — fetch session notes and LLM-derived session topics for framing context
+4. **`retrieve_context`** — hybrid RAG retrieval (session_notes + neighbors + similarity, top_k=10)
 
 For each intervention:
 

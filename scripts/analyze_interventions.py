@@ -631,6 +631,7 @@ def _persist_run_data(
                     evidence_chunk_ids_json = excluded.evidence_chunk_ids_json,
                     analysis_version = excluded.analysis_version,
                     updated_at = CURRENT_TIMESTAMP
+                WHERE intervention_analysis.relevance_source = 'constructiveness_baseline_v1'
                 """,
                 (
                     iv["intervention_id"],

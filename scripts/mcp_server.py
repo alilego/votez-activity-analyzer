@@ -99,12 +99,14 @@ class MCPServer:
             # Read tools
             "get_run_config": self._get_run_config,
             "get_session": self._get_session,
+            "get_session_topics": self._get_session_topics,
             "get_intervention": self._get_intervention,
             "get_member": self._get_member,
             # RAG tools
             "retrieve_context": self._retrieve_context,
             "get_chunk": self._get_chunk,
             # Write tools
+            "store_session_topics": self._store_session_topics,
             "store_intervention_analysis": self._store_intervention_analysis,
             "append_unmatched_speaker": self._append_unmatched_speaker,
             "write_run_summary": self._write_run_summary,
@@ -178,6 +180,28 @@ class MCPServer:
                 "source_url": str(data.get("source_url", "")),
                 "initial_notes": str(data.get("initial_notes", "")),
             }
+        )
+
+    def _get_session_topics(self, params: dict) -> dict:
+        session_id = params.get("session_id", "")
+        if not session_id:
+            return _err("VALIDATION_ERROR", "session_id is required")
+
+        row = self._conn.execute(
+            "SELECT topics_json, topics_source FROM session_topics WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()
+        if row is None:
+            return _ok(session_id=session_id, topics=[], topics_source=None)
+
+        try:
+            topics = json.loads(row["topics_json"])
+        except (json.JSONDecodeError, TypeError):
+            topics = []
+        return _ok(
+            session_id=session_id,
+            topics=topics,
+            topics_source=row["topics_source"],
         )
 
     def _get_intervention(self, params: dict) -> dict:
@@ -310,6 +334,91 @@ class MCPServer:
     # -----------------------------------------------------------------------
     # 4) Write tools
     # -----------------------------------------------------------------------
+
+    def _store_session_topics(self, params: dict) -> dict:
+        """
+        Persist LLM-derived session topics.
+        Idempotent: no-op if topics_source and content are unchanged.
+
+        topics_source format:
+          - 'keyword_baseline_v1'  — keyword taxonomy (baseline pass)
+          - 'llm_v1:{model}'       — LLM extraction, e.g. 'llm_v1:llama3.1:8b'
+        """
+        session_id = params.get("session_id", "")
+        topics_raw = params.get("topics", [])
+        source = params.get("topics_source", "llm_v1")
+
+        if not session_id:
+            return _err("VALIDATION_ERROR", "session_id is required")
+
+        # Validate session exists (via chunks or topics table).
+        exists = self._conn.execute(
+            "SELECT 1 FROM session_chunks WHERE session_id = ? LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        if exists is None:
+            return _err("NOT_FOUND", f"Session not found: {session_id}")
+
+        if not isinstance(topics_raw, list):
+            return _err("VALIDATION_ERROR", "topics must be a list")
+        topics: list[str] = []
+        seen: set[str] = set()
+        for t in topics_raw:
+            if not isinstance(t, str):
+                return _err("VALIDATION_ERROR", "Each topic must be a string")
+            t = t.strip()
+            if t and t not in seen:
+                topics.append(t)
+                seen.add(t)
+
+        # Valid formats: 'keyword_baseline_v1' or 'llm_v1:{model_name}'
+        if source != "keyword_baseline_v1" and not source.startswith("llm_v1:"):
+            return _err(
+                "VALIDATION_ERROR",
+                "topics_source must be 'keyword_baseline_v1' or 'llm_v1:{model}' (e.g. 'llm_v1:llama3.1:8b')",
+            )
+
+        # Resolve stenogram_path for the FK.
+        path_row = self._conn.execute(
+            "SELECT stenogram_path FROM session_chunks WHERE session_id = ? LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        stenogram_path = path_row["stenogram_path"] if path_row else ""
+
+        existing = self._conn.execute(
+            "SELECT topics_json, topics_source FROM session_topics WHERE session_id = ?",
+            (session_id,),
+        ).fetchone()
+
+        new_topics_json = json.dumps(topics, ensure_ascii=True)
+
+        if existing is not None:
+            same = (
+                existing["topics_json"] == new_topics_json
+                and existing["topics_source"] == source
+            )
+            if same:
+                return _ok(stored={"session_id": session_id, "topics": topics, "topics_source": source})
+
+        self._conn.execute(
+            """
+            INSERT INTO session_topics (session_id, run_id, stenogram_path, topics_json, topics_source, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(session_id) DO UPDATE SET
+                run_id          = excluded.run_id,
+                stenogram_path  = excluded.stenogram_path,
+                topics_json     = excluded.topics_json,
+                topics_source   = excluded.topics_source,
+                updated_at      = CURRENT_TIMESTAMP
+            """,
+            (session_id, self._run_id, stenogram_path, new_topics_json, source),
+        )
+        self._conn.commit()
+
+        action = "updated" if existing is not None else "inserted"
+        print(f"  DB {action}: session_topics  session={session_id}  source={source}  topics={topics}")
+
+        return _ok(stored={"session_id": session_id, "topics": topics, "topics_source": source})
 
     def _store_intervention_analysis(self, params: dict) -> dict:
         intervention_id = params.get("intervention_id", "")

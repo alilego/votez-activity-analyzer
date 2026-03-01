@@ -160,7 +160,7 @@ def _call_llm(model: str, user_message: str, client, provider: str) -> dict:
       but we also append an explicit JSON instruction to the system prompt to be safe.
     """
     extra_kwargs: dict = {}
-    if provider == "openai":
+    if provider in ("openai", "ollama"):
         extra_kwargs["response_format"] = {"type": "json_object"}
 
     response = client.chat.completions.create(
