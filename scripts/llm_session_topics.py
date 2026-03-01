@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from init_db import DEFAULT_DB_PATH, init_db
 from mcp_server import MCPServer
+from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -209,8 +210,47 @@ def _build_client(provider: str, model: str):
     raise SystemExit(f"Unknown provider: {provider!r}. Choose 'openai' or 'ollama'.")
 
 
-def _chat(client, system: str, user: str, json_mode: bool = False, max_tokens: int = 512) -> str:
-    """Single LLM call. Returns raw string content."""
+class _BuildPromptsOnly(Exception):
+    """Raised inside _chat() when build_prompts_only=True to skip the LLM call."""
+
+
+def _chat(
+    client,
+    system: str,
+    user: str,
+    json_mode: bool = False,
+    max_tokens: int = 512,
+    prompt_label: str = "",
+    session_id: str = "",
+    session_date: str = "",
+    build_prompts_only: bool = False,
+) -> str:
+    """Single LLM call. Returns raw string content.
+
+    When ``build_prompts_only=True`` the prompt is saved with a stable
+    ``"draft"`` timestamp and ``_BuildPromptsOnly`` is raised instead of
+    calling the LLM.  Callers must catch this exception.
+    """
+    if session_id:
+        try:
+            ts = "draft" if build_prompts_only else None
+            save_prompt(
+                step="session_topics",
+                session_id=session_id,
+                session_date=session_date,
+                model=client._model,
+                label=prompt_label or "call",
+                system_prompt=system,
+                user_message=user,
+                extra_meta={"max_tokens": max_tokens, "json_mode": json_mode},
+                timestamp=ts,
+            )
+        except Exception:
+            pass  # Never let logging block the actual LLM call.
+
+    if build_prompts_only:
+        raise _BuildPromptsOnly(prompt_label or "call")
+
     extra_kwargs: dict = {}
     if json_mode:
         extra_kwargs["response_format"] = {"type": "json_object"}
@@ -306,15 +346,34 @@ def _parse_topics(raw: str) -> list[dict]:
     return topics
 
 
-def _call_reduce_once(client, session_header: str, prose_list: list[str], label: str) -> list[dict]:
-    """Run one reduce LLM call over a list of prose strings. Returns parsed topic list."""
+def _call_reduce_once(
+    client,
+    session_header: str,
+    prose_list: list[str],
+    label: str,
+    session_id: str = "",
+    session_date: str = "",
+    build_prompts_only: bool = False,
+) -> list[dict]:
+    """Run one reduce LLM call over a list of prose strings. Returns parsed topic list.
+
+    In build_prompts_only mode the prompt is saved and an empty list is returned.
+    """
     reduce_msg = _build_reduce_message(session_header, prose_list)
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            raw = _chat(client, REDUCE_SYSTEM, reduce_msg, json_mode=True, max_tokens=2048)
+            raw = _chat(
+                client, REDUCE_SYSTEM, reduce_msg, json_mode=True, max_tokens=2048,
+                prompt_label=label.lower().replace(" ", "_"),
+                session_id=session_id, session_date=session_date,
+                build_prompts_only=build_prompts_only,
+            )
             topics = _parse_topics(raw)
             print(f"  {label}: {len(topics)} topics from {len(prose_list)} inputs ({len(reduce_msg)} chars)")
             return topics
+        except _BuildPromptsOnly:
+            print(f"  {label}: prompt saved (build-prompts mode)")
+            return []  # no retries — prompt is saved, nothing to parse
         except (json.JSONDecodeError, ValueError) as exc:
             print(f"  {label} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
@@ -322,7 +381,14 @@ def _call_reduce_once(client, session_header: str, prose_list: list[str], label:
     return []
 
 
-def _reduce(client, session_header: str, window_results: list[str]) -> dict:
+def _reduce(
+    client,
+    session_header: str,
+    window_results: list[str],
+    session_id: str = "",
+    session_date: str = "",
+    build_prompts_only: bool = False,
+) -> dict:
     """Two-stage reduce.
 
     Stage 1: if all window prose fits in one batch → single reduce call (common case).
@@ -335,16 +401,22 @@ def _reduce(client, session_header: str, window_results: list[str]) -> dict:
     print(f"  Reduce: {len(window_results)} window(s), {total_chars} chars → {len(batches)} batch(es)")
 
     if len(batches) == 1:
-        # Single-pass reduce — most sessions fit here.
-        topics = _call_reduce_once(client, session_header, batches[0], "Reduce")
+        topics = _call_reduce_once(
+            client, session_header, batches[0], "Reduce",
+            session_id=session_id, session_date=session_date,
+            build_prompts_only=build_prompts_only,
+        )
         return {"topics": topics, "session_summary": ""}
 
     # Stage 1: reduce each batch to an intermediate topic list.
     intermediate_prose: list[str] = []
     for b_idx, batch in enumerate(batches, 1):
-        partial = _call_reduce_once(client, session_header, batch, f"Reduce stage-1 batch {b_idx}/{len(batches)}")
+        partial = _call_reduce_once(
+            client, session_header, batch, f"Reduce stage-1 batch {b_idx}/{len(batches)}",
+            session_id=session_id, session_date=session_date,
+            build_prompts_only=build_prompts_only,
+        )
         if partial:
-            # Serialise partial topics back to bullet prose for stage 2 input.
             lines = []
             for t in partial:
                 law = f" ({t['law_id']})" if t.get("law_id") else ""
@@ -353,7 +425,11 @@ def _reduce(client, session_header: str, window_results: list[str]) -> dict:
             intermediate_prose.append("\n".join(lines))
 
     # Stage 2: merge all intermediate lists into the final result.
-    final_topics = _call_reduce_once(client, session_header, intermediate_prose, "Reduce stage-2 final")
+    final_topics = _call_reduce_once(
+        client, session_header, intermediate_prose, "Reduce stage-2 final",
+        session_id=session_id, session_date=session_date,
+        build_prompts_only=build_prompts_only,
+    )
     return {"topics": final_topics, "session_summary": ""}
 
 
@@ -390,7 +466,14 @@ def _build_single_pass_message(session_header: str, chunks: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def _call_single_pass(client, session_header: str, chunks: list[dict]) -> dict:
+def _call_single_pass(
+    client,
+    session_header: str,
+    chunks: list[dict],
+    session_id: str = "",
+    session_date: str = "",
+    build_prompts_only: bool = False,
+) -> dict:
     """Single-pass topic extraction for large-context models.
 
     Sends the entire session in one LLM call. Only used when the model's
@@ -403,10 +486,18 @@ def _call_single_pass(client, session_header: str, chunks: list[dict]) -> dict:
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            raw = _chat(client, SINGLE_PASS_SYSTEM, user_msg, json_mode=True, max_tokens=2048)
+            raw = _chat(
+                client, SINGLE_PASS_SYSTEM, user_msg, json_mode=True, max_tokens=2048,
+                prompt_label="single_pass",
+                session_id=session_id, session_date=session_date,
+                build_prompts_only=build_prompts_only,
+            )
             topics = _parse_topics(raw)
             print(f"  Single-pass result: {len(topics)} topics  (first 120 chars: {raw[:120]!r})")
             return {"topics": topics, "session_summary": ""}
+        except _BuildPromptsOnly:
+            print(f"  Single-pass: prompt saved (build-prompts mode)")
+            return {"topics": [], "session_summary": ""}
         except (json.JSONDecodeError, ValueError) as exc:
             print(f"  Single-pass attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
@@ -414,7 +505,14 @@ def _call_single_pass(client, session_header: str, chunks: list[dict]) -> dict:
     return {"topics": [], "session_summary": ""}
 
 
-def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]) -> dict:
+def _call_map_reduce(
+    client,
+    session_header: str,
+    substantive_chunks: list[dict],
+    session_id: str = "",
+    session_date: str = "",
+    build_prompts_only: bool = False,
+) -> dict:
     """
     Map-reduce topic extraction.
 
@@ -433,7 +531,12 @@ def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]
         user_msg = _build_window_message(session_header, window, w_idx, total_windows)
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                prose = _chat(client, WINDOW_SYSTEM, user_msg, max_tokens=512)
+                prose = _chat(
+                    client, WINDOW_SYSTEM, user_msg, max_tokens=512,
+                    prompt_label=f"window_{w_idx}of{total_windows}",
+                    session_id=session_id, session_date=session_date,
+                    build_prompts_only=build_prompts_only,
+                )
                 window_results.append(prose)
                 bullet_count = sum(
                     1 for line in prose.splitlines()
@@ -441,6 +544,9 @@ def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]
                 )
                 print(f"    window {w_idx}/{total_windows}: ~{bullet_count} bullets ({len(prose)} chars): {prose[:120]!r}")
                 break
+            except _BuildPromptsOnly:
+                print(f"    window {w_idx}/{total_windows}: prompt saved (build-prompts mode)")
+                break  # move to next window — no retries needed
             except Exception as exc:
                 print(f"    window {w_idx} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
                 if attempt < MAX_RETRIES:
@@ -448,14 +554,12 @@ def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]
                 else:
                     window_results.append("")  # Skip window on repeated failure.
 
-    # Reduce all window bullet lists into structured JSON.
-    # Two-stage reduce for large sessions:
-    #   Stage 1: batch window prose into groups that fit MAX_REDUCE_BATCH_CHARS,
-    #            call reduce on each group → intermediate JSON topic list (as prose).
-    #   Stage 2: reduce all intermediate lists into the final 20 deduplicated topics.
-    # For small sessions (all windows fit in one batch) this degenerates to a single call.
     non_empty = [r for r in window_results if r.strip()]
-    return _reduce(client, session_header, non_empty)
+    # In build_prompts_only mode non_empty will be empty, but we still call _reduce
+    # so the reduce-step prompts are also generated (with a placeholder input).
+    reduce_input = non_empty if non_empty else (["placeholder"] if build_prompts_only else [])
+    return _reduce(client, session_header, reduce_input, session_id=session_id,
+                   session_date=session_date, build_prompts_only=build_prompts_only)
 
 
 # ---------------------------------------------------------------------------
@@ -469,8 +573,14 @@ def extract_session_topics(
     client,
     provider: str,
     conn: sqlite3.Connection,
+    build_prompts_only: bool = False,
 ) -> dict:
-    """Run the map-reduce pipeline for one session and store the result via MCP."""
+    """Run the map-reduce pipeline for one session and store the result via MCP.
+
+    When ``build_prompts_only=True`` the prompt files are written but no LLM
+    call is made and nothing is stored to the DB.  Returns ``{"ok": True,
+    "prompts_only": True}`` in that case.
+    """
     # Fetch session metadata.
     session_result = server.call("get_session", {"session_id": session_id})
     if not session_result["ok"]:
@@ -534,9 +644,14 @@ def extract_session_topics(
             for r in speech_pool
         ]
         capped_total = sum(len(c["text"]) for c in single_pass_chunks)
+        session_date = session.get("session_date", "")
         if capped_total <= LARGE_CTX_THRESHOLD_CHARS:
             print(f"  Mode: single-pass (large-ctx model, capped total {capped_total:,} chars ≤ {LARGE_CTX_THRESHOLD_CHARS:,})")
-            llm_data = _call_single_pass(client, session_header, single_pass_chunks)
+            llm_data = _call_single_pass(
+                client, session_header, single_pass_chunks,
+                session_id=session_id, session_date=session_date,
+                build_prompts_only=build_prompts_only,
+            )
         else:
             print(f"  Mode: map-reduce (capped total {capped_total:,} chars > {LARGE_CTX_THRESHOLD_CHARS:,}, too many chunks)")
             substantive_chunks = [
@@ -547,8 +662,13 @@ def extract_session_topics(
                 }
                 for r in speech_pool
             ]
-            llm_data = _call_map_reduce(client, session_header, substantive_chunks)
+            llm_data = _call_map_reduce(
+                client, session_header, substantive_chunks,
+                session_id=session_id, session_date=session_date,
+                build_prompts_only=build_prompts_only,
+            )
     else:
+        session_date = session.get("session_date", "")
         # Map-reduce: small-context model.
         print(f"  Mode: map-reduce (small-ctx model)")
         substantive_chunks = [
@@ -559,7 +679,14 @@ def extract_session_topics(
             }
             for r in speech_pool
         ]
-        llm_data = _call_map_reduce(client, session_header, substantive_chunks)
+        llm_data = _call_map_reduce(
+            client, session_header, substantive_chunks,
+            session_id=session_id, session_date=session_date,
+            build_prompts_only=build_prompts_only,
+        )
+
+    if build_prompts_only:
+        return {"ok": True, "prompts_only": True}
 
     topics = llm_data.get("topics", [])
     session_summary = llm_data.get("session_summary", "")
@@ -578,6 +705,20 @@ def extract_session_topics(
 # ---------------------------------------------------------------------------
 # Batch loop
 # ---------------------------------------------------------------------------
+
+def _load_all_session_ids(db_path: Path) -> list[str]:
+    """Return ALL session IDs present in the DB, regardless of processing state.
+
+    Used by --build-prompts so that every session gets a prompt file, not just
+    the ones that are still pending LLM work.
+    """
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT DISTINCT session_id FROM session_chunks ORDER BY session_id"
+        ).fetchall()
+    return [r["session_id"] for r in rows]
+
 
 def _load_session_ids(
     db_path: Path,
@@ -656,6 +797,7 @@ def run_session_topics(
     model: str,
     provider: str,
     reprocess: bool = False,
+    build_prompts_only: bool = False,
 ) -> dict:
     client = _build_client(provider, model)
 
@@ -674,13 +816,17 @@ def run_session_topics(
                     session_id=session_id,
                     model=model,
                     client=client,
-                    provider=provider,  # kept for future use / logging
+                    provider=provider,
                     conn=raw_conn,
+                    build_prompts_only=build_prompts_only,
                 )
                 if result.get("ok"):
                     extracted += 1
-                    stored = result.get("stored", {})
-                    print(f"  → stored: {len(stored.get('topics', []))} topics  source={stored.get('topics_source')}")
+                    if build_prompts_only:
+                        print(f"  → prompts saved (build-prompts mode, no LLM call)")
+                    else:
+                        stored = result.get("stored", {})
+                        print(f"  → stored: {len(stored.get('topics', []))} topics  source={stored.get('topics_source')}")
                 else:
                     errors += 1
                     err_info = result.get("error", {})
@@ -688,6 +834,118 @@ def run_session_topics(
                     error_log.append({"session_id": session_id, "error": err_info})
 
     return {"total": total, "extracted": extracted, "errors": errors, "error_log": error_log}
+
+
+# ---------------------------------------------------------------------------
+# External-output ingestion
+# ---------------------------------------------------------------------------
+
+def ingest_external_outputs(db_path: Path, run_id: str) -> int:
+    """
+    Read files from state/external_prompts_output/ whose names match
+    session_topics_* and store the parsed topic JSON to the DB via MCP.
+
+    Expected file naming (same as prompt output files):
+      session_topics_{session_date}_{session_id}_{timestamp}_{model_safe}_{label}.txt
+
+    File content: the raw JSON response from the external model — just the
+    JSON object, e.g.:
+      {"topics": [...], "session_summary": "..."}
+
+    Any file that has already been ingested (tracked by a .done sidecar) is
+    skipped.  Returns the number of successfully ingested files.
+    """
+    import re as _re
+    ext_dir = EXTERNAL_OUTPUTS_DIR
+    if not ext_dir.exists():
+        print(f"  External outputs dir not found: {ext_dir}")
+        return 0
+
+    files = sorted(ext_dir.glob("session_topics_*.txt"))
+    if not files:
+        print(f"  No session_topics_*.txt files in {ext_dir}")
+        return 0
+
+    ingested = 0
+    init_db(db_path)
+
+    with sqlite3.connect(db_path) as raw_conn:
+        raw_conn.row_factory = sqlite3.Row
+        with MCPServer(db_path=db_path, run_id=run_id) as server:
+            for f in files:
+                done_marker = f.with_suffix(".done")
+                if done_marker.exists():
+                    print(f"  [skip] {f.name}  (already ingested)")
+                    continue
+
+                # Parse filename: session_topics_{date}_{sid}_{ts}_{model}_{label}.txt
+                # Fields after the step prefix are: date, sid, ts, model, label
+                stem = f.stem  # strip .txt
+                parts = stem.split("_")
+                # parts[0] == "session", parts[1] == "topics", parts[2] == date,
+                # parts[3] == session_id, parts[4] == ts, parts[5+] == model + label
+                if len(parts) < 6:
+                    print(f"  [skip] {f.name}  (unexpected filename format)")
+                    continue
+                session_date = parts[2]
+                session_id = parts[3]
+                # Reconstruct model from parts between ts and label.
+                # Convention: model is everything between ts and the last underscore-segment(s)
+                # that constitute the label.  We keep it simple: everything after ts until
+                # the last segment is the model; the last segment is the label.
+                model_and_label = "_".join(parts[5:])
+                # Model name was sanitised with _safe_model (: → -), label is last segment.
+                # We only need model for topics_source — use the full remaining string minus
+                # the label suffix (last _ group).  Since model can itself contain _ we
+                # reconstruct as: everything except the very last _-separated token.
+                ml_parts = model_and_label.rsplit("_", 1)
+                model_safe = ml_parts[0] if len(ml_parts) > 1 else model_and_label
+                # Restore colons in model name (- was used as replacement).
+                model_hint = model_safe  # keep the safe version for topics_source
+
+                # utf-8-sig strips a BOM if present (common when files are
+                # saved by Windows tools or copy-pasted from some editors).
+                raw_text = f.read_text(encoding="utf-8-sig").strip()
+                if not raw_text:
+                    print(f"  [skip] {f.name}  (empty file)")
+                    continue
+
+                try:
+                    llm_data = _parse_topics(raw_text)
+                except (json.JSONDecodeError, ValueError):
+                    # Try extracting from a {"topics": [...]} wrapper.
+                    try:
+                        wrapper = json.loads(raw_text)
+                        if isinstance(wrapper, dict):
+                            llm_data = _parse_topics(json.dumps(wrapper))
+                        else:
+                            raise ValueError("not a dict")
+                    except Exception as exc:
+                        print(f"  [error] {f.name}  parse failed: {exc}")
+                        continue
+
+                # Use llm_v1: prefix so the MCP validation accepts it and the
+                # result is treated identically to a locally-computed topic set.
+                # The model name in the filename is already sanitised (: → -);
+                # restore colons so it matches the canonical llm_v1:{model} form.
+                model_canonical = model_safe.replace("-", ":", 1)  # first dash only: qwen2.5-7b → qwen2.5:7b
+                topics_source = f"llm_v1:{model_canonical}"
+                store_result = server.call(
+                    "store_session_topics",
+                    {"session_id": session_id, "topics": llm_data, "topics_source": topics_source},
+                )
+                if store_result.get("ok"):
+                    done_marker.write_text("ingested\n", encoding="utf-8")
+                    ingested += 1
+                    print(
+                        f"  [ok] {f.name}  session={session_id}  "
+                        f"{len(llm_data)} topics  source={topics_source}"
+                    )
+                else:
+                    err = store_result.get("error", {})
+                    print(f"  [error] {f.name}  store failed: {err.get('code')}: {err.get('message')}")
+
+    return ingested
 
 
 # ---------------------------------------------------------------------------
@@ -730,6 +988,23 @@ def main() -> int:
         default=0,
         help="Process at most N sessions (0 = all). Useful for testing.",
     )
+    parser.add_argument(
+        "--build-prompts",
+        action="store_true",
+        help=(
+            "Build prompt files in state/run_prompts/ for all targeted sessions "
+            "without calling the LLM.  Use this to iterate on prompts externally."
+        ),
+    )
+    parser.add_argument(
+        "--ingest-external-outputs",
+        action="store_true",
+        help=(
+            "Ingest LLM responses from state/external_prompts_output/ "
+            "(files named like the corresponding prompt files) and store them "
+            "to the DB.  No LLM calls are made."
+        ),
+    )
     args = parser.parse_args()
 
     if not args.run_id:
@@ -743,14 +1018,25 @@ def main() -> int:
     db_path = Path(args.db_path)
     init_db(db_path)
 
+    # --ingest-external-outputs: read external model responses and store to DB.
+    if args.ingest_external_outputs:
+        print(f"\nIngesting external session-topic outputs from {EXTERNAL_OUTPUTS_DIR} ...")
+        n = ingest_external_outputs(db_path, args.run_id)
+        print(f"Ingested {n} file(s).")
+        return 0
+
     if args.session_id:
         session_ids = [args.session_id]
+    elif args.build_prompts:
+        # Build-prompts targets ALL sessions so the generated_prompts/ directory
+        # is a complete snapshot — not just sessions with pending LLM work.
+        session_ids = _load_all_session_ids(db_path)
     else:
         list_path = Path(args.stenogram_list_path) if args.stenogram_list_path else None
         session_ids = _load_session_ids(db_path, list_path, model, reprocess=args.reprocess_session_topics)
 
     if not session_ids:
-        print("No sessions need LLM topic extraction. Nothing to do.")
+        print("No sessions found. Nothing to do.")
         return 0
 
     if args.limit > 0:
@@ -758,7 +1044,11 @@ def main() -> int:
 
     reprocess_note = "  (reprocess=True — overwriting existing LLM topics)" if args.reprocess_session_topics else ""
     limit_note = f"  (limit={args.limit})" if args.limit > 0 else ""
-    print(f"Session topic extraction: {len(session_ids)} session(s) (run_id={args.run_id}){reprocess_note}{limit_note}")
+    mode_note = "  [BUILD-PROMPTS — writing to state/generated_prompts/]" if args.build_prompts else ""
+    print(
+        f"Session topic extraction: {len(session_ids)} session(s) "
+        f"(run_id={args.run_id}){reprocess_note}{limit_note}{mode_note}"
+    )
 
     summary = run_session_topics(
         db_path=db_path,
@@ -767,12 +1057,20 @@ def main() -> int:
         model=model,
         provider=args.provider,
         reprocess=args.reprocess_session_topics,
+        build_prompts_only=args.build_prompts,
     )
 
-    print(
-        f"\nSession topics finished: {summary['extracted']}/{summary['total']} extracted, "
-        f"{summary['errors']} error(s)."
-    )
+    if args.build_prompts:
+        from prompt_logger import GENERATED_PROMPTS_DIR
+        print(
+            f"\nBuild-prompts finished: {summary['extracted']}/{summary['total']} sessions, "
+            f"prompts written to {GENERATED_PROMPTS_DIR}/"
+        )
+    else:
+        print(
+            f"\nSession topics finished: {summary['extracted']}/{summary['total']} extracted, "
+            f"{summary['errors']} error(s)."
+        )
     if summary["error_log"]:
         print("Errors:")
         for entry in summary["error_log"]:

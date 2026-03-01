@@ -128,7 +128,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 iv.text,
                 COALESCE(ia.relevance_label, 'unknown') AS relevance_label,
                 COALESCE(ia.topics_json, '[]') AS topics_json,
-                ia.confidence
+                ia.confidence,
+                ia.reasoning
             FROM interventions_raw iv
             JOIN members m ON m.member_id = iv.member_id
             LEFT JOIN intervention_analysis ia ON ia.intervention_id = iv.intervention_id
@@ -148,9 +149,10 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             session_date,
             stenogram_path,
             text,
-        constructiveness_label_raw,
-        topics_json,
-        confidence,
+            constructiveness_label_raw,
+            topics_json,
+            confidence,
+            reasoning,
         ) = row
         constructiveness_label = _map_label(constructiveness_label_raw)
         topics = _safe_topics(topics_json)
@@ -178,6 +180,7 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "text": text or "",
                 "topics": topics,
                 "confidence": confidence_value,
+                "reasoning": reasoning or "",
                 "stenogram_name": stenogram_name,
                 "stenogram_link": session_links.get(str(session_id), ""),
             }

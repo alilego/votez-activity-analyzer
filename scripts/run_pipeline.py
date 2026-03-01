@@ -26,8 +26,11 @@ from pathlib import Path
 # LibreSSL instead of OpenSSL; the warning is cosmetic and not actionable.
 warnings.filterwarnings("ignore", category=Warning, module="urllib3")
 
+import shutil
+
 from init_db import init_db
 from mark_processed_stenograms import mark_candidates
+from prompt_logger import GENERATED_PROMPTS_DIR
 from select_stenograms import DEFAULT_DB_PATH, DEFAULT_INPUT_DIR, StenogramCandidate, select_candidates
 
 
@@ -210,6 +213,25 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--build-prompts",
+        action="store_true",
+        help=(
+            "Write LLM prompt files for ALL sessions to state/generated_prompts/ without "
+            "calling any LLM.  The directory is wiped and fully refreshed on every run.  "
+            "After reviewing the prompts, place model responses with matching names in "
+            "state/external_prompts_output/ and re-run with --ingest-external-outputs."
+        ),
+    )
+    parser.add_argument(
+        "--ingest-external-outputs",
+        action="store_true",
+        help=(
+            "Read external model responses from state/external_prompts_output/ (files "
+            "named identically to the corresponding generated_prompts/ files) and store "
+            "them to the DB, then export.  No LLM calls are made."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Only list selected files and exit.",
@@ -231,12 +253,19 @@ def main() -> int:
     print(f"  DB:        {db_path}")
     print(f"  Input dir: {input_dir}")
     print(f"  Mode:      {args.analyzer_mode}")
-    if args.analyzer_mode == "llm":
+    if args.build_prompts:
+        print(f"  [BUILD-PROMPTS] Writing prompt files only — no LLM calls.")
+    elif args.ingest_external_outputs:
+        print(f"  [INGEST-EXTERNAL] Reading responses from state/external_prompts_output/")
+    if args.analyzer_mode == "llm" and not args.ingest_external_outputs:
         provider = args.llm_provider
         model_hint = args.llm_model or ("llama3.1:8b-8k" if provider == "ollama" else "gpt-4o-mini")
         print(f"  Provider:  {provider}  model={model_hint}")
-        print(f"  LLM steps: 3b) session topics  3c) intervention classification")
-        if provider == "ollama":
+        if args.build_prompts:
+            print(f"  LLM steps: 3b) build topic prompts  3c) build intervention prompts")
+        else:
+            print(f"  LLM steps: 3b) session topics  3c) intervention classification")
+        if provider == "ollama" and not args.build_prompts:
             _check_ollama_model(model_hint)
     print(f"{'='*60}\n")
 
@@ -246,6 +275,14 @@ def main() -> int:
     print("Step 1/4  Initializing database...")
     init_db(db_path)
     print(f"  DB ready: {db_path}")
+
+    # --build-prompts: wipe state/generated_prompts/ so every run produces a
+    # complete, fresh snapshot rather than mixing old and new prompt files.
+    if args.build_prompts:
+        if GENERATED_PROMPTS_DIR.exists():
+            shutil.rmtree(GENERATED_PROMPTS_DIR)
+            print(f"  Cleared {GENERATED_PROMPTS_DIR}/ (build-prompts refresh)")
+        GENERATED_PROMPTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # --stenogram: bypass file selection, force a single file through the pipeline.
     forced_session_id: str | None = None
@@ -345,56 +382,103 @@ def main() -> int:
 
     # Optional LLM passes (run outside conn context to avoid lock contention).
     if args.analyzer_mode == "llm":
-        # Step 3b: LLM session topic extraction (runs before intervention classification
-        # so that LLM-derived session topics are available as grounding context).
-        limit_note = f" (limit={args.llm_sessions_limit})" if args.llm_sessions_limit > 0 else ""
-        print(f"\nStep 3b/4  Running LLM session topic extraction{limit_note}...")
-        topics_cmd = [
-            sys.executable, "scripts/llm_session_topics.py",
-            "--provider", args.llm_provider,
-        ]
-        if args.llm_model.strip():
-            topics_cmd += ["--model", args.llm_model.strip()]
-        if forced_session_id:
-            topics_cmd += ["--session-id", forced_session_id, "--reprocess-session-topics"]
-        elif args.reprocess_session_topics:
-            topics_cmd += ["--reprocess-session-topics"]
-        if args.llm_sessions_limit > 0:
-            topics_cmd += ["--limit", str(args.llm_sessions_limit)]
-        topics_proc = subprocess.run(topics_cmd, env=env)
-        if topics_proc.returncode != 0:
-            with sqlite3.connect(db_path) as conn:
-                conn.execute("PRAGMA foreign_keys = ON;")
-                _finish_run(conn, run_id, "failed", 0)
-                conn.commit()
-            print(f"\nLLM session topic extraction failed (exit code {topics_proc.returncode}). Nothing was marked processed.")
-            return topics_proc.returncode
 
-        # Step 3c: LLM intervention classification.
-        llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
-        if args.llm_model.strip():
-            llm_cmd += ["--model", args.llm_model.strip()]
-        if forced_session_id:
-            llm_cmd += ["--session-id", forced_session_id]
-        if args.llm_speech_limit > 0:
-            llm_cmd += ["--limit", str(args.llm_speech_limit)]
-            print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_speech_limit})...")
+        # --ingest-external-outputs: skip LLM calls, read from external_prompts_output/.
+        if args.ingest_external_outputs:
+            print(f"\nStep 3b/4  Ingesting external session-topic outputs...")
+            topics_cmd = [
+                sys.executable, "scripts/llm_session_topics.py",
+                "--provider", args.llm_provider,
+                "--ingest-external-outputs",
+            ]
+            if args.llm_model.strip():
+                topics_cmd += ["--model", args.llm_model.strip()]
+            topics_proc = subprocess.run(topics_cmd, env=env)
+            if topics_proc.returncode != 0:
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    _finish_run(conn, run_id, "failed", 0)
+                    conn.commit()
+                print(f"\nIngestion of session topics failed (exit code {topics_proc.returncode}).")
+                return topics_proc.returncode
+
+            print(f"\nStep 3c/4  Ingesting external intervention outputs...")
+            llm_cmd = [
+                sys.executable, "scripts/llm_agent.py",
+                "--provider", args.llm_provider,
+                "--ingest-external-outputs",
+            ]
+            if args.llm_model.strip():
+                llm_cmd += ["--model", args.llm_model.strip()]
+            llm_proc = subprocess.run(llm_cmd, env=env)
+            if llm_proc.returncode != 0:
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    _finish_run(conn, run_id, "failed", 0)
+                    conn.commit()
+                print(f"\nIngestion of interventions failed (exit code {llm_proc.returncode}).")
+                return llm_proc.returncode
+
         else:
-            print(f"\nStep 3c/4  Running LLM intervention classification (all interventions)...")
-        llm_proc = subprocess.run(llm_cmd, env=env)
-        if llm_proc.returncode != 0:
-            with sqlite3.connect(db_path) as conn:
-                conn.execute("PRAGMA foreign_keys = ON;")
-                _finish_run(conn, run_id, "failed", 0)
-                conn.commit()
-            print(f"\nLLM intervention classification failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
-            return llm_proc.returncode
+            # Normal LLM flow (or --build-prompts flow).
+            # Step 3b: LLM session topic extraction (runs before intervention classification
+            # so that LLM-derived session topics are available as grounding context).
+            limit_note = f" (limit={args.llm_sessions_limit})" if args.llm_sessions_limit > 0 else ""
+            build_note = " [build-prompts only]" if args.build_prompts else ""
+            print(f"\nStep 3b/4  Running LLM session topic extraction{limit_note}{build_note}...")
+            topics_cmd = [
+                sys.executable, "scripts/llm_session_topics.py",
+                "--provider", args.llm_provider,
+            ]
+            if args.llm_model.strip():
+                topics_cmd += ["--model", args.llm_model.strip()]
+            if forced_session_id:
+                topics_cmd += ["--session-id", forced_session_id, "--reprocess-session-topics"]
+            elif args.reprocess_session_topics:
+                topics_cmd += ["--reprocess-session-topics"]
+            if args.llm_sessions_limit > 0:
+                topics_cmd += ["--limit", str(args.llm_sessions_limit)]
+            if args.build_prompts:
+                topics_cmd += ["--build-prompts"]
+            topics_proc = subprocess.run(topics_cmd, env=env)
+            if topics_proc.returncode != 0:
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    _finish_run(conn, run_id, "failed", 0)
+                    conn.commit()
+                print(f"\nLLM session topic extraction failed (exit code {topics_proc.returncode}). Nothing was marked processed.")
+                return topics_proc.returncode
+
+            # Step 3c: LLM intervention classification.
+            llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
+            if args.llm_model.strip():
+                llm_cmd += ["--model", args.llm_model.strip()]
+            if forced_session_id:
+                llm_cmd += ["--session-id", forced_session_id]
+            if args.llm_speech_limit > 0:
+                llm_cmd += ["--limit", str(args.llm_speech_limit)]
+            if args.build_prompts:
+                llm_cmd += ["--build-prompts"]
+                print(f"\nStep 3c/4  Building intervention prompts (build-prompts mode)...")
+            elif args.llm_speech_limit > 0:
+                print(f"\nStep 3c/4  Running LLM intervention classification (limit={args.llm_speech_limit})...")
+            else:
+                print(f"\nStep 3c/4  Running LLM intervention classification (all interventions)...")
+            llm_proc = subprocess.run(llm_cmd, env=env)
+            if llm_proc.returncode != 0:
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    _finish_run(conn, run_id, "failed", 0)
+                    conn.commit()
+                print(f"\nLLM intervention classification failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
+                return llm_proc.returncode
 
     with sqlite3.connect(db_path) as conn:
         conn.execute("PRAGMA foreign_keys = ON;")
-        if not args.skip_export:
-            step_label = "Step 4/4" if args.analyzer_mode == "baseline" else "Step 4/4"
-            print(f"\n{step_label}  Exporting frontend JSON artifacts...")
+        # --build-prompts: skip export — nothing was stored to DB.
+        skip_export = args.skip_export or args.build_prompts
+        if not skip_export:
+            print(f"\nStep 4/4  Exporting frontend JSON artifacts...")
             export_cmd = [sys.executable, "scripts/export_outputs.py", "--db-path", str(db_path)]
             export_proc = subprocess.run(export_cmd, env=env)
             if export_proc.returncode != 0:
@@ -402,6 +486,8 @@ def main() -> int:
                 conn.commit()
                 print(f"\nExport failed (exit code {export_proc.returncode}). Nothing was marked processed.")
                 return export_proc.returncode
+        elif args.build_prompts:
+            print("\nStep 4/4  Export skipped (build-prompts mode — no DB changes).")
         else:
             print("\nStep 4/4  Export skipped (--skip-export).")
 
@@ -411,7 +497,12 @@ def main() -> int:
     print(f"\n{'='*60}")
     print(f"Pipeline complete  run_id={run_id}")
     print(f"  Stenograms processed: {len(candidates)}")
-    print(f"  Outputs: {'skipped' if args.skip_export else 'outputs/'}")
+    if args.build_prompts:
+        print(f"  Prompts: {GENERATED_PROMPTS_DIR}/")
+        print(f"  Next: copy model responses (same filename) to state/external_prompts_output/")
+        print(f"        then run: python3 scripts/run_pipeline.py --analyzer-mode llm --ingest-external-outputs")
+    else:
+        print(f"  Outputs: {'skipped' if args.skip_export else 'outputs/'}")
     print(f"{'='*60}\n")
     return 0
 

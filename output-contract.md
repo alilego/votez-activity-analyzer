@@ -125,28 +125,31 @@ Structure:
         "text": "string",
         "topics": ["string"],
         "confidence": number,
+        "reasoning": "string",
         "stenogram_name": "string",
         "stenogram_link": "string"
       }
     ],
     "neutral": [
-        {
+      {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
         "text": "string",
         "topics": ["string"],
         "confidence": number,
+        "reasoning": "string",
         "stenogram_name": "string",
         "stenogram_link": "string"
       }
     ],
     "non_constructive": [
-        {
+      {
         "session_id": "string",
         "session_date": "YYYY-MM-DD",
         "text": "string",
         "topics": ["string"],
         "confidence": number,
+        "reasoning": "string",
         "stenogram_name": "string",
         "stenogram_link": "string"
       }
@@ -252,6 +255,10 @@ topics:
 confidence:
 - Optional numeric score between 0 and 1
 - Represents model confidence in classification
+
+reasoning:
+- Short free-text explanation produced by the model alongside the classification
+- Empty string when no reasoning is available (e.g. baseline classifier)
 
 party_id:
 - Stable unique identifier (slug or canonical party ID)

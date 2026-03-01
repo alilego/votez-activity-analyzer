@@ -90,6 +90,59 @@ This processes only new/changed stenograms, classifies every intervention via LL
 > | `--llm-sessions-limit N` | Session topic extraction (step 3b) | 0 = all |
 > | `--llm-speech-limit N` | Intervention classification (step 3c) | 0 = all |
 
+### Optimise prompts externally — without calling the local LLM
+
+Use this two-step workflow when you want to test a prompt against a more capable external model (e.g. ChatGPT, Gemini) before committing to a full pipeline run.
+
+**Step 1 — generate prompt files (no LLM call)**
+
+```bash
+python3 scripts/run_pipeline.py --analyzer-mode llm --build-prompts
+```
+
+This runs the full preparation logic (chunking, session header, topic grounding context) for **every session in the DB** and writes one `.txt` file per LLM call to `state/generated_prompts/`. **No LLM is called and nothing is written to the DB.** The directory is wiped and fully refreshed on every `--build-prompts` run so you always get a clean snapshot.
+
+Prompt files are named:
+```
+session_topics_{date}_{session_id}_draft_{model}_{label}.txt
+interventions_{date}_{session_id}_draft_{model}_{label}.txt
+```
+
+Each file contains a `=== METADATA ===` header, the full `=== SYSTEM PROMPT ===`, and the `=== USER MESSAGE ===`.
+
+**Step 2 — send to an external model, place the response in `state/external_prompts_output/`**
+
+Create a file with the **exact same name** as the prompt file (only the directory differs) and put the model's raw JSON response inside — just the JSON, no extra wrapper:
+
+```
+# For session topics (single-pass or reduce):
+{"topics": [{"label": "...", "description": "...", "law_id": null}, ...], "session_summary": "..."}
+
+# For interventions:
+{"results": [{"speech_index": 1, "constructiveness_label": "constructive", "topics": ["..."], "confidence": 0.9, "reasoning": "..."}, ...]}
+```
+
+**Step 3 — ingest the responses and export**
+
+```bash
+python3 scripts/run_pipeline.py --analyzer-mode llm --ingest-external-outputs
+```
+
+This reads every unprocessed file from `state/external_prompts_output/`, validates and stores each result to the DB, then exports. A `.done` sidecar is created next to each ingested file so it is never double-processed.
+
+> **Tip:** You can also target a single session directly via the sub-scripts:
+> ```bash
+> # Build prompts for one session only (output goes to state/generated_prompts/)
+> python3 scripts/llm_session_topics.py --session-id 8856 --run-id <run_id> --build-prompts
+> python3 scripts/llm_agent.py --session-id 8856 --run-id <run_id> --build-prompts
+>
+> # Ingest responses (reads from state/external_prompts_output/)
+> python3 scripts/llm_session_topics.py --run-id <run_id> --ingest-external-outputs
+> python3 scripts/llm_agent.py --run-id <run_id> --ingest-external-outputs
+> ```
+
+---
+
 ### Run baseline only (no LLM, no Ollama needed)
 
 ```bash
@@ -127,10 +180,11 @@ python3 scripts/run_pipeline.py --dry-run
 - Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:qwen2.5:7b-32k`) for auditability
 
 **Step 3c — Intervention classification** (`llm_agent.py`):
-- For each intervention, retrieves grounded context via hybrid RAG (session notes + neighbors + similarity)
-- Sends intervention + LLM session topics + classification rubric to the LLM
-- Stores label, topics, confidence, and evidence chunk IDs via MCP
-- Source is stamped as `llm_agent_v1` for auditability
+- Sends **all speeches of a session in one call** so the model has full conversational context
+- If a session is too large for the context window, speeches are split into greedy consecutive batches (never cutting a speech in half)
+- Each batch includes: session date, initial notes, LLM-derived session topics (grounding context), full speeches with speaker names and indices
+- LLM returns one classification object per speech: `constructiveness_label`, `topics`, `confidence`, `reasoning`
+- Stores results via MCP; source stamped as `llm_agent_v1` for auditability
 - Baseline labels (`constructiveness_baseline_v1`) are **never overwritten** by a re-run of the baseline — only LLM can upgrade them
 
 Run session topic extraction alone (useful for debugging):
@@ -168,8 +222,11 @@ python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai
 ## Inspect & Debug
 
 ```bash
-# Classify a single intervention (debugging)
-python3 scripts/llm_agent.py --intervention-id iv:abc:5 --run-id <run_id>
+# Classify a single session (all its interventions) directly
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id>
+
+# Build prompts for a single session without calling the LLM
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --build-prompts
 
 # Inspect RAG retrieval for an intervention
 python3 scripts/inspect_retrieval.py --session-id <id> --speech-index <n>
@@ -227,6 +284,18 @@ When using `--analyzer-cmd`, these env vars are injected:
 | `run_outputs` | Run summary stats |
 
 View: `interventions_enriched` — joins all of the above for easy querying.
+
+---
+
+## State directories
+
+| Directory | Contents |
+|-----------|----------|
+| `state/run_inputs/` | Stenogram file lists written at the start of each run |
+| `state/run_outputs/` | Run summary JSON written at the end of each run |
+| `state/run_prompts/` | Live prompts written during normal LLM runs — one timestamped `.txt` per call, never wiped |
+| `state/generated_prompts/` | Prompts generated by `--build-prompts` — wiped and refreshed on every run, covers all sessions |
+| `state/external_prompts_output/` | External model responses to ingest — place files here with names matching the corresponding `generated_prompts/` files |
 
 ---
 

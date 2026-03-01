@@ -236,6 +236,9 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
 def init_db(db_path: Path) -> Path:
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure sibling state directories exist.
+    for subdir in ("run_inputs", "run_prompts", "run_outputs", "external_prompts_output", "generated_prompts"):
+        (db_path.parent / subdir).mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(db_path) as conn:
         _create_schema(conn)
         conn.commit()
