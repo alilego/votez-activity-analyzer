@@ -123,10 +123,34 @@ Respond with ONLY a JSON object — no prose, no markdown, no explanation outsid
 # LLM call
 # ---------------------------------------------------------------------------
 
+def _format_session_topics(topics: list) -> str:
+    """Format session topics for injection into the prompt.
+
+    Handles both the old format (list[str]) and the new map-reduce format
+    (list[dict] with label/description/law_id keys).
+    """
+    if not topics:
+        return ""
+    lines: list[str] = []
+    for t in topics:
+        if isinstance(t, dict):
+            label = t.get("label", "")
+            desc = t.get("description", "")
+            law_id = t.get("law_id")
+            if law_id:
+                lines.append(f"- {label} ({law_id}): {desc}" if desc else f"- {label} ({law_id})")
+            else:
+                lines.append(f"- {label}: {desc}" if desc else f"- {label}")
+        elif isinstance(t, str) and t.strip():
+            lines.append(f"- {t.strip()}")
+    return "\n".join(lines)
+
+
 def _build_user_message(
     intervention: dict,
     session: dict,
     context_chunks: list[dict],
+    session_topics: list | None = None,
 ) -> str:
     parts: list[str] = []
 
@@ -134,6 +158,11 @@ def _build_user_message(
     initial_notes = (session.get("initial_notes") or "").strip()
     if initial_notes:
         parts.append(f"Session notes: {initial_notes}")
+
+    if session_topics:
+        topics_text = _format_session_topics(session_topics)
+        if topics_text:
+            parts.append(f"\n## Session topics\n{topics_text}")
 
     parts.append(
         f"\n## Speaker\n{intervention.get('raw_speaker', '')} "
@@ -273,6 +302,12 @@ def classify_intervention(
     session_result = server.call("get_session", {"session_id": iv["session_id"]})
     session = session_result.get("session", {}) if session_result["ok"] else {}
 
+    # Step 3b: get_session_topics (grounding context for constructiveness classification).
+    # Topics may be plain strings (keyword baseline) or rich dicts {label, description, law_id}
+    # from the LLM map-reduce pipeline.  _build_user_message handles both formats.
+    topics_result = server.call("get_session_topics", {"session_id": iv["session_id"]})
+    session_topics: list = topics_result.get("topics", []) if topics_result.get("ok") else []
+
     # Step 4: retrieve_context
     ctx_result = server.call(
         "retrieve_context",
@@ -294,7 +329,7 @@ def classify_intervention(
     )
 
     # Step 5: call LLM (with retries)
-    user_msg = _build_user_message(iv, session, context_chunks)
+    user_msg = _build_user_message(iv, session, context_chunks, session_topics=session_topics)
     last_exc: Exception | None = None
     llm_data: dict | None = None
     for attempt in range(1, MAX_RETRIES + 1):

@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-LLM-based session topic extraction.
+LLM-based session topic extraction — map-reduce pipeline.
 
-For each session that has only keyword-baseline topics (topics_source='keyword_baseline_v1'),
-or no topics at all:
+For each session:
 
-  1. Fetch session initial_notes via MCP get_session
-  2. Fetch the first N substantial chunks from session_chunks (early speeches)
-  3. Call LLM: "What are the main legislative/policy topics of this session?"
-  4. Store result via MCP store_session_topics (source='llm_v1')
+  1. Fetch all substantive chunks (>=200 chars) from session_chunks.
+  2. MAP: group consecutive chunks into windows up to MAX_WINDOW_CHARS; call LLM on each
+     to produce a free-form bullet list of specific subjects.
+  3. REDUCE: send all window bullet lists to the LLM; it merges, deduplicates,
+     and structures them into rich topic objects:
+       {"label": "...", "description": "...", "law_id": "..." | null}
+  4. Store result via MCP store_session_topics (source='llm_v1:{model}').
 
-The LLM-derived topics are then used by the intervention LLM pass as grounding context,
-replacing the keyword-taxonomy topics that the baseline builds.
+Why map-reduce?
+- Coverage: every part of the session is read, not just 20 sampled chunks.
+- Quality: small windows (~5 chunks) keep each map call focused and fast.
+- Rich topics: law IDs are paired with descriptions so they are useful for
+  grounding constructiveness classification in the intervention pass.
 
 Supports the same --provider / --model flags as llm_agent.py.
 
@@ -51,14 +56,25 @@ DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
 DEFAULT_MODEL_OLLAMA = "llama3.1:8b-8k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
-# How many chunks to sample for topic extraction.
-# Chunks are sampled evenly across the full session (not just the first N)
-# so that topics from all agenda items are represented.
-# 20 evenly-spaced chunks ≈ 2,700 tokens — fits any model comfortably.
-SAMPLE_CHUNKS = 20
+# Map-reduce parameters.
+# Consecutive substantive chunks are grouped greedily up to MAX_WINDOW_CHARS total.
+# Budget: 8,192 ctx × 80% = 6,554 usable tokens × ~4 chars/token ≈ 26,000 chars.
+# Subtract system prompt (~400 tokens = ~1,600 chars) and map output (~512 tokens = ~2,000 chars).
+# Net window budget: ~22,000 chars ≈ 5,500 tokens — safely within 80% of the ctx window.
+MAX_WINDOW_CHARS = 22000
+# Individual chunk text is capped so one very long speech cannot monopolise a window.
+# 4,000 chars ≈ 1,000 tokens — enough to capture a speech's full argument while still
+# allowing several speeches per window.
+MAX_CHUNK_CHARS = 4000
 
 MAX_TOPICS_PER_SESSION = 20
-MAX_TOPIC_LENGTH = 64
+# 120 chars gives room for specific Romanian labels with law numbers and locations
+# without truncating mid-word. The prompt explicitly asks for ≤10 words.
+MAX_TOPIC_LABEL_LENGTH = 120
+MAX_TOPIC_DESC_LENGTH = 200
+# Each reduce batch stays under this char limit so it fits in the 8k ctx window.
+# REDUCE_SYSTEM (~600 chars) + output (~2,000 chars) leaves ~19,400 chars for input.
+MAX_REDUCE_BATCH_CHARS = 19000
 
 MAX_RETRIES = 3
 RETRY_DELAY_S = 10
@@ -70,76 +86,77 @@ LLM_REQUEST_TIMEOUT_S = 180
 OLLAMA_NUM_CTX = 8192
 
 # ---------------------------------------------------------------------------
-# Prompt
+# Prompts — map-reduce
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Two-step prompts
-#
-# Why two steps?
-# Small local models (llama3.1:8b) produce much better content when allowed to
-# reason freely in prose first. When forced directly into JSON they fall back to
-# generic terms. Step 1 extracts rich prose; Step 2 distils it into structured JSON.
-# ---------------------------------------------------------------------------
+# MAP prompt: free-form bullet list from a small window of chunks.
+# Romanian so the model stays in-language and avoids translation loss.
+WINDOW_SYSTEM = """Ești un analist expert al ședințelor Parlamentului României.
 
-# Step 1: free-form analysis in Romanian — model describes the session content.
-STEP1_SYSTEM = """Ești un analist expert al ședințelor Parlamentului României.
+Citește fragmentele de stenogramă de mai jos și listează TOATE subiectele specifice menționate.
 
-Citește fragmentele de stenogramă și listează TOATE subiectele specifice menționate.
-
-Formatul răspunsului — o listă cu linii separate, fiecare linie = un subiect specific:
-- buget de stat 2025
-- Autostrada A7 sector Siret-Pașcani
-- dotare școli gimnaziale
-- ambulanțe județ Sibiu
-- Astra Film Festival
-- etc.
+Formatul răspunsului — o listă de puncte, câte un subiect pe linie, DOAR cu informații din textul de mai jos:
+- [subiect specific din text — sumă/locație/instituție dacă există]
+- [proiect de lege din text — număr și scurt titlu]
+- [altă temă specifică din text]
 
 Reguli:
-- Fii SPECIFIC: menționează sumele, locațiile, instituțiile, numerele de lege din text.
-- NU scrie generic: NU "buget", NU "educație", NU "infrastructură" — scrie exact ce apare în text.
-- Listează cel puțin 10 subiecte dacă textul le conține.
-- Răspunde DOAR cu lista de puncte, fără introducere."""
+- Fii SPECIFIC: menționează sumele, locațiile, instituțiile, numerele de lege/proiect din text.
+- Dacă apare un număr de lege sau proiect (ex. PL-x 45/2025, OUG 114/2018, nr. 360/2023), include-l.
+- NU scrie generic: NU "buget", NU "educație", NU "infrastructură" singure.
+- Dacă fragmentele nu conțin subiecte clare, scrie "- (fără subiecte identificate)".
+- Răspunde DOAR cu lista de puncte, fără titlu sau introducere."""
 
-# Step 2: extract structured JSON from the prose analysis.
-STEP2_SYSTEM = """You extract a structured topic list from a parliamentary session analysis.
+# REDUCE prompt: merge all window bullet lists into structured JSON topic objects.
+REDUCE_SYSTEM = """You are extracting a structured topic list from a Romanian parliamentary session.
 
-Given a plain-text analysis of a Romanian parliamentary session, extract 5–20 specific topics.
+You will receive bullet-list summaries from multiple windows covering the full session.
+Your job: merge them into a deduplicated list of up to 20 rich topic objects.
+
+Output format — respond with ONLY valid JSON, no prose, no markdown:
+{
+  "topics": [
+    {"label": "LABEL_FROM_INPUT_MAX_10_WORDS", "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE", "law_id": "LAW_ID_FROM_INPUT_OR_NULL"},
+    {"label": "LABEL_FROM_INPUT_MAX_10_WORDS", "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE", "law_id": null}
+  ],
+  "session_summary": "ONE_SENTENCE_SUMMARY_FROM_INPUT"
+}
 
 Rules:
-- Topics must be specific to this session (e.g. "buget de stat 2025", "PL-x 45/2025", "spital Suceava").
-- Do NOT use generic terms like "legislativ", "politica", "economie", "procedura".
-- Each topic: 2–6 words, in Romanian.
-- Deduplicate similar topics.
+- label: MAXIMUM 10 words, in Romanian, specific to this session. If a law/bill is the topic, use its short title + identifier (e.g. "Reforma pensiilor speciale PL-x 45/2025"). Never cut a label mid-sentence — finish with a complete noun phrase.
+- description: one sentence in Romanian. MUST include: (a) what the topic is actually about (not just its name), (b) all specific details present in the input — amounts, ALL locations mentioned, institutions, percentages. If a law/bill is mentioned, state what it regulates. ONLY use facts that appear in the input text — do NOT invent amounts, locations, or details.
+- law_id: the bill/law/ordinance identifier if mentioned (e.g. "PL-x 45/2025", "OUG 114/2018", "nr. 360/2023"), otherwise null.
+- COMBINING duplicates: if two entries cover the same subject but mention different locations or amounts, COMBINE them into ONE entry whose label and description list ALL locations and amounts from both. Do NOT drop any location or amount that appears in the input.
+- Only drop an entry if it is truly identical (same subject, same location, same amount) to another.
+- CRITICAL: every label, description and law_id you output MUST be grounded in the input text above. Do NOT copy from examples or invent details not present in the input.
+- Drop generic entries like "buget", "legislativ", "procedura" unless paired with a specific amount/date/institution.
+- Keep up to 20 topics. Prefer specificity over quantity.
+- Do NOT include "(fără subiecte identificate)" lines."""
 
-Respond with ONLY valid JSON, nothing else:
-{"topics": ["topic1", "topic2", ...], "reasoning": "one sentence summary"}"""
+
+def _build_window_message(session_header: str, window_chunks: list[dict], window_num: int, total_windows: int) -> str:
+    """Build the user message for one map window."""
+    parts = [
+        f"{session_header}  [Fereastră {window_num}/{total_windows}]",
+        "Fragmente:",
+    ]
+    for i, chunk in enumerate(window_chunks, 1):
+        parts.append(f"[{i}] {chunk['text'].strip()}")
+    parts.append("Listează subiectele specifice din fragmentele de mai sus, câte unul pe linie.")
+    return "\n\n".join(parts)
 
 
-def _build_session_message(session: dict, chunks: list[dict]) -> str:
-    """Build the user message for step 1 (free-form analysis)."""
-    parts: list[str] = []
-    parts.append(
-        f"Ședința ID: {session.get('session_id', '')}  "
-        f"Data: {session.get('session_date', '')}"
-    )
-    initial_notes = (session.get("initial_notes") or "").strip()
-    if initial_notes:
-        parts.append(f"Note inițiale:\n{initial_notes}")
-
-    if chunks:
-        # Number each fragment so the model treats each as separate — reduces tendency to summarize.
-        frag_parts: list[str] = ["Fragmente din stenogramă:"]
-        for i, chunk in enumerate(chunks, 1):
-            frag_parts.append(f"[Fragment {i}]\n{chunk['text'].strip()}")
-        parts.append("\n\n".join(frag_parts))
-
-    parts.append("Listează TOATE subiectele specifice din fragmentele de mai sus, câte unul pe linie.")
+def _build_reduce_message(session_header: str, window_results: list[str]) -> str:
+    """Build the user message for the reduce step."""
+    parts = [session_header, "Window summaries from across the full session:"]
+    for i, prose in enumerate(window_results, 1):
+        parts.append(f"--- Window {i} ---\n{prose.strip()}")
+    parts.append("Merge the above into the structured JSON topic list.")
     return "\n\n".join(parts)
 
 
 # ---------------------------------------------------------------------------
-# LLM calls (two-step)
+# LLM calls (map-reduce)
 # ---------------------------------------------------------------------------
 
 def _build_client(provider: str, model: str):
@@ -179,15 +196,14 @@ def _build_client(provider: str, model: str):
     raise SystemExit(f"Unknown provider: {provider!r}. Choose 'openai' or 'ollama'.")
 
 
-def _chat(client, system: str, user: str, json_mode: bool = False) -> str:
+def _chat(client, system: str, user: str, json_mode: bool = False, max_tokens: int = 512) -> str:
     """Single LLM call. Returns raw string content."""
     extra_kwargs: dict = {}
     if json_mode:
         extra_kwargs["response_format"] = {"type": "json_object"}
-    # For Ollama, explicitly set num_ctx so large session prompts are not
-    # silently truncated (Ollama's default runtime context is only 4096 tokens).
-    # Ollama's /v1/chat/completions endpoint reads num_ctx at the top level of the
-    # request body, not nested under "options". extra_body merges into the top level.
+    # For Ollama, explicitly set num_ctx so session prompts are not silently
+    # truncated. Ollama reads num_ctx at the top level of the request body
+    # (not nested under "options"), so extra_body merges it correctly.
     if getattr(client, "_provider", "") == "ollama":
         extra_kwargs["extra_body"] = {"num_ctx": OLLAMA_NUM_CTX}
     response = client.chat.completions.create(
@@ -196,60 +212,180 @@ def _chat(client, system: str, user: str, json_mode: bool = False) -> str:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        temperature=0.0,
+        temperature=0.2,
+        max_tokens=max_tokens,
         timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
     )
     return response.choices[0].message.content or ""
 
 
-def _call_llm_two_step(session_message: str, client, provider: str) -> dict:
+def _group_into_windows(chunks: list[dict], max_chars: int) -> list[list[dict]]:
+    """Group consecutive chunks greedily up to max_chars total text.
+
+    Each chunk's text is already capped at MAX_CHUNK_CHARS before this is called.
+    Starting a new window when adding the next chunk would exceed the budget keeps
+    related speeches together (better topic signal) while bounding token use.
+    A chunk that is already at the cap becomes its own single-chunk window.
     """
-    Two-step extraction:
-      Step 1 — free-form prose analysis (no JSON constraint, model reasons freely).
-      Step 2 — extract structured JSON from the prose.
+    windows: list[list[dict]] = []
+    current: list[dict] = []
+    current_chars = 0
+    for chunk in chunks:
+        chunk_len = len(chunk["text"])
+        if current and current_chars + chunk_len > max_chars:
+            windows.append(current)
+            current = []
+            current_chars = 0
+        current.append(chunk)
+        current_chars += chunk_len
+    if current:
+        windows.append(current)
+    return windows
 
-    Why two steps? llama3.1:8b produces rich, accurate content in free-form Romanian
-    but defaults to generic terms when forced into JSON directly. Separating reasoning
-    from formatting produces much better topic quality.
-    """
-    # Step 1: free-form analysis.
-    prose = _chat(client, STEP1_SYSTEM, session_message, json_mode=False)
-    print(f"  Step 1 prose ({len(prose)} chars):")
-    for line in prose.strip().splitlines()[:30]:
-        print(f"    {line}")
 
-    # Step 2: extract JSON from the prose.
-    extraction_user = (
-        f"Analiza ședinței:\n{prose}\n\n"
-        "Extrage lista de subiecte specifice ca JSON."
-    )
-    raw = _chat(client, STEP2_SYSTEM, extraction_user, json_mode=True)
+def _batch_prose(prose_list: list[str], max_chars: int) -> list[list[str]]:
+    """Group a flat list of prose strings into batches that fit within max_chars total."""
+    batches: list[list[str]] = []
+    current: list[str] = []
+    current_chars = 0
+    for prose in prose_list:
+        if current and current_chars + len(prose) > max_chars:
+            batches.append(current)
+            current = []
+            current_chars = 0
+        current.append(prose)
+        current_chars += len(prose)
+    if current:
+        batches.append(current)
+    return batches
 
-    # Strip markdown fences defensively.
+
+def _parse_topics(raw: str) -> list[dict]:
+    """Parse and normalise a reduce JSON response into a list of topic dicts."""
     if raw.startswith("```"):
-        raw = "\n".join(line for line in raw.splitlines() if not line.startswith("```")).strip()
-
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Step 2 returned non-JSON: {raw!r}") from exc
-
-
-def _validate_topics(data: dict) -> list[str]:
-    topics_raw = data.get("topics", [])
+        raw = "\n".join(ln for ln in raw.splitlines() if not ln.startswith("```")).strip()
+    parsed = json.loads(raw)
+    topics_raw = parsed.get("topics", [])
     if not isinstance(topics_raw, list):
-        return []
-    topics: list[str] = []
+        raise ValueError("'topics' is not a list")
+    topics: list[dict] = []
     seen: set[str] = set()
-    for t in topics_raw:
-        t = str(t).strip()
-        if t and len(t) <= MAX_TOPIC_LENGTH and t not in seen:
-            topics.append(t)
-            seen.add(t)
+    for item in topics_raw:
+        if isinstance(item, dict) and item.get("label"):
+            label = str(item["label"]).strip()[:MAX_TOPIC_LABEL_LENGTH]
+            if label.lower() in seen:
+                continue
+            seen.add(label.lower())
+            topics.append({
+                "label": label,
+                "description": str(item.get("description", "")).strip()[:MAX_TOPIC_DESC_LENGTH],
+                "law_id": item.get("law_id") or None,
+            })
+        elif isinstance(item, str) and item.strip():
+            label = item.strip()[:MAX_TOPIC_LABEL_LENGTH]
+            if label.lower() in seen:
+                continue
+            seen.add(label.lower())
+            topics.append({"label": label, "description": "", "law_id": None})
         if len(topics) >= MAX_TOPICS_PER_SESSION:
             break
     return topics
+
+
+def _call_reduce_once(client, session_header: str, prose_list: list[str], label: str) -> list[dict]:
+    """Run one reduce LLM call over a list of prose strings. Returns parsed topic list."""
+    reduce_msg = _build_reduce_message(session_header, prose_list)
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            raw = _chat(client, REDUCE_SYSTEM, reduce_msg, json_mode=True, max_tokens=2048)
+            topics = _parse_topics(raw)
+            print(f"  {label}: {len(topics)} topics from {len(prose_list)} inputs ({len(reduce_msg)} chars)")
+            return topics
+        except (json.JSONDecodeError, ValueError) as exc:
+            print(f"  {label} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    return []
+
+
+def _reduce(client, session_header: str, window_results: list[str]) -> dict:
+    """Two-stage reduce.
+
+    Stage 1: if all window prose fits in one batch → single reduce call (common case).
+             Otherwise split into batches of MAX_REDUCE_BATCH_CHARS and reduce each
+             batch to an intermediate JSON topic list serialised back to prose.
+    Stage 2: reduce all intermediate lists into the final deduplicated 20 topics.
+    """
+    batches = _batch_prose(window_results, MAX_REDUCE_BATCH_CHARS)
+    total_chars = sum(len(p) for p in window_results)
+    print(f"  Reduce: {len(window_results)} window(s), {total_chars} chars → {len(batches)} batch(es)")
+
+    if len(batches) == 1:
+        # Single-pass reduce — most sessions fit here.
+        topics = _call_reduce_once(client, session_header, batches[0], "Reduce")
+        return {"topics": topics, "session_summary": ""}
+
+    # Stage 1: reduce each batch to an intermediate topic list.
+    intermediate_prose: list[str] = []
+    for b_idx, batch in enumerate(batches, 1):
+        partial = _call_reduce_once(client, session_header, batch, f"Reduce stage-1 batch {b_idx}/{len(batches)}")
+        if partial:
+            # Serialise partial topics back to bullet prose for stage 2 input.
+            lines = []
+            for t in partial:
+                law = f" ({t['law_id']})" if t.get("law_id") else ""
+                desc = f": {t['description']}" if t.get("description") else ""
+                lines.append(f"- {t['label']}{law}{desc}")
+            intermediate_prose.append("\n".join(lines))
+
+    # Stage 2: merge all intermediate lists into the final result.
+    final_topics = _call_reduce_once(client, session_header, intermediate_prose, "Reduce stage-2 final")
+    return {"topics": final_topics, "session_summary": ""}
+
+
+def _call_map_reduce(client, session_header: str, substantive_chunks: list[dict]) -> dict:
+    """
+    Map-reduce topic extraction.
+
+    MAP: for each window of consecutive substantive chunks (up to MAX_WINDOW_CHARS), call the LLM to produce
+         a free-form Romanian bullet list of specific subjects.
+    REDUCE: send all bullet lists to the LLM; it merges, deduplicates, and structures
+            them into rich {label, description, law_id} topic objects (max 20).
+    """
+    windows = _group_into_windows(substantive_chunks, MAX_WINDOW_CHARS)
+    total_windows = len(windows)
+    avg_chunks = len(substantive_chunks) / total_windows if total_windows else 0
+    print(f"  Map step: {len(substantive_chunks)} chunks → {total_windows} window(s) (avg {avg_chunks:.1f} chunks/window, max {MAX_WINDOW_CHARS} chars)")
+
+    window_results: list[str] = []
+    for w_idx, window in enumerate(windows, 1):
+        user_msg = _build_window_message(session_header, window, w_idx, total_windows)
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                prose = _chat(client, WINDOW_SYSTEM, user_msg, max_tokens=512)
+                window_results.append(prose)
+                bullet_count = sum(
+                    1 for line in prose.splitlines()
+                    if line.lstrip().startswith(("-", "•", "*", "–"))
+                )
+                print(f"    window {w_idx}/{total_windows}: ~{bullet_count} bullets ({len(prose)} chars): {prose[:120]!r}")
+                break
+            except Exception as exc:
+                print(f"    window {w_idx} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY_S)
+                else:
+                    window_results.append("")  # Skip window on repeated failure.
+
+    # Reduce all window bullet lists into structured JSON.
+    # Two-stage reduce for large sessions:
+    #   Stage 1: batch window prose into groups that fit MAX_REDUCE_BATCH_CHARS,
+    #            call reduce on each group → intermediate JSON topic list (as prose).
+    #   Stage 2: reduce all intermediate lists into the final 20 deduplicated topics.
+    # For small sessions (all windows fit in one batch) this degenerates to a single call.
+    non_empty = [r for r in window_results if r.strip()]
+    return _reduce(client, session_header, non_empty)
 
 
 # ---------------------------------------------------------------------------
@@ -264,14 +400,14 @@ def extract_session_topics(
     provider: str,
     conn: sqlite3.Connection,
 ) -> dict:
+    """Run the map-reduce pipeline for one session and store the result via MCP."""
     # Fetch session metadata.
     session_result = server.call("get_session", {"session_id": session_id})
     if not session_result["ok"]:
         return session_result
     session = session_result["session"]
 
-    # Fetch all chunks for this session, then sample evenly across the full timeline.
-    # This ensures topics from all agenda items are represented, not just the opening.
+    # Fetch all chunks ordered by position.
     all_rows = conn.execute(
         """
         SELECT chunk_id, chunk_type, text
@@ -282,58 +418,51 @@ def extract_session_topics(
         (session_id,),
     ).fetchall()
 
-    # Always include session_notes (first chunk if present).
+    # Separate the session_notes header from the speech pool.
     notes_rows = [r for r in all_rows if r["chunk_type"] == "session_notes"]
 
-    # Filter to substantive speeches only (>=200 chars) before sampling.
-    # Short chunks are mostly voting procedural lines ("Marginal 37 - vot, vă rog")
-    # which add noise and no topical signal.
+    # Keep substantive speeches only (>=200 chars).
+    # Short chunks are procedural voting lines that add noise ("vă rog să votați").
     substantive_rows = [
         r for r in all_rows
         if r["chunk_type"] != "session_notes" and len(r["text"]) >= 200
     ]
-    # Fall back to all non-notes if too few substantive chunks.
+    # Fall back to all non-notes if the session has very short speeches (rare).
     speech_pool = substantive_rows if len(substantive_rows) >= 5 else [
         r for r in all_rows if r["chunk_type"] != "session_notes"
     ]
 
-    n_speeches = SAMPLE_CHUNKS - len(notes_rows)
-    if len(speech_pool) <= n_speeches:
-        sampled_speeches = speech_pool
-    else:
-        step = len(speech_pool) / n_speeches
-        sampled_speeches = [speech_pool[int(i * step)] for i in range(n_speeches)]
+    # Build the header that goes at the top of every window message.
+    session_header = (
+        f"Ședința ID: {session_id}  Data: {session.get('session_date', '')}  "
+        f"({len(speech_pool)} fragmente substantive)"
+    )
+    notes_text = (notes_rows[0]["text"].strip() if notes_rows else "")
+    if notes_text:
+        session_header += f"\nNote inițiale: {notes_text[:200]}"
 
-    sampled_rows = notes_rows + sampled_speeches
-    chunks = [{"chunk_id": r["chunk_id"], "chunk_type": r["chunk_type"], "text": r["text"]} for r in sampled_rows]
-
-    initial_notes = session.get("initial_notes", "")
-    text_preview = initial_notes[:80].replace("\n", " ") if initial_notes else "(no notes)"
     print(
-        f"  LLM call: session={session_id}  date={session.get('session_date', '')}  "
-        f"sampled={len(chunks)}/{len(all_rows)} chunks  notes_preview={text_preview!r}..."
+        f"  session={session_id}  date={session.get('session_date', '')}  "
+        f"substantive={len(speech_pool)}/{len(all_rows)} chunks"
     )
 
-    session_msg = _build_session_message(session, chunks)
-    last_exc: Exception | None = None
-    llm_data: dict | None = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            llm_data = _call_llm_two_step(session_msg, client, provider)
-            break
-        except Exception as exc:
-            last_exc = exc
-            print(f"  LLM attempt {attempt}/{MAX_RETRIES} failed: {exc}")
-            if attempt < MAX_RETRIES:
-                time.sleep(RETRY_DELAY_S)
+    # Cap each chunk to MAX_CHUNK_CHARS so no single long speech overflows a window.
+    # Long speeches are truncated with an ellipsis marker so the model knows more follows.
+    substantive_chunks = [
+        {
+            "chunk_id": r["chunk_id"],
+            "chunk_type": r["chunk_type"],
+            "text": r["text"][:MAX_CHUNK_CHARS] + ("…" if len(r["text"]) > MAX_CHUNK_CHARS else ""),
+        }
+        for r in speech_pool
+    ]
+    llm_data = _call_map_reduce(client, session_header, substantive_chunks)
 
-    if llm_data is None:
-        return {"ok": False, "error": {"code": "LLM_ERROR", "message": str(last_exc)}}
-
-    topics = _validate_topics(llm_data)
-    reasoning = llm_data.get("reasoning", "")
-    print(f"  LLM response: {len(topics)} topics  reasoning={reasoning!r}")
-    print(f"  topics={topics}")
+    topics = llm_data.get("topics", [])
+    session_summary = llm_data.get("session_summary", "")
+    print(f"  session_summary={session_summary!r}")
+    for t in topics:
+        print(f"    - {t.get('label')} | {t.get('description', '')[:80]} | law_id={t.get('law_id')}")
 
     topics_source = f"llm_v1:{client._model}"
     store_result = server.call(
@@ -442,7 +571,7 @@ def run_session_topics(
                     session_id=session_id,
                     model=model,
                     client=client,
-                    provider=provider,
+                    provider=provider,  # kept for future use / logging
                     conn=raw_conn,
                 )
                 if result.get("ok"):

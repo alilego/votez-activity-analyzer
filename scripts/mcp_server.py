@@ -361,15 +361,32 @@ class MCPServer:
 
         if not isinstance(topics_raw, list):
             return _err("VALIDATION_ERROR", "topics must be a list")
-        topics: list[str] = []
+
+        # Accept either list[str] (keyword baseline) or list[dict] (LLM map-reduce).
+        # For dicts, each item must have at least a non-empty "label" key.
+        # Deduplication is performed by label (case-insensitive) for dicts, by value for strings.
+        topics: list = []
         seen: set[str] = set()
-        for t in topics_raw:
-            if not isinstance(t, str):
-                return _err("VALIDATION_ERROR", "Each topic must be a string")
-            t = t.strip()
-            if t and t not in seen:
-                topics.append(t)
-                seen.add(t)
+        for item in topics_raw:
+            if isinstance(item, dict):
+                label = str(item.get("label", "")).strip()
+                if not label:
+                    return _err("VALIDATION_ERROR", "Each topic dict must have a non-empty 'label' key")
+                key = label.lower()
+                if key not in seen:
+                    topics.append({
+                        "label": label,
+                        "description": str(item.get("description", "")).strip(),
+                        "law_id": item.get("law_id") or None,
+                    })
+                    seen.add(key)
+            elif isinstance(item, str):
+                t = item.strip()
+                if t and t not in seen:
+                    topics.append(t)
+                    seen.add(t)
+            else:
+                return _err("VALIDATION_ERROR", "Each topic must be a string or a dict with 'label'")
 
         # Valid formats: 'keyword_baseline_v1' or 'llm_v1:{model_name}'
         if source != "keyword_baseline_v1" and not source.startswith("llm_v1:"):
