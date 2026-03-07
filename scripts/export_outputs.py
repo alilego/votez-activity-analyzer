@@ -11,9 +11,14 @@ import re
 import sqlite3
 import unicodedata
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from init_db import DEFAULT_DB_PATH, init_db
+
+
+DEFAULT_TAXONOMY_CONFIG_PATH = Path("config/topic_taxonomy.json")
 
 
 def _map_label(label: str) -> str:
@@ -42,6 +47,398 @@ def _safe_topics(topics_json: str) -> list[str]:
 def _top_topics(counter: Counter[str], limit: int = 20) -> list[dict]:
     ranked = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
     return [{"topic": topic, "count": count} for topic, count in ranked[:limit]]
+
+
+def _top_directions(counter: Counter[str], limit: int = 20) -> list[dict]:
+    filtered = Counter({k: v for k, v in counter.items() if k != "altele"})
+    ranked = sorted(filtered.items(), key=lambda x: (-x[1], x[0]))
+    return [{"topic": topic, "count": count} for topic, count in ranked[:limit]]
+
+
+_TOPIC_STOPWORDS = {
+    "si", "sau", "de", "din", "la", "cu", "pentru", "in", "pe", "ale", "al", "ai", "a",
+    "un", "o", "unei", "unui", "lui", "lor", "prin", "privind", "despre", "asupra",
+    "modificarea", "modificari", "lege", "legii", "proiect", "proiectul", "propunere",
+    "legislativa", "parlament", "parlamentara", "romania", "roman", "national",
+}
+
+_TOKEN_EQUIVALENTS = {
+    "fiscal": "fiscalitate",
+    "fiscala": "fiscalitate",
+    "fiscale": "fiscalitate",
+    "taxe": "taxe",
+    "taxa": "taxe",
+    "taxelor": "taxe",
+    "impozit": "impozite",
+    "impozite": "impozite",
+    "impozitelor": "impozite",
+    "educatie": "educatie",
+    "invatamant": "educatie",
+    "scoala": "educatie",
+    "scoli": "educatie",
+    "elevi": "educatie",
+    "studenti": "educatie",
+    "sanatate": "sanatate",
+    "spital": "sanatate",
+    "spitale": "sanatate",
+    "medicamente": "sanatate",
+    "drum": "infrastructura",
+    "drumuri": "infrastructura",
+    "autostrada": "infrastructura",
+    "autostrazi": "infrastructura",
+    "feroviar": "infrastructura",
+    "transport": "infrastructura",
+    "energie": "energie",
+    "energetic": "energie",
+    "energetica": "energie",
+    "agricultura": "agricultura",
+    "agricol": "agricultura",
+    "agricole": "agricultura",
+    "fermieri": "agricultura",
+    "pensie": "pensii",
+    "pensii": "pensii",
+    "pensiilor": "pensii",
+    "militar": "aparare",
+    "militare": "aparare",
+    "aparare": "aparare",
+    "securitate": "securitate",
+    "siguranta": "securitate",
+    "sigurantei": "securitate",
+    "suveranism": "suveranitate",
+    "suveranist": "suveranitate",
+    "suveranista": "suveranitate",
+    "suveraniste": "suveranitate",
+    "constitutie": "constitutional",
+    "constitutional": "constitutional",
+    "constitutionala": "constitutional",
+    "neconstitutionalitate": "constitutional",
+    "ccr": "constitutional",
+    "procedura": "procedural",
+    "procedurala": "procedural",
+    "vot": "procedural",
+    "sedinta": "procedural",
+    "plen": "procedural",
+    "ordine": "procedural",
+    "agenda": "procedural",
+    "rusia": "rusia_ucraina",
+    "ucraina": "rusia_ucraina",
+    "nato": "securitate_externa",
+    "csat": "securitate_externa",
+    "apararii": "aparare",
+    "drone": "aparare",
+    "buget": "buget",
+    "bugetar": "buget",
+    "bugetara": "buget",
+    "bugetului": "buget",
+}
+
+_DIRECTION_RULES: list[tuple[str, set[str], set[str]]] = [
+    (
+        "politica externa si securitate",
+        {"rusia_ucraina", "securitate_externa", "geopolitica", "aparare", "securitate", "suveranitate"},
+        {
+            "rusia", "ucraina", "nato", "razboi", "geopolitica", "aparare", "securitate", "suveranitate",
+            "csat", "uniunea europeana", "ue", "sua", "diaspora", "sanctiuni", "pace",
+            "politica externa", "grupuri de prietenie", "paza obiective",
+        },
+    ),
+    (
+        "procedura parlamentara",
+        {"procedural"},
+        {
+            "procedura", "vot", "ordine", "sedinta", "plen", "cvorum", "respingere", "regulament",
+            "ora prim-ministrului", "retrimitere la comisie", "lucru in paralel", "amendament",
+            "amendamente", "comisie",
+        },
+    ),
+    (
+        "economie si fiscalitate",
+        {"fiscalitate", "taxe", "impozite", "buget", "investitii", "pnrr", "fonduri"},
+        {
+            "fiscal", "tax", "impoz", "buget", "austeritate", "investitii", "pnrr", "fonduri",
+            "finante", "cheltuieli", "datorie publica", "privatizare", "imm", "multinationale",
+            "salariu minim", "saracie", "industrie", "servicii publice", "tva",
+            "pensii", "pensiile speciale", "pensii de serviciu", "reconversie profesionala",
+            "valea jiului", "minerit",
+        },
+    ),
+    (
+        "energie si mediu",
+        {"energie"},
+        {
+            "energie", "facturi energie", "certificat verde", "certificat emisii", "piata energiei",
+            "pret energie", "energie termica", "energie regenerabila", "carbon", "apele romane",
+            "salrom", "resurse nationale", "certificate verzi", "hidroelectrica",
+        },
+    ),
+    (
+        "infrastructura si transport",
+        {"infrastructura"},
+        {"drum", "autostr", "transport", "feroviar", "aeroport", "port", "control spatiu aerian", "tulcea", "risc seismic"},
+    ),
+    (
+        "agricultura si dezvoltare rurala",
+        {"agricultura"},
+        {"agricultura", "fermier", "irig", "rural", "fond cinegetic", "ferme de familie", "despagubiri"},
+    ),
+    (
+        "sanatate",
+        {"sanatate"},
+        {"sanatate", "spital", "medicament", "medical", "reforma sanatatii", "salarizare medici", "profesia medic"},
+    ),
+    (
+        "educatie",
+        {"educatie"},
+        {"educatie", "invatamant", "scoala", "elev", "student", "univers", "burse", "curriculum"},
+    ),
+    (
+        "justitie si constitutional",
+        {"constitutional"},
+        {
+            "constitut", "constitutional", "ccr", "justit", "stat de drept", "prescriptie penala",
+            "coruptie", "drepturi fundamentale", "abuzuri", "retrocedari", "proprietate privata",
+            "retrocedari ilegale", "cod civil", "retrocedare", "contraventii", "csm", "diicot",
+            "anpc", "antifrauda", "cna",
+        },
+    ),
+    (
+        "digitalizare si tehnologie",
+        {"digitalizare"},
+        {"digital", "cibern", "ai", "tehnolog", "dezinformare", "propaganda", "inteligenta artificiala", "eurohpc"},
+    ),
+    (
+        "media si comunicare publica",
+        {"tvr", "radiodifuziune"},
+        {"tvr", "radiodifuziune", "libertatea de exprimare"},
+    ),
+    (
+        "administratie publica si guvernare",
+        {"guvern", "transparenta"},
+        {
+            "guvern", "minister", "administr", "transparent", "numiri politice", "finantare electorala",
+            "demisie presedinte", "alegeri prezidentiale", "critica presedinte", "vicepremieri",
+            "curtea de conturi", "ans", "numire presedinte ca", "proiect de tara",
+            "transfer imobil", "transfer proprietate", "transfer autoritate", "lege organica",
+            "claritate legislativa", "responsabilitate institutionala", "proprietate", "critica politica",
+            "comisia europeana", "usr", "prelungire program",
+        },
+    ),
+    (
+        "cultura si patrimoniu",
+        {"patrimoniu"},
+        {"cultura", "patrimoniu", "brancusi", "muze", "festival", "salina", "valori nationale", "identitate nationala"},
+    ),
+    (
+        "social si drepturi civile",
+        {"minoritati"},
+        {
+            "minoritati", "violenta domestica", "democratie", "extremism", "unitate nationala",
+            "romani diaspora", "pasapoarte", "permise auto", "masuri represive", "putin", "federatia rusa",
+            "basarabia", "holodomor", "istoria evreilor", "corneliu vadim tudor",
+            "cumintenia pamantului",
+        },
+    ),
+    (
+        "proces legislativ si reforme",
+        set(),
+        {"pl-x", "oug ", "og ", "hg ", "legea nr", "phcd", "cod fiscal", "reglementare"},
+    ),
+    (
+        "justitie si constitutional",
+        set(),
+        {"ejtn"},
+    ),
+]
+
+
+def _load_taxonomy_config(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    return data
+
+
+def _apply_taxonomy_config(path: Path) -> bool:
+    data = _load_taxonomy_config(path)
+    if data is None:
+        return False
+
+    stopwords_raw = data.get("topic_stopwords", [])
+    equivalents_raw = data.get("token_equivalents", {})
+    rules_raw = data.get("direction_rules", [])
+
+    if not isinstance(stopwords_raw, list) or not isinstance(equivalents_raw, dict) or not isinstance(rules_raw, list):
+        return False
+
+    stopwords: set[str] = set()
+    for item in stopwords_raw:
+        if isinstance(item, str) and item.strip():
+            stopwords.add(item.strip())
+
+    equivalents: dict[str, str] = {}
+    for k, v in equivalents_raw.items():
+        if isinstance(k, str) and isinstance(v, str) and k.strip() and v.strip():
+            equivalents[k.strip()] = v.strip()
+
+    rules: list[tuple[str, set[str], set[str]]] = []
+    for item in rules_raw:
+        if not isinstance(item, dict):
+            continue
+        label = item.get("label")
+        mapped_tokens = item.get("mapped_tokens", [])
+        raw_roots = item.get("raw_roots", [])
+        if not isinstance(label, str) or not label.strip():
+            continue
+        if not isinstance(mapped_tokens, list) or not isinstance(raw_roots, list):
+            continue
+        mapped_set = {str(x).strip() for x in mapped_tokens if isinstance(x, str) and str(x).strip()}
+        roots_set = {str(x).strip() for x in raw_roots if isinstance(x, str) and str(x).strip()}
+        rules.append((label.strip(), mapped_set, roots_set))
+
+    if not stopwords or not equivalents or not rules:
+        return False
+
+    global _TOPIC_STOPWORDS
+    global _TOKEN_EQUIVALENTS
+    global _DIRECTION_RULES
+    _TOPIC_STOPWORDS = stopwords
+    _TOKEN_EQUIVALENTS = equivalents
+    _DIRECTION_RULES = rules
+    return True
+
+
+def _normalize_topic_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text or "")
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = normalized.lower().strip()
+    return re.sub(r"\s+", " ", normalized)
+
+
+def _extract_law_id(text: str) -> str | None:
+    patterns = [
+        r"\bpl[-\s]?x\s*(\d+/\d{4})\b",
+        r"\boug\s*(\d+/\d{4})\b",
+        r"\bog\s*(\d+/\d{4})\b",
+        r"\bhg\s*(\d+/\d{4})\b",
+        r"\blegea?\s*nr\.?\s*(\d+/\d{4})\b",
+        r"\blegea?\s*(\d+/\d{4})\b",
+        r"\bphcd\s*(\d+/\d{4})\b",
+    ]
+    labels = ["PL-x", "OUG", "OG", "HG", "Legea nr.", "Legea", "PHCD"]
+    normalized = _normalize_topic_text(text)
+    for label, pattern in zip(labels, patterns):
+        m = re.search(pattern, normalized, flags=re.IGNORECASE)
+        if m:
+            return f"{label} {m.group(1)}"
+    return None
+
+
+def _tokenize_topic(text: str) -> list[str]:
+    raw_tokens = re.findall(r"[a-z0-9]+", _normalize_topic_text(text))
+    out: list[str] = []
+    for tok in raw_tokens:
+        mapped = _TOKEN_EQUIVALENTS.get(tok, tok)
+        if len(mapped) < 3:
+            continue
+        if mapped in _TOPIC_STOPWORDS:
+            continue
+        out.append(mapped)
+    return out
+
+
+def _topic_key(text: str) -> str:
+    law_id = _extract_law_id(text)
+    if law_id:
+        return f"law:{law_id.lower()}"
+    tokens = sorted(set(_tokenize_topic(text)))
+    if tokens:
+        return "kw:" + "|".join(tokens[:6])
+    return "raw:" + _normalize_topic_text(text)
+
+
+def _topic_direction(topic: str) -> str:
+    if _extract_law_id(topic):
+        return "proces legislativ si reforme"
+    normalized = _normalize_topic_text(topic)
+    tokens = set(_tokenize_topic(topic))
+    for label, mapped_tokens, raw_roots in _DIRECTION_RULES:
+        if tokens.intersection(mapped_tokens):
+            return label
+        if any(root in normalized for root in raw_roots):
+            return label
+    return "altele"
+
+
+class TopicCanonicalizer:
+    def __init__(self) -> None:
+        self._key_counts: Counter[str] = Counter()
+        self._key_alias_counts: dict[str, Counter[str]] = defaultdict(Counter)
+        self._resolved: dict[str, str] = {}
+
+    def add(self, topic: str, count: int = 1) -> None:
+        if not isinstance(topic, str):
+            return
+        value = topic.strip()
+        if not value:
+            return
+        key = _topic_key(value)
+        self._key_counts[key] += count
+        self._key_alias_counts[key][value] += count
+
+    def resolve(self) -> None:
+        resolved: dict[str, str] = {}
+        for key in self._key_counts:
+            if key.startswith("law:"):
+                law_label = key.replace("law:", "", 1).strip()
+                resolved[key] = law_label.upper().replace("NR.", "nr.")
+                continue
+            aliases = self._key_alias_counts[key]
+            ranked = sorted(aliases.items(), key=lambda x: (-x[1], x[0].lower()))
+            resolved[key] = ranked[0][0]
+        self._resolved = resolved
+
+    def canonical(self, topic: str) -> str:
+        key = _topic_key(topic)
+        if not self._resolved:
+            self.resolve()
+        return self._resolved.get(key, topic.strip())
+
+    def top_topics(self, limit: int = 20) -> list[dict]:
+        if not self._resolved:
+            self.resolve()
+        ranked = sorted(
+            ((self._resolved.get(k, k), c) for k, c in self._key_counts.items()),
+            key=lambda x: (-x[1], x[0].lower()),
+        )
+        return [{"topic": topic, "count": count} for topic, count in ranked[:limit]]
+
+    def top_topics_with_aliases(self, limit: int = 100, alias_limit: int = 5) -> list[dict]:
+        if not self._resolved:
+            self.resolve()
+        ranked_keys = sorted(
+            self._key_counts.items(),
+            key=lambda x: (-x[1], self._resolved.get(x[0], x[0])),
+        )
+        out: list[dict] = []
+        for key, count in ranked_keys[:limit]:
+            canonical = self._resolved.get(key, key)
+            aliases = sorted(
+                self._key_alias_counts[key].items(),
+                key=lambda x: (-x[1], x[0].lower()),
+            )[:alias_limit]
+            out.append(
+                {
+                    "topic": canonical,
+                    "count": count,
+                    "aliases": [{"topic": a, "count": c} for a, c in aliases],
+                }
+            )
+        return out
 
 
 def _clear_json_files(path: Path) -> None:
@@ -110,7 +507,12 @@ def _export_session_topics(conn: sqlite3.Connection, topics_dir: Path, session_l
     return written
 
 
-def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
+def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path = DEFAULT_TAXONOMY_CONFIG_PATH) -> tuple[int, int]:
+    loaded_taxonomy = _apply_taxonomy_config(taxonomy_config_path)
+    print(
+        f"Export taxonomy: {'loaded' if loaded_taxonomy else 'using built-in defaults'} "
+        f"({taxonomy_config_path})"
+    )
     init_db(db_path)
     print(f"Export: loading data from {db_path}...")
     session_links = _load_session_links()
@@ -139,6 +541,15 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         ).fetchall()
 
     print(f"  Loaded {len(rows)} intervention rows for {len({r[0] for r in rows})} member(s).")
+    global_topic_model = TopicCanonicalizer()
+    global_direction_counter: Counter[str] = Counter()
+    for row in rows:
+        topics = _safe_topics(row[8])
+        for topic in topics:
+            global_topic_model.add(topic)
+            global_direction_counter[_topic_direction(topic)] += 1
+    global_topic_model.resolve()
+
     member_data: dict[str, dict] = {}
     for row in rows:
         (
@@ -155,7 +566,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             reasoning,
         ) = row
         constructiveness_label = _map_label(constructiveness_label_raw)
-        topics = _safe_topics(topics_json)
+        topics_raw = _safe_topics(topics_json)
+        topics = [global_topic_model.canonical(t) for t in topics_raw]
         confidence_value = float(confidence) if confidence is not None else 0.0
         stenogram_name = Path(stenogram_path).name
 
@@ -167,18 +579,21 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "party_name": party_id,
                 "counts": {"constructive": 0, "neutral": 0, "non_constructive": 0},
                 "topics_counter": Counter(),
+                "directions_counter": Counter(),
                 "interventions": {"constructive": [], "neutral": [], "non_constructive": []},
             }
 
         md = member_data[member_id]
         md["counts"][constructiveness_label] += 1
         md["topics_counter"].update(topics)
+        md["directions_counter"].update(_topic_direction(t) for t in topics)
         md["interventions"][constructiveness_label].append(
             {
                 "session_id": session_id,
                 "session_date": session_date,
                 "text": text or "",
                 "topics": topics,
+                "topics_raw": topics_raw,
                 "confidence": confidence_value,
                 "reasoning": reasoning or "",
                 "stenogram_name": stenogram_name,
@@ -193,6 +608,24 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         n_topics = _export_session_topics(topics_conn, topics_dir, session_links)
     print(f"  Written: {n_topics} session topic file(s) → {topics_dir}")
 
+    # Global canonical topic stats across all interventions.
+    global_topics_dir = output_dir / "topics"
+    _clear_json_files(global_topics_dir)
+    global_topics = {
+        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "scope": "all_interventions",
+        "total_distinct_canonical_topics": len(global_topic_model.top_topics_with_aliases(limit=100000)),
+        "top_directions": _top_directions(global_direction_counter, limit=50),
+        "other_topics_count": int(global_direction_counter.get("altele", 0)),
+        "top_topics": global_topic_model.top_topics_with_aliases(limit=200, alias_limit=8),
+    }
+    global_topics_path = global_topics_dir / "interventions_topics_index.json"
+    global_topics_path.write_text(
+        json.dumps(global_topics, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"  Written: {global_topics_path}")
+
     members_dir = output_dir / "members"
     parties_dir = output_dir / "parties"
     print(f"  Clearing output dirs: {members_dir}, {parties_dir}")
@@ -206,6 +639,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         counts = md["counts"]
         interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
         top_topics = _top_topics(md["topics_counter"])
+        top_directions = _top_directions(md["directions_counter"])
+        other_topics_count = int(md["directions_counter"].get("altele", 0))
         members_index.append(
             {
                 "member_id": md["member_id"],
@@ -217,6 +652,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "neutral_count": counts["neutral"],
                 "non_constructive_count": counts["non_constructive"],
                 "top_topics": top_topics,
+                "top_directions": top_directions,
+                "other_topics_count": other_topics_count,
             }
         )
 
@@ -232,6 +669,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "non_constructive_count": counts["non_constructive"],
             },
             "top_topics": top_topics,
+            "top_directions": top_directions,
+            "other_topics_count": other_topics_count,
             "interventions": md["interventions"],
         }
         member_name_slug = _slugify_name(md["name"])
@@ -274,10 +713,15 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
         interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
 
         topic_counter: Counter[str] = Counter()
+        direction_counter: Counter[str] = Counter()
         for m in members:
             for topic in m["top_topics"]:
                 topic_counter[topic["topic"]] += int(topic["count"])
+            for direction in m.get("top_directions", []):
+                direction_counter[direction["topic"]] += int(direction["count"])
         top_topics = _top_topics(topic_counter)
+        top_directions = _top_directions(direction_counter)
+        other_topics_count = int(sum(int(m.get("other_topics_count", 0)) for m in members))
 
         party_index_entry = {
             "party_id": party_id,
@@ -288,6 +732,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
             "neutral_count": counts["neutral"],
             "non_constructive_count": counts["non_constructive"],
             "top_topics": top_topics,
+            "top_directions": top_directions,
+            "other_topics_count": other_topics_count,
         }
         parties_index.append(party_index_entry)
 
@@ -302,6 +748,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                 "non_constructive_count": counts["non_constructive"],
             },
             "top_topics": top_topics,
+            "top_directions": top_directions,
+            "other_topics_count": other_topics_count,
             "members": [
                 {
                     "member_id": m["member_id"],
@@ -311,6 +759,8 @@ def export_outputs(db_path: Path, output_dir: Path) -> tuple[int, int]:
                     "neutral_count": m["neutral_count"],
                     "non_constructive_count": m["non_constructive_count"],
                     "top_topics": m["top_topics"],
+                    "top_directions": m.get("top_directions", []),
+                    "other_topics_count": int(m.get("other_topics_count", 0)),
                 }
                 for m in sorted(members, key=lambda x: (-x["interventions_total"], x["member_id"]))
             ],
@@ -350,11 +800,17 @@ def main() -> int:
         default="outputs",
         help="Output directory root (default: outputs)",
     )
+    parser.add_argument(
+        "--taxonomy-config",
+        default=str(DEFAULT_TAXONOMY_CONFIG_PATH),
+        help=f"Path to topic taxonomy JSON config (default: {DEFAULT_TAXONOMY_CONFIG_PATH})",
+    )
     args = parser.parse_args()
 
     members_count, parties_count = export_outputs(
         db_path=Path(args.db_path),
         output_dir=Path(args.output_dir),
+        taxonomy_config_path=Path(args.taxonomy_config),
     )
     print(
         "Export completed: "

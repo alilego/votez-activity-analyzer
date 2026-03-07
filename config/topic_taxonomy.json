@@ -1,0 +1,1197 @@
+{
+  "topic_stopwords": [
+    "a",
+    "ai",
+    "al",
+    "ale",
+    "asupra",
+    "cu",
+    "de",
+    "despre",
+    "din",
+    "in",
+    "la",
+    "lege",
+    "legii",
+    "legislativa",
+    "lor",
+    "lui",
+    "modificarea",
+    "modificari",
+    "national",
+    "o",
+    "parlament",
+    "parlamentara",
+    "pe",
+    "pentru",
+    "prin",
+    "privind",
+    "proiect",
+    "proiectul",
+    "propunere",
+    "roman",
+    "romania",
+    "sau",
+    "si",
+    "un",
+    "unei",
+    "unui"
+  ],
+  "token_equivalents": {
+    "agenda": "procedural",
+    "agricol": "agricultura",
+    "agricole": "agricultura",
+    "agricultura": "agricultura",
+    "aparare": "aparare",
+    "apararii": "aparare",
+    "autostrada": "infrastructura",
+    "autostrazi": "infrastructura",
+    "buget": "buget",
+    "bugetar": "buget",
+    "bugetara": "buget",
+    "bugetului": "buget",
+    "ccr": "constitutional",
+    "constitutie": "constitutional",
+    "constitutional": "constitutional",
+    "constitutionala": "constitutional",
+    "csat": "securitate_externa",
+    "drone": "aparare",
+    "drum": "infrastructura",
+    "drumuri": "infrastructura",
+    "educatie": "educatie",
+    "elevi": "educatie",
+    "energetic": "energie",
+    "energetica": "energie",
+    "energie": "energie",
+    "fermieri": "agricultura",
+    "feroviar": "infrastructura",
+    "fiscal": "fiscalitate",
+    "fiscala": "fiscalitate",
+    "fiscale": "fiscalitate",
+    "impozit": "impozite",
+    "impozite": "impozite",
+    "impozitelor": "impozite",
+    "invatamant": "educatie",
+    "medicamente": "sanatate",
+    "militar": "aparare",
+    "militare": "aparare",
+    "nato": "securitate_externa",
+    "neconstitutionalitate": "constitutional",
+    "ordine": "procedural",
+    "pensie": "pensii",
+    "pensii": "pensii",
+    "pensiilor": "pensii",
+    "plen": "procedural",
+    "procedura": "procedural",
+    "procedurala": "procedural",
+    "rusia": "rusia_ucraina",
+    "sanatate": "sanatate",
+    "scoala": "educatie",
+    "scoli": "educatie",
+    "securitate": "securitate",
+    "sedinta": "procedural",
+    "siguranta": "securitate",
+    "sigurantei": "securitate",
+    "spital": "sanatate",
+    "spitale": "sanatate",
+    "studenti": "educatie",
+    "suveranism": "suveranitate",
+    "suveranist": "suveranitate",
+    "suveranista": "suveranitate",
+    "suveraniste": "suveranitate",
+    "taxa": "taxe",
+    "taxe": "taxe",
+    "taxelor": "taxe",
+    "transport": "infrastructura",
+    "ucraina": "rusia_ucraina",
+    "vot": "procedural"
+  },
+  "direction_rules": [
+    {
+      "label": "politica externa si securitate",
+      "mapped_tokens": [
+        "aparare",
+        "geopolitica",
+        "rusia_ucraina",
+        "securitate",
+        "securitate_externa",
+        "suveranitate"
+      ],
+      "raw_roots": [
+        "aparare",
+        "csat",
+        "diaspora",
+        "geopolitica",
+        "grupuri de prietenie",
+        "independenta solidara",
+        "nato",
+        "pace",
+        "paza obiective",
+        "politica externa",
+        "razboi",
+        "rusia",
+        "sanctiuni",
+        "securitate",
+        "sua",
+        "suveranitate",
+        "ucraina",
+        "ue",
+        "uniunea europeana"
+      ]
+    },
+    {
+      "label": "procedura parlamentara",
+      "mapped_tokens": [
+        "procedural"
+      ],
+      "raw_roots": [
+        "amendament",
+        "amendamente",
+        "comisie",
+        "cvorum",
+        "lucru in paralel",
+        "ora prim-ministrului",
+        "ordine",
+        "plen",
+        "procedura",
+        "regulament",
+        "respingere",
+        "retrimitere la comisie",
+        "sedinta",
+        "vot"
+      ]
+    },
+    {
+      "label": "economie si fiscalitate",
+      "mapped_tokens": [
+        "buget",
+        "fiscalitate",
+        "fonduri",
+        "impozite",
+        "investitii",
+        "pnrr",
+        "taxe"
+      ],
+      "raw_roots": [
+        "austeritate",
+        "buget",
+        "cheltuieli",
+        "datorie publica",
+        "finante",
+        "fiscal",
+        "fonduri",
+        "imm",
+        "impoz",
+        "industrie",
+        "investitii",
+        "minerit",
+        "multinationale",
+        "pensii",
+        "pensii de serviciu",
+        "pensiile speciale",
+        "pnrr",
+        "privatizare",
+        "reconversie profesionala",
+        "salariu minim",
+        "saracie",
+        "servicii publice",
+        "tax",
+        "tva",
+        "valea jiului"
+      ]
+    },
+    {
+      "label": "energie si mediu",
+      "mapped_tokens": [
+        "energie"
+      ],
+      "raw_roots": [
+        "apele romane",
+        "carbon",
+        "certificat emisii",
+        "certificat verde",
+        "certificate verzi",
+        "energie",
+        "energie regenerabila",
+        "energie termica",
+        "facturi energie",
+        "hidroelectrica",
+        "piata energiei",
+        "pret energie",
+        "resurse nationale",
+        "salrom"
+      ]
+    },
+    {
+      "label": "infrastructura si transport",
+      "mapped_tokens": [
+        "infrastructura"
+      ],
+      "raw_roots": [
+        "aeroport",
+        "autostr",
+        "control spatiu aerian",
+        "drum",
+        "feroviar",
+        "port",
+        "risc seismic",
+        "transport",
+        "tulcea"
+      ]
+    },
+    {
+      "label": "agricultura si dezvoltare rurala",
+      "mapped_tokens": [
+        "agricultura"
+      ],
+      "raw_roots": [
+        "agricultura",
+        "despagubiri",
+        "ferme de familie",
+        "fermier",
+        "fond cinegetic",
+        "irig",
+        "rural"
+      ]
+    },
+    {
+      "label": "sanatate",
+      "mapped_tokens": [
+        "sanatate"
+      ],
+      "raw_roots": [
+        "cass",
+        "medical",
+        "medicament",
+        "profesia medic",
+        "reforma sanatatii",
+        "salarizare medici",
+        "sanatate",
+        "spital"
+      ]
+    },
+    {
+      "label": "educatie",
+      "mapped_tokens": [
+        "educatie"
+      ],
+      "raw_roots": [
+        "burse",
+        "curriculum",
+        "educatie",
+        "elev",
+        "invatamant",
+        "scoala",
+        "student",
+        "univers"
+      ]
+    },
+    {
+      "label": "justitie si constitutional",
+      "mapped_tokens": [
+        "constitutional"
+      ],
+      "raw_roots": [
+        "abuzuri",
+        "anpc",
+        "antifrauda",
+        "ccr",
+        "cna",
+        "cod civil",
+        "constitut",
+        "constitutional",
+        "contraventii",
+        "coruptie",
+        "csm",
+        "diicot",
+        "drepturi fundamentale",
+        "justit",
+        "prescriptie penala",
+        "proprietate privata",
+        "retrocedare",
+        "retrocedari",
+        "retrocedari ilegale",
+        "stat de drept"
+      ]
+    },
+    {
+      "label": "digitalizare si tehnologie",
+      "mapped_tokens": [
+        "digitalizare"
+      ],
+      "raw_roots": [
+        "ai",
+        "cibern",
+        "dezinformare",
+        "digital",
+        "eurohpc",
+        "inteligenta artificiala",
+        "propaganda",
+        "tehnolog"
+      ]
+    },
+    {
+      "label": "media si comunicare publica",
+      "mapped_tokens": [
+        "radiodifuziune",
+        "tvr"
+      ],
+      "raw_roots": [
+        "libertatea de exprimare",
+        "radiodifuziune",
+        "tvr"
+      ]
+    },
+    {
+      "label": "administratie publica si guvernare",
+      "mapped_tokens": [
+        "guvern",
+        "transparenta"
+      ],
+      "raw_roots": [
+        "administr",
+        "alegeri prezidentiale",
+        "ans",
+        "claritate legislativa",
+        "comisia europeana",
+        "critica politica",
+        "critica presedinte",
+        "curtea de conturi",
+        "demisie presedinte",
+        "finantare electorala",
+        "guvern",
+        "iasi",
+        "lege organica",
+        "minister",
+        "numire presedinte ca",
+        "numiri politice",
+        "prelungire program",
+        "proiect de tara",
+        "proprietate",
+        "responsabilitate institutionala",
+        "transfer autoritate",
+        "transfer imobil",
+        "transfer proprietate",
+        "transparent",
+        "usr",
+        "vicepremieri"
+      ]
+    },
+    {
+      "label": "cultura si patrimoniu",
+      "mapped_tokens": [
+        "patrimoniu"
+      ],
+      "raw_roots": [
+        "brancusi",
+        "cultura",
+        "festival",
+        "identitate nationala",
+        "muze",
+        "patrimoniu",
+        "salina",
+        "valori nationale"
+      ]
+    },
+    {
+      "label": "social si drepturi civile",
+      "mapped_tokens": [
+        "minoritati"
+      ],
+      "raw_roots": [
+        "anul copilului",
+        "basarabia",
+        "corneliu vadim tudor",
+        "cumintenia pamantului",
+        "democratie",
+        "extremism",
+        "federatia rusa",
+        "holodomor",
+        "istoria evreilor",
+        "masuri represive",
+        "minoritati",
+        "pasapoarte",
+        "permise auto",
+        "putin",
+        "romani diaspora",
+        "unitate nationala",
+        "violenta domestica"
+      ]
+    },
+    {
+      "label": "proces legislativ si reforme",
+      "mapped_tokens": [],
+      "raw_roots": [
+        "cod fiscal",
+        "hg ",
+        "legea nr",
+        "og ",
+        "oug ",
+        "phcd",
+        "pl-x",
+        "reglementare"
+      ]
+    },
+    {
+      "label": "justitie si constitutional",
+      "mapped_tokens": [],
+      "raw_roots": [
+        "ejtn"
+      ]
+    }
+  ],
+  "catalog_topics": [
+    {
+      "id": "tp_ordine_de_zi",
+      "label": "ordine de zi",
+      "description": "Canonical topic from current corpus frequency rank 1.",
+      "aliases": [
+        "procedură parlamentară",
+        "procedură legislativă",
+        "vot",
+        "vot proiect",
+        "procedură",
+        "vot procedură"
+      ]
+    },
+    {
+      "id": "tp_suveranitate",
+      "label": "suveranitate",
+      "description": "Canonical topic from current corpus frequency rank 2.",
+      "aliases": [
+        "suveranism"
+      ]
+    },
+    {
+      "id": "tp_nato",
+      "label": "NATO",
+      "description": "Canonical topic from current corpus frequency rank 3.",
+      "aliases": [
+        "CSAT"
+      ]
+    },
+    {
+      "id": "tp_ccr",
+      "label": "CCR",
+      "description": "Canonical topic from current corpus frequency rank 4.",
+      "aliases": [
+        "Constituție",
+        "neconstituționalitate"
+      ]
+    },
+    {
+      "id": "tp_rusia",
+      "label": "Rusia",
+      "description": "Canonical topic from current corpus frequency rank 5.",
+      "aliases": [
+        "Ucraina"
+      ]
+    },
+    {
+      "id": "tp_siguran_na_ional",
+      "label": "siguranță națională",
+      "description": "Canonical topic from current corpus frequency rank 6.",
+      "aliases": [
+        "securitate națională"
+      ]
+    },
+    {
+      "id": "tp_politic_extern",
+      "label": "politică externă",
+      "description": "Canonical topic from current corpus frequency rank 7.",
+      "aliases": []
+    },
+    {
+      "id": "tp_agricultur",
+      "label": "agricultură",
+      "description": "Canonical topic from current corpus frequency rank 8.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pnrr",
+      "label": "PNRR",
+      "description": "Canonical topic from current corpus frequency rank 9.",
+      "aliases": []
+    },
+    {
+      "id": "tp_austeritate",
+      "label": "austeritate",
+      "description": "Canonical topic from current corpus frequency rank 10.",
+      "aliases": []
+    },
+    {
+      "id": "tp_comisie_de_anchet",
+      "label": "comisie de anchetă",
+      "description": "Canonical topic from current corpus frequency rank 11.",
+      "aliases": [
+        "comisie anchetă"
+      ]
+    },
+    {
+      "id": "tp_drone",
+      "label": "drone",
+      "description": "Canonical topic from current corpus frequency rank 12.",
+      "aliases": [
+        "apărare"
+      ]
+    },
+    {
+      "id": "tp_finan_e_publice_locale",
+      "label": "finanțe publice locale",
+      "description": "Canonical topic from current corpus frequency rank 13.",
+      "aliases": []
+    },
+    {
+      "id": "tp_constantin_br_ncu_i",
+      "label": "Constantin Brâncuși",
+      "description": "Canonical topic from current corpus frequency rank 14.",
+      "aliases": []
+    },
+    {
+      "id": "tp_salina_praid",
+      "label": "Salina Praid",
+      "description": "Canonical topic from current corpus frequency rank 15.",
+      "aliases": []
+    },
+    {
+      "id": "tp_educa_ie",
+      "label": "educație",
+      "description": "Canonical topic from current corpus frequency rank 16.",
+      "aliases": []
+    },
+    {
+      "id": "tp_fonduri_europene",
+      "label": "fonduri europene",
+      "description": "Canonical topic from current corpus frequency rank 17.",
+      "aliases": []
+    },
+    {
+      "id": "tp_infrastructur",
+      "label": "infrastructură",
+      "description": "Canonical topic from current corpus frequency rank 18.",
+      "aliases": [
+        "autostrada A8",
+        "autostrăzi A7",
+        "e-Transport",
+        "transport feroviar"
+      ]
+    },
+    {
+      "id": "tp_respingere_proiect",
+      "label": "respingere proiect",
+      "description": "Canonical topic from current corpus frequency rank 19.",
+      "aliases": []
+    },
+    {
+      "id": "tp_retroced_ri",
+      "label": "retrocedări",
+      "description": "Canonical topic from current corpus frequency rank 20.",
+      "aliases": []
+    },
+    {
+      "id": "tp_s_n_tate",
+      "label": "sănătate",
+      "description": "Canonical topic from current corpus frequency rank 21.",
+      "aliases": [
+        "medicamente",
+        "spitale"
+      ]
+    },
+    {
+      "id": "tp_transparen",
+      "label": "transparență",
+      "description": "Canonical topic from current corpus frequency rank 22.",
+      "aliases": []
+    },
+    {
+      "id": "tp_strategia_de_ap_rare",
+      "label": "Strategia de Apărare",
+      "description": "Canonical topic from current corpus frequency rank 23.",
+      "aliases": []
+    },
+    {
+      "id": "tp_control_spa_iu_aerian",
+      "label": "control spațiu aerian",
+      "description": "Canonical topic from current corpus frequency rank 24.",
+      "aliases": []
+    },
+    {
+      "id": "tp_energie",
+      "label": "energie",
+      "description": "Canonical topic from current corpus frequency rank 25.",
+      "aliases": []
+    },
+    {
+      "id": "tp_geopolitic",
+      "label": "geopolitică",
+      "description": "Canonical topic from current corpus frequency rank 26.",
+      "aliases": []
+    },
+    {
+      "id": "tp_numiri_politice",
+      "label": "numiri politice",
+      "description": "Canonical topic from current corpus frequency rank 27.",
+      "aliases": []
+    },
+    {
+      "id": "tp_edin_plen_comun",
+      "label": "ședință plen comun",
+      "description": "Canonical topic from current corpus frequency rank 28.",
+      "aliases": []
+    },
+    {
+      "id": "tp_guvern",
+      "label": "Guvern",
+      "description": "Canonical topic from current corpus frequency rank 29.",
+      "aliases": []
+    },
+    {
+      "id": "tp_tvr",
+      "label": "TVR",
+      "description": "Canonical topic from current corpus frequency rank 30.",
+      "aliases": []
+    },
+    {
+      "id": "tp_uniunea_european",
+      "label": "Uniunea Europeană",
+      "description": "Canonical topic from current corpus frequency rank 31.",
+      "aliases": []
+    },
+    {
+      "id": "tp_abuzuri",
+      "label": "abuzuri",
+      "description": "Canonical topic from current corpus frequency rank 32.",
+      "aliases": []
+    },
+    {
+      "id": "tp_critic_politic",
+      "label": "critică politică",
+      "description": "Canonical topic from current corpus frequency rank 33.",
+      "aliases": []
+    },
+    {
+      "id": "tp_demisie_pre_edinte",
+      "label": "demisie președinte",
+      "description": "Canonical topic from current corpus frequency rank 34.",
+      "aliases": []
+    },
+    {
+      "id": "tp_digitalizare",
+      "label": "digitalizare",
+      "description": "Canonical topic from current corpus frequency rank 35.",
+      "aliases": []
+    },
+    {
+      "id": "tp_facilit_i_fiscale",
+      "label": "facilități fiscale",
+      "description": "Canonical topic from current corpus frequency rank 36.",
+      "aliases": []
+    },
+    {
+      "id": "tp_inteligen_artificial",
+      "label": "inteligență artificială",
+      "description": "Canonical topic from current corpus frequency rank 37.",
+      "aliases": []
+    },
+    {
+      "id": "tp_investi_ii",
+      "label": "investiții",
+      "description": "Canonical topic from current corpus frequency rank 38.",
+      "aliases": []
+    },
+    {
+      "id": "tp_patrimoniu_cultural",
+      "label": "patrimoniu cultural",
+      "description": "Canonical topic from current corpus frequency rank 39.",
+      "aliases": []
+    },
+    {
+      "id": "tp_prelungire_program",
+      "label": "prelungire program",
+      "description": "Canonical topic from current corpus frequency rank 40.",
+      "aliases": []
+    },
+    {
+      "id": "tp_retrocedare",
+      "label": "retrocedare",
+      "description": "Canonical topic from current corpus frequency rank 41.",
+      "aliases": []
+    },
+    {
+      "id": "tp_securitate_regional",
+      "label": "securitate regională",
+      "description": "Canonical topic from current corpus frequency rank 42.",
+      "aliases": []
+    },
+    {
+      "id": "tp_transfer_imobil",
+      "label": "transfer imobil",
+      "description": "Canonical topic from current corpus frequency rank 43.",
+      "aliases": []
+    },
+    {
+      "id": "tp_vot_final",
+      "label": "vot final",
+      "description": "Canonical topic from current corpus frequency rank 44.",
+      "aliases": []
+    },
+    {
+      "id": "tp_anul_br_ncu_i",
+      "label": "Anul Brâncuși",
+      "description": "Canonical topic from current corpus frequency rank 45.",
+      "aliases": []
+    },
+    {
+      "id": "tp_cod_civil",
+      "label": "Cod civil",
+      "description": "Canonical topic from current corpus frequency rank 46.",
+      "aliases": []
+    },
+    {
+      "id": "tp_cod_fiscal",
+      "label": "Cod fiscal",
+      "description": "Canonical topic from current corpus frequency rank 47.",
+      "aliases": []
+    },
+    {
+      "id": "tp_imm_uri",
+      "label": "IMM-uri",
+      "description": "Canonical topic from current corpus frequency rank 48.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pl_x_5_2025",
+      "label": "PL-X 5/2025",
+      "description": "Canonical topic from current corpus frequency rank 49.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pl_x_6_2025",
+      "label": "PL-X 6/2025",
+      "description": "Canonical topic from current corpus frequency rank 50.",
+      "aliases": []
+    },
+    {
+      "id": "tp_radiodifuziune",
+      "label": "Radiodifuziune",
+      "description": "Canonical topic from current corpus frequency rank 51.",
+      "aliases": []
+    },
+    {
+      "id": "tp_salrom",
+      "label": "Salrom",
+      "description": "Canonical topic from current corpus frequency rank 52.",
+      "aliases": []
+    },
+    {
+      "id": "tp_alegeri_preziden_iale",
+      "label": "alegeri prezidențiale",
+      "description": "Canonical topic from current corpus frequency rank 53.",
+      "aliases": []
+    },
+    {
+      "id": "tp_contraven_ii",
+      "label": "contravenții",
+      "description": "Canonical topic from current corpus frequency rank 54.",
+      "aliases": []
+    },
+    {
+      "id": "tp_cvorum",
+      "label": "cvorum",
+      "description": "Canonical topic from current corpus frequency rank 55.",
+      "aliases": []
+    },
+    {
+      "id": "tp_dezinformare",
+      "label": "dezinformare",
+      "description": "Canonical topic from current corpus frequency rank 56.",
+      "aliases": []
+    },
+    {
+      "id": "tp_evaziune_fiscal",
+      "label": "evaziune fiscală",
+      "description": "Canonical topic from current corpus frequency rank 57.",
+      "aliases": []
+    },
+    {
+      "id": "tp_federa_ii_sportive",
+      "label": "federații sportive",
+      "description": "Canonical topic from current corpus frequency rank 58.",
+      "aliases": []
+    },
+    {
+      "id": "tp_grupuri_de_prietenie",
+      "label": "grupuri de prietenie",
+      "description": "Canonical topic from current corpus frequency rank 59.",
+      "aliases": []
+    },
+    {
+      "id": "tp_investi_ii_publice",
+      "label": "investiții publice",
+      "description": "Canonical topic from current corpus frequency rank 60.",
+      "aliases": []
+    },
+    {
+      "id": "tp_misiuni_militare",
+      "label": "misiuni militare",
+      "description": "Canonical topic from current corpus frequency rank 61.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pace",
+      "label": "pace",
+      "description": "Canonical topic from current corpus frequency rank 62.",
+      "aliases": []
+    },
+    {
+      "id": "tp_paza_obiective",
+      "label": "paza obiective",
+      "description": "Canonical topic from current corpus frequency rank 63.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pensii_de_serviciu",
+      "label": "pensii de serviciu",
+      "description": "Canonical topic from current corpus frequency rank 64.",
+      "aliases": []
+    },
+    {
+      "id": "tp_pensiile_speciale",
+      "label": "pensiile speciale",
+      "description": "Canonical topic from current corpus frequency rank 65.",
+      "aliases": []
+    },
+    {
+      "id": "tp_prescrip_ie_penal",
+      "label": "prescripție penală",
+      "description": "Canonical topic from current corpus frequency rank 66.",
+      "aliases": []
+    },
+    {
+      "id": "tp_privatizare",
+      "label": "privatizare",
+      "description": "Canonical topic from current corpus frequency rank 67.",
+      "aliases": []
+    },
+    {
+      "id": "tp_raport_comisie",
+      "label": "raport comisie",
+      "description": "Canonical topic from current corpus frequency rank 68.",
+      "aliases": []
+    },
+    {
+      "id": "tp_reforma_s_n_t_ii",
+      "label": "reforma sănătății",
+      "description": "Canonical topic from current corpus frequency rank 69.",
+      "aliases": []
+    },
+    {
+      "id": "tp_reform_administrativ",
+      "label": "reformă administrativă",
+      "description": "Canonical topic from current corpus frequency rank 70.",
+      "aliases": []
+    },
+    {
+      "id": "tp_rom_ni_diaspora",
+      "label": "români diaspora",
+      "description": "Canonical topic from current corpus frequency rank 71.",
+      "aliases": [
+        "români din diaspora"
+      ]
+    },
+    {
+      "id": "tp_r_zboi_ucraina",
+      "label": "război Ucraina",
+      "description": "Canonical topic from current corpus frequency rank 72.",
+      "aliases": []
+    },
+    {
+      "id": "tp_sanc_iuni_interna_ionale",
+      "label": "sancțiuni internaționale",
+      "description": "Canonical topic from current corpus frequency rank 73.",
+      "aliases": []
+    },
+    {
+      "id": "tp_servicii_publice",
+      "label": "servicii publice",
+      "description": "Canonical topic from current corpus frequency rank 74.",
+      "aliases": []
+    },
+    {
+      "id": "tp_stat_de_drept",
+      "label": "stat de drept",
+      "description": "Canonical topic from current corpus frequency rank 75.",
+      "aliases": []
+    },
+    {
+      "id": "tp_taxa_pe_st_lp",
+      "label": "taxa pe stâlp",
+      "description": "Canonical topic from current corpus frequency rank 76.",
+      "aliases": []
+    },
+    {
+      "id": "tp_taxe",
+      "label": "taxe",
+      "description": "Canonical topic from current corpus frequency rank 77.",
+      "aliases": []
+    },
+    {
+      "id": "tp_transfer_autoritate",
+      "label": "transfer autoritate",
+      "description": "Canonical topic from current corpus frequency rank 78.",
+      "aliases": []
+    },
+    {
+      "id": "tp_transfer_proprietate",
+      "label": "transfer proprietate",
+      "description": "Canonical topic from current corpus frequency rank 79.",
+      "aliases": []
+    },
+    {
+      "id": "tp_violen_domestic",
+      "label": "violență domestică",
+      "description": "Canonical topic from current corpus frequency rank 80.",
+      "aliases": []
+    },
+    {
+      "id": "tp_ans",
+      "label": "ANS",
+      "description": "Canonical topic from current corpus frequency rank 81.",
+      "aliases": []
+    },
+    {
+      "id": "tp_apele_rom_ne",
+      "label": "Apele Române",
+      "description": "Canonical topic from current corpus frequency rank 82.",
+      "aliases": []
+    },
+    {
+      "id": "tp_comisia_cultur",
+      "label": "Comisia cultură",
+      "description": "Canonical topic from current corpus frequency rank 83.",
+      "aliases": []
+    },
+    {
+      "id": "tp_curtea_constitu_ional",
+      "label": "Curtea Constituțională",
+      "description": "Canonical topic from current corpus frequency rank 84.",
+      "aliases": []
+    },
+    {
+      "id": "tp_curtea_de_conturi",
+      "label": "Curtea de Conturi",
+      "description": "Canonical topic from current corpus frequency rank 85.",
+      "aliases": []
+    },
+    {
+      "id": "tp_legea_sportului",
+      "label": "Legea sportului",
+      "description": "Canonical topic from current corpus frequency rank 86.",
+      "aliases": []
+    },
+    {
+      "id": "tp_oug_41_2016",
+      "label": "OUG 41/2016",
+      "description": "Canonical topic from current corpus frequency rank 87.",
+      "aliases": []
+    },
+    {
+      "id": "tp_ora_prim_ministrului",
+      "label": "Ora prim-ministrului",
+      "description": "Canonical topic from current corpus frequency rank 88.",
+      "aliases": []
+    },
+    {
+      "id": "tp_putin",
+      "label": "Putin",
+      "description": "Canonical topic from current corpus frequency rank 89.",
+      "aliases": []
+    },
+    {
+      "id": "tp_regulament_camer",
+      "label": "Regulament Cameră",
+      "description": "Canonical topic from current corpus frequency rank 90.",
+      "aliases": []
+    },
+    {
+      "id": "tp_tva",
+      "label": "TVA",
+      "description": "Canonical topic from current corpus frequency rank 91.",
+      "aliases": []
+    },
+    {
+      "id": "tp_tulcea",
+      "label": "Tulcea",
+      "description": "Canonical topic from current corpus frequency rank 92.",
+      "aliases": []
+    },
+    {
+      "id": "tp_ue",
+      "label": "UE",
+      "description": "Canonical topic from current corpus frequency rank 93.",
+      "aliases": []
+    },
+    {
+      "id": "tp_usr",
+      "label": "USR",
+      "description": "Canonical topic from current corpus frequency rank 94.",
+      "aliases": []
+    },
+    {
+      "id": "tp_valea_jiului",
+      "label": "Valea Jiului",
+      "description": "Canonical topic from current corpus frequency rank 95.",
+      "aliases": []
+    },
+    {
+      "id": "tp_administra_ie_local",
+      "label": "administrație locală",
+      "description": "Canonical topic from current corpus frequency rank 96.",
+      "aliases": []
+    },
+    {
+      "id": "tp_administra_ie_public",
+      "label": "administrație publică",
+      "description": "Canonical topic from current corpus frequency rank 97.",
+      "aliases": []
+    },
+    {
+      "id": "tp_amendamente",
+      "label": "amendamente",
+      "description": "Canonical topic from current corpus frequency rank 98.",
+      "aliases": []
+    },
+    {
+      "id": "tp_ap_rare_na_ional",
+      "label": "apărare națională",
+      "description": "Canonical topic from current corpus frequency rank 99.",
+      "aliases": []
+    },
+    {
+      "id": "tp_buget",
+      "label": "buget",
+      "description": "Canonical topic from current corpus frequency rank 100.",
+      "aliases": []
+    },
+    {
+      "id": "tp_buget_public",
+      "label": "buget public",
+      "description": "Canonical topic from current corpus frequency rank 101.",
+      "aliases": []
+    },
+    {
+      "id": "tp_bugete_locale",
+      "label": "bugete locale",
+      "description": "Canonical topic from current corpus frequency rank 102.",
+      "aliases": []
+    },
+    {
+      "id": "tp_burse",
+      "label": "burse",
+      "description": "Canonical topic from current corpus frequency rank 103.",
+      "aliases": []
+    },
+    {
+      "id": "tp_certificate_verzi",
+      "label": "certificate verzi",
+      "description": "Canonical topic from current corpus frequency rank 104.",
+      "aliases": []
+    },
+    {
+      "id": "tp_cheltuieli_preziden_iale",
+      "label": "cheltuieli prezidențiale",
+      "description": "Canonical topic from current corpus frequency rank 105.",
+      "aliases": []
+    },
+    {
+      "id": "tp_cheltuieli_publice",
+      "label": "cheltuieli publice",
+      "description": "Canonical topic from current corpus frequency rank 106.",
+      "aliases": []
+    },
+    {
+      "id": "tp_claritate_legislativ",
+      "label": "claritate legislativă",
+      "description": "Canonical topic from current corpus frequency rank 107.",
+      "aliases": []
+    },
+    {
+      "id": "tp_coali_ie_guvernare",
+      "label": "coaliție guvernare",
+      "description": "Canonical topic from current corpus frequency rank 108.",
+      "aliases": []
+    },
+    {
+      "id": "tp_competen_a_guvernului",
+      "label": "competența Guvernului",
+      "description": "Canonical topic from current corpus frequency rank 109.",
+      "aliases": []
+    },
+    {
+      "id": "tp_constitu_ionalitate",
+      "label": "constituționalitate",
+      "description": "Canonical topic from current corpus frequency rank 110.",
+      "aliases": []
+    },
+    {
+      "id": "tp_corup_ie",
+      "label": "corupție",
+      "description": "Canonical topic from current corpus frequency rank 111.",
+      "aliases": []
+    },
+    {
+      "id": "tp_critic_guvern",
+      "label": "critică guvern",
+      "description": "Canonical topic from current corpus frequency rank 112.",
+      "aliases": []
+    },
+    {
+      "id": "tp_critic_pre_edinte",
+      "label": "critică președinte",
+      "description": "Canonical topic from current corpus frequency rank 113.",
+      "aliases": []
+    },
+    {
+      "id": "tp_curriculum",
+      "label": "curriculum",
+      "description": "Canonical topic from current corpus frequency rank 114.",
+      "aliases": []
+    },
+    {
+      "id": "tp_datorie_public",
+      "label": "datorie publică",
+      "description": "Canonical topic from current corpus frequency rank 115.",
+      "aliases": []
+    },
+    {
+      "id": "tp_democra_ie",
+      "label": "democrație",
+      "description": "Canonical topic from current corpus frequency rank 116.",
+      "aliases": []
+    },
+    {
+      "id": "tp_desp_gubiri",
+      "label": "despăgubiri",
+      "description": "Canonical topic from current corpus frequency rank 117.",
+      "aliases": []
+    },
+    {
+      "id": "tp_digitalizare_anaf",
+      "label": "digitalizare ANAF",
+      "description": "Canonical topic from current corpus frequency rank 118.",
+      "aliases": []
+    },
+    {
+      "id": "tp_drepturi_fundamentale",
+      "label": "drepturi fundamentale",
+      "description": "Canonical topic from current corpus frequency rank 119.",
+      "aliases": []
+    },
+    {
+      "id": "tp_energie_regenerabil",
+      "label": "energie regenerabilă",
+      "description": "Canonical topic from current corpus frequency rank 120.",
+      "aliases": []
+    }
+  ]
+}

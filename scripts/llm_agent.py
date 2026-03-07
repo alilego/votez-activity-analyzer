@@ -54,9 +54,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -76,6 +78,8 @@ DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 
 MAX_RETRIES = 3
 RETRY_DELAY_S = 10
+MISSING_RECOVERY_MAX_ROUNDS = 3
+MISSING_RECOVERY_CHUNK_SIZE = 12
 
 # Hard timeout per LLM batch request. Larger batches take longer to generate.
 # 600s (10 min) gives headroom for a full session on a slow M1.
@@ -88,7 +92,9 @@ OLLAMA_NUM_CTX = 32768
 # qwen2.5:7b-32k: 32,768 tokens × 80% usable = ~26,200 tokens.
 # Reserve ~1,000 tokens for system prompt + session header, ~3,000 for JSON output.
 # Net speech budget: ~22,000 tokens × 3.5 chars/token (Romanian) ≈ 77,000 chars.
-BATCH_CHAR_BUDGET = 77_000
+# Lower budget improves per-speech fidelity for local 7B models and reduces
+# truncation/omission risk in long sessions.
+BATCH_CHAR_BUDGET = 40_000
 
 # ---------------------------------------------------------------------------
 # System prompt — batch mode
@@ -113,10 +119,14 @@ Being on-topic is NOT sufficient for `constructive`. A speech can be fully on-to
 - Legitimate opposition WITH evidence or concrete alternatives → `constructive`
 - Opposition that is purely rhetorical or blocking → `non_constructive`
 - ≤2 sentences, no policy substance, or pure chair line → `neutral`
+- Formal report speeches that present analysis/recommendations to plen (e.g. committee report + approval proposal) → `constructive`
+- For mixed speeches with both attacks and policy proposals: if concrete policy content is substantial, do NOT use `non_constructive` unless attacks clearly dominate.
 
 ## Topic extraction
 For each speech: extract up to 5 short topics (1–4 words each, in Romanian) reflecting specific policy areas or legislative themes covered by THAT speech.
 Return [] if none apply. Do NOT hallucinate topics not present in the text.
+Prefer concrete noun phrases (e.g. "pensiile speciale", "buget local", "PL-x 45/2025"), not generic labels ("politică", "dezbatere", "discurs politic").
+If a session topic clearly matches, reuse its wording for consistency.
 
 ## Output format
 Respond with ONLY a valid JSON array — one object per speech, in the SAME ORDER as the input, no prose, no markdown fences:
@@ -126,10 +136,13 @@ Respond with ONLY a valid JSON array — one object per speech, in the SAME ORDE
     "constructiveness_label": "constructive" | "neutral" | "non_constructive",
     "confidence": 0.0-1.0,
     "topics": ["topic1", "topic2"],
-    "reasoning": "o propoziție în română care explică clasificarea"
+    "reasoning": "o propoziție în română care explică clasificarea, referindu-se la conținut concret din discurs",
+    "evidence_quote": "un citat scurt exact (6-20 cuvinte) din acel discurs"
   },
   ...
-]"""
+]
+
+Return EXACTLY one object for EACH input speech_index. Do not skip any speech_index.""" 
 
 
 # ---------------------------------------------------------------------------
@@ -310,14 +323,298 @@ def _call_llm_batch(
     return results
 
 
+def _index_results_by_speech_index(raw_results: list[dict]) -> dict[int, dict]:
+    out: dict[int, dict] = {}
+    for item in raw_results:
+        idx = item.get("speech_index")
+        if idx is None:
+            continue
+        try:
+            out[int(idx)] = item
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _chunk_list(items: list[dict], chunk_size: int) -> list[list[dict]]:
+    if chunk_size <= 0:
+        return [items]
+    return [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
+
+
+def _recover_missing_batch_results(
+    client,
+    provider: str,
+    session: dict,
+    session_topics: list,
+    batch_label: str,
+    missing_speeches: list[dict],
+) -> dict[int, dict]:
+    """Retry only missing speeches in small batches and merge recovered outputs."""
+    recovered: dict[int, dict] = {}
+    pending = list(missing_speeches)
+
+    for round_idx in range(1, MISSING_RECOVERY_MAX_ROUNDS + 1):
+        if not pending:
+            break
+
+        chunk_size = max(1, MISSING_RECOVERY_CHUNK_SIZE // (2 ** (round_idx - 1)))
+        chunks = _chunk_list(pending, chunk_size)
+        print(
+            f"    Recovery round {round_idx}/{MISSING_RECOVERY_MAX_ROUNDS}: "
+            f"{len(pending)} missing speech(es) in {len(chunks)} chunk(s) of <= {chunk_size}"
+        )
+
+        for c_idx, chunk in enumerate(chunks, 1):
+            label = f"{batch_label}_recover_r{round_idx}_{c_idx}of{len(chunks)}"
+            last_exc: Exception | None = None
+            raw_results: list[dict] = []
+
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    raw_results = _call_llm_batch(
+                        client=client,
+                        provider=provider,
+                        session=session,
+                        session_topics=session_topics,
+                        speeches=chunk,
+                        batch_label=label,
+                        build_prompts_only=False,
+                    )
+                    break
+                except Exception as exc:
+                    last_exc = exc
+                    if attempt < MAX_RETRIES:
+                        time.sleep(RETRY_DELAY_S)
+
+            if not raw_results:
+                err = str(last_exc) if last_exc else "empty response"
+                print(
+                    f"      Recovery chunk {c_idx}/{len(chunks)} failed: {err}"
+                )
+                continue
+
+            chunk_by_index = _index_results_by_speech_index(raw_results)
+            if chunk_by_index:
+                recovered.update(chunk_by_index)
+                print(
+                    f"      Recovery chunk {c_idx}/{len(chunks)}: "
+                    f"{len(chunk_by_index)}/{len(chunk)} recovered"
+                )
+            else:
+                print(
+                    f"      Recovery chunk {c_idx}/{len(chunks)}: "
+                    "returned no usable speech_index items"
+                )
+
+        pending = [sp for sp in pending if sp["speech_index"] not in recovered]
+
+    return recovered
+
+
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
 
 VALID_LABELS = {"constructive", "neutral", "non_constructive"}
+_TOPIC_GENERIC_PHRASES = {
+    "politica",
+    "politici",
+    "partid",
+    "partide",
+    "discurs politic",
+    "dezbatere",
+    "subiect",
+    "tema",
+    "probleme",
+    "chestiuni",
+    "declaratii politice",
+}
 
 
-def _validate_one(item: dict, config: dict) -> dict:
+def _strip_diacritics(text: str) -> str:
+    return "".join(ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch))
+
+
+def _topic_key(topic: str) -> str:
+    """Build a stable comparison key for dedup/canonical matching."""
+    key = _strip_diacritics(topic.casefold())
+    key = re.sub(r"[^a-z0-9\s/.-]+", " ", key)
+    key = re.sub(r"\s+", " ", key).strip()
+    return key
+
+
+def _text_key(text: str) -> str:
+    key = _strip_diacritics(text.casefold())
+    key = re.sub(r"\s+", " ", key).strip()
+    return key
+
+
+def _word_tokens(text: str) -> list[str]:
+    return re.findall(r"[a-zA-ZăâîșțĂÂÎȘȚ]+", text)
+
+
+def _looks_non_romanian_reasoning(text: str) -> bool:
+    toks = {t.casefold() for t in _word_tokens(_strip_diacritics(text))}
+    if not toks:
+        return True
+    # Lightweight heuristic: common English markers.
+    en_markers = {
+        "the", "and", "without", "with", "for", "from", "of", "is",
+        "are", "speech", "presentation", "rhetorical", "blocking", "debate",
+    }
+    return len(toks & en_markers) >= 2
+
+
+def _content_tokens(text: str) -> set[str]:
+    stop = {
+        "si", "sau", "cu", "din", "pentru", "este", "sunt", "care", "aceasta",
+        "acest", "fost", "prin", "iar", "dar", "cum", "mai", "nu", "la", "in",
+        "pe", "de", "un", "o", "ai", "ale", "al", "se",
+    }
+    toks = []
+    for t in _word_tokens(_strip_diacritics(text.casefold())):
+        if len(t) < 4:
+            continue
+        if t in stop:
+            continue
+        toks.append(t)
+    return set(toks)
+
+
+def _reasoning_matches_speech(reasoning: str, speech_text: str) -> bool:
+    r = _content_tokens(reasoning)
+    s = _content_tokens(speech_text)
+    if not r or not s:
+        return False
+    overlap = len(r & s)
+    # Require at least some lexical grounding in the actual speech.
+    return overlap >= 2
+
+
+def _fallback_quote_from_speech(speech_text: str) -> str:
+    tokens = _word_tokens(speech_text)
+    if len(tokens) < 6:
+        return ""
+    quote = " ".join(tokens[:16]).strip()
+    return quote[:160].strip()
+
+
+def _quote_matches_speech(evidence_quote: str, speech_text: str) -> bool:
+    q = _text_key((evidence_quote or "").strip().strip("\"“”"))
+    s = _text_key(speech_text or "")
+    return bool(q and len(q) >= 24 and q in s)
+
+
+def _reasoning_prefix_for_label(label: str) -> str:
+    if label == "constructive":
+        return "Discursul este constructiv deoarece include conținut substanțial și orientat spre soluții."
+    if label == "neutral":
+        return "Intervenția este neutră, predominant procedurală sau fără substanță de politică publică."
+    return "Discursul este non-constructiv deoarece domină atacul retoric sau blocarea dezbaterii."
+
+
+def _compose_grounded_reasoning(label: str, topics: list[str], evidence_quote: str) -> str:
+    base = _reasoning_prefix_for_label(label)
+    if topics:
+        base += f" Teme: {', '.join(topics[:2])}."
+    if evidence_quote:
+        base += f' Citat: "{evidence_quote}".'
+    return base
+
+
+def _token_variants(token: str) -> set[str]:
+    variants = {token}
+    suffixes = ("ului", "ilor", "elor", "ile", "ele", "lor", "le", "ul", "ii")
+    for suf in suffixes:
+        if token.endswith(suf) and len(token) - len(suf) >= 3:
+            variants.add(token[: -len(suf)])
+    return variants
+
+
+def _topic_tokens(topic: str) -> set[str]:
+    out: set[str] = set()
+    for tok in _topic_key(topic).split():
+        if len(tok) < 3:
+            continue
+        out.update(v for v in _token_variants(tok) if len(v) >= 3)
+    return out
+
+
+def _normalize_topic_text(raw: str) -> str:
+    topic = str(raw).strip()
+    topic = re.sub(r"^[\-\*\d\.\)\(\[\]]+\s*", "", topic)
+    topic = re.sub(r"\s+", " ", topic).strip(" ,;:.")
+    return topic
+
+
+def _looks_like_noise_topic(topic: str) -> bool:
+    key = _topic_key(topic)
+    if not key:
+        return True
+    if key in _TOPIC_GENERIC_PHRASES:
+        return True
+    # Require at least one letter; reject pure numbers/symbols.
+    if not re.search(r"[a-zA-ZĂÂÎȘȚăâîșț]", topic):
+        return True
+    return False
+
+
+def _session_topic_aliases(session_topics: list) -> list[tuple[str, str]]:
+    """Return (display_label, normalized_key) pairs for fast matching."""
+    out: list[tuple[str, str]] = []
+    for item in session_topics:
+        if isinstance(item, dict):
+            label = str(item.get("label", "")).strip()
+        else:
+            label = str(item).strip()
+        if not label:
+            continue
+        out.append((label, _topic_key(label)))
+    return out
+
+
+def _canonicalize_topic(topic: str, session_aliases: list[tuple[str, str]]) -> str:
+    """Snap extracted topic to closest session topic label when clearly equivalent."""
+    key = _topic_key(topic)
+    if not key:
+        return topic
+
+    # Exact key match first.
+    for label, alias_key in session_aliases:
+        if key == alias_key:
+            return label
+
+    # Then conservative containment-based matching to avoid over-merging.
+    for label, alias_key in session_aliases:
+        if len(key) >= 6 and (key in alias_key or alias_key in key):
+            return label
+
+    # Fallback: high token overlap catches inflection variants
+    # (e.g. "pensii speciale" vs "pensiile speciale").
+    topic_toks = _topic_tokens(topic)
+    if topic_toks:
+        best_label = topic
+        best_score = 0.0
+        best_overlap = 0
+        for label, alias_key in session_aliases:
+            alias_toks = _topic_tokens(alias_key)
+            if not alias_toks:
+                continue
+            overlap = len(topic_toks & alias_toks)
+            denom = max(len(topic_toks), len(alias_toks))
+            score = overlap / denom
+            if score > best_score:
+                best_score = score
+                best_overlap = overlap
+                best_label = label
+        if best_score >= 0.5 and best_overlap >= 2:
+            return best_label
+
+    return topic
+
+
+def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
     """Validate and clean one speech result from the LLM batch output."""
     label = str(item.get("constructiveness_label", "")).strip()
     if label not in VALID_LABELS:
@@ -330,11 +627,16 @@ def _validate_one(item: dict, config: dict) -> dict:
     max_len = config["max_topic_length"]
     topics: list[str] = []
     seen: set[str] = set()
+    session_aliases = _session_topic_aliases(session_topics)
     for t in topics_raw:
-        t = str(t).strip()
-        if t and len(t) <= max_len and t not in seen:
+        t = _normalize_topic_text(t)
+        if not t or len(t) > max_len or _looks_like_noise_topic(t):
+            continue
+        t = _canonicalize_topic(t, session_aliases)
+        topic_key = _topic_key(t)
+        if topic_key and topic_key not in seen:
             topics.append(t)
-            seen.add(t)
+            seen.add(topic_key)
         if len(topics) >= max_topics:
             break
 
@@ -346,6 +648,46 @@ def _validate_one(item: dict, config: dict) -> dict:
     confidence = max(0.0, min(1.0, confidence))
 
     reasoning = str(item.get("reasoning", "")).strip()
+    evidence_quote = str(item.get("evidence_quote", "")).strip().strip("\"“”")
+
+    # Encourage grounded reasoning by requiring quote overlap with speech text.
+    if evidence_quote:
+        quote_key = _text_key(evidence_quote)
+    else:
+        quote_key = ""
+    # speech_text is attached dynamically by caller to avoid changing MCP schema.
+    speech_text = str(item.get("_speech_text", ""))
+    speech_key = _text_key(speech_text)
+    has_grounding = bool(quote_key and len(quote_key) >= 24 and quote_key in speech_key)
+    if not evidence_quote:
+        evidence_quote = _fallback_quote_from_speech(speech_text)
+        quote_key = _text_key(evidence_quote) if evidence_quote else ""
+        has_grounding = bool(quote_key and len(quote_key) >= 24 and quote_key in speech_key)
+    elif not has_grounding:
+        # Model supplied a quote from a different speech; replace with a local quote.
+        evidence_quote = _fallback_quote_from_speech(speech_text)
+        quote_key = _text_key(evidence_quote) if evidence_quote else ""
+        has_grounding = bool(quote_key and len(quote_key) >= 24 and quote_key in speech_key)
+
+    if not has_grounding:
+        confidence = min(confidence, 0.6)
+        quote_note = "fără citat valid din discurs"
+    else:
+        quote_note = ""
+
+    # Enforce Romanian and ensure reasoning is grounded in THIS speech.
+    reasoning_grounded = bool(speech_text and _reasoning_matches_speech(reasoning, speech_text))
+    if (
+        (not reasoning)
+        or _looks_non_romanian_reasoning(reasoning)
+        or (speech_text and not reasoning_grounded)
+    ):
+        reasoning = _compose_grounded_reasoning(label, topics, evidence_quote)
+        reasoning_grounded = True if evidence_quote else False
+    elif evidence_quote and "Citat:" not in reasoning:
+        reasoning = f'{reasoning} Citat: "{evidence_quote}".'
+    if quote_note:
+        reasoning = f"{reasoning} [{quote_note}]"
 
     return {
         "constructiveness_label": label,
@@ -353,7 +695,95 @@ def _validate_one(item: dict, config: dict) -> dict:
         "confidence": confidence,
         "evidence_chunk_ids": [],  # no RAG in batch mode — full context replaces it
         "reasoning": reasoning,
+        "_needs_recheck": not has_grounding or not reasoning_grounded,
     }
+
+
+def _recheck_single_speech(
+    client,
+    provider: str,
+    session: dict,
+    session_topics: list,
+    sp: dict,
+    config: dict,
+    parent_batch_label: str,
+) -> dict | None:
+    """Reclassify one speech when initial output looks misaligned/ungrounded."""
+    last_exc: Exception | None = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            raw_results = _call_llm_batch(
+                client=client,
+                provider=provider,
+                session=session,
+                session_topics=session_topics,
+                speeches=[sp],
+                batch_label=f"{parent_batch_label}_recheck_{sp['speech_index']}",
+                build_prompts_only=False,
+            )
+            if not raw_results:
+                return None
+            raw = raw_results[0]
+            raw_for_validation = dict(raw)
+            raw_for_validation["_speech_text"] = sp["text"]
+            return _validate_one(raw_for_validation, config, session_topics)
+        except Exception as exc:
+            last_exc = exc
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    if last_exc:
+        print(f"      Recheck failed for speech_index={sp['speech_index']}: {last_exc}")
+    return None
+
+
+def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[int, dict]:
+    """Align possibly shifted model items back to target speeches.
+
+    Priority:
+    1) exact speech_index + quote matches target speech (or no quote present)
+    2) quote matches target speech (cross-index rescue)
+    3) exact speech_index fallback
+    """
+    by_index = _index_results_by_speech_index(items)
+    assigned: dict[int, dict] = {}
+    used_item_ids: set[int] = set()
+
+    # Pass 1: exact index with compatible quote.
+    for sp in batch:
+        idx = sp["speech_index"]
+        item = by_index.get(idx)
+        if item is None:
+            continue
+        quote = str(item.get("evidence_quote", "")).strip()
+        if (not quote) or _quote_matches_speech(quote, sp["text"]):
+            assigned[idx] = item
+            used_item_ids.add(id(item))
+
+    # Pass 2: quote-based rescue for unassigned speeches.
+    for sp in batch:
+        idx = sp["speech_index"]
+        if idx in assigned:
+            continue
+        for item in items:
+            if id(item) in used_item_ids:
+                continue
+            quote = str(item.get("evidence_quote", "")).strip()
+            if quote and _quote_matches_speech(quote, sp["text"]):
+                assigned[idx] = item
+                used_item_ids.add(id(item))
+                break
+
+    # Pass 3: exact index fallback even if quote mismatches.
+    for sp in batch:
+        idx = sp["speech_index"]
+        if idx in assigned:
+            continue
+        item = by_index.get(idx)
+        if item is not None and id(item) not in used_item_ids:
+            assigned[idx] = item
+            used_item_ids.add(id(item))
+
+    return assigned
 
 
 # ---------------------------------------------------------------------------
@@ -473,11 +903,33 @@ def classify_session_batch(
             continue
 
         # Build index: speech_index → raw result from LLM.
-        result_by_index: dict[int, dict] = {}
-        for item in raw_results:
-            idx = item.get("speech_index")
-            if idx is not None:
-                result_by_index[int(idx)] = item
+        result_by_index = _index_results_by_speech_index(raw_results)
+
+        missing_speeches = [sp for sp in batch if sp["speech_index"] not in result_by_index]
+        if missing_speeches:
+            print(
+                f"    Initial batch incomplete: {len(result_by_index)}/{len(batch)} "
+                "results. Attempting targeted recovery..."
+            )
+            recovered = _recover_missing_batch_results(
+                client=client,
+                provider=provider,
+                session=session,
+                session_topics=session_topics,
+                batch_label=batch_label,
+                missing_speeches=missing_speeches,
+            )
+            if recovered:
+                for idx, item in recovered.items():
+                    result_by_index.setdefault(idx, item)
+                print(
+                    f"    Recovery merged: now {len(result_by_index)}/{len(batch)} "
+                    "results available"
+                )
+
+        # Realign results in case the model shifted speech_index values while
+        # providing quote evidence from adjacent speeches.
+        aligned_by_index = _realign_results_to_speeches(batch, list(result_by_index.values()))
 
         # Match LLM results back to speeches in the batch.
         for sp in batch:
@@ -485,7 +937,7 @@ def classify_session_batch(
             if iid not in id_set:
                 continue  # Not a target — skip storing
 
-            raw = result_by_index.get(sp["speech_index"])
+            raw = aligned_by_index.get(sp["speech_index"])
             if raw is None:
                 print(f"    No result for speech_index={sp['speech_index']} ({iid})")
                 errors += 1
@@ -496,7 +948,9 @@ def classify_session_batch(
                 continue
 
             try:
-                payload = _validate_one(raw, config)
+                raw_for_validation = dict(raw)
+                raw_for_validation["_speech_text"] = sp["text"]
+                payload = _validate_one(raw_for_validation, config, session_topics)
             except ValueError as exc:
                 print(f"    Validation error for {iid}: {exc}")
                 errors += 1
@@ -505,6 +959,20 @@ def classify_session_batch(
                     "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
                 })
                 continue
+
+            if payload.get("_needs_recheck"):
+                print(f"      Rechecking speech_index={sp['speech_index']} (ungrounded result)...")
+                rechecked = _recheck_single_speech(
+                    client=client,
+                    provider=provider,
+                    session=session,
+                    session_topics=session_topics,
+                    sp=sp,
+                    config=config,
+                    parent_batch_label=batch_label,
+                )
+                if rechecked is not None:
+                    payload = rechecked
 
             print(
                 f"    [{sp['speech_index']}] {sp['raw_speaker'][:40]!r}  "
@@ -515,6 +983,7 @@ def classify_session_batch(
             if payload["reasoning"]:
                 print(f"      reasoning: {payload['reasoning']}")
 
+            payload = {k: v for k, v in payload.items() if not k.startswith("_")}
             store_result = server.call(
                 "store_intervention_analysis",
                 {"intervention_id": iid, **payload},
@@ -734,6 +1203,16 @@ def ingest_external_outputs(db_path: Path, run_id: str) -> int:
                     (session_id,),
                 ).fetchall()
                 idx_to_iid: dict[int, str] = {r["speech_index"]: r["intervention_id"] for r in rows}
+                idx_to_text: dict[int, str] = {r["speech_index"]: r["text"] for r in raw_conn.execute(
+                    """
+                    SELECT speech_index, text
+                    FROM interventions_raw
+                    WHERE session_id = ? AND member_id IS NOT NULL
+                    """,
+                    (session_id,),
+                ).fetchall()}
+                topics_result = server.call("get_session_topics", {"session_id": session_id})
+                session_topics: list = topics_result.get("topics", []) if topics_result.get("ok") else []
 
                 file_classified = 0
                 file_errors = 0
@@ -749,7 +1228,9 @@ def ingest_external_outputs(db_path: Path, run_id: str) -> int:
                         continue
 
                     try:
-                        payload = _validate_one(item, config)
+                        item_for_validation = dict(item)
+                        item_for_validation["_speech_text"] = idx_to_text.get(int(idx), "")
+                        payload = _validate_one(item_for_validation, config, session_topics)
                     except ValueError as exc:
                         print(f"    [error] speech_index={idx}: {exc}")
                         file_errors += 1

@@ -43,6 +43,7 @@ def validate_outputs(output_dir: Path) -> list[str]:
     errors: list[str] = []
     members_dir = output_dir / "members"
     parties_dir = output_dir / "parties"
+    topics_dir = output_dir / "topics"
 
     members_index_path = members_dir / "interventions_index.json"
     parties_index_path = parties_dir / "interventions_index.json"
@@ -183,6 +184,40 @@ def validate_outputs(output_dir: Path) -> list[str]:
 
     if not _is_sorted_count_then_id(parties_index, "interventions_total", "party_id"):
         errors.append("parties/interventions_index.json is not deterministically sorted.")
+
+    # Global canonical topics checks (new artifact).
+    topics_index_path = topics_dir / "interventions_topics_index.json"
+    if not topics_index_path.exists():
+        errors.append(f"Missing file: {topics_index_path}")
+        return errors
+    topics_index = _load_json(topics_index_path)
+    if not isinstance(topics_index, dict):
+        errors.append("topics/interventions_topics_index.json must be a JSON object.")
+        return errors
+    top_topics = topics_index.get("top_topics", [])
+    if not isinstance(top_topics, list):
+        errors.append("topics/interventions_topics_index.json: top_topics must be a list.")
+        return errors
+    prev_count = None
+    prev_topic = None
+    for item in top_topics:
+        if not isinstance(item, dict):
+            errors.append("topics/interventions_topics_index.json: each top_topics item must be an object.")
+            continue
+        if "topic" not in item or "count" not in item:
+            errors.append("topics/interventions_topics_index.json: item missing topic/count.")
+            continue
+        topic = str(item["topic"])
+        count = int(item["count"])
+        aliases = item.get("aliases", [])
+        if not isinstance(aliases, list):
+            errors.append(f"topics/interventions_topics_index.json: aliases must be list for topic '{topic}'.")
+        if prev_count is not None:
+            if count > prev_count or (count == prev_count and topic < str(prev_topic)):
+                errors.append("topics/interventions_topics_index.json: top_topics is not sorted by count desc, topic asc.")
+                break
+        prev_count = count
+        prev_topic = topic
 
     return errors
 

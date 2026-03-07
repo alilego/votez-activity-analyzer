@@ -99,6 +99,88 @@ OLLAMA_NUM_CTX = 32768
 # Fallback num_ctx for small-context models (llama3.1:8b-8k).
 OLLAMA_NUM_CTX_SMALL = 8192
 
+# Topic catalog config used to constrain LLM output to known canonical topics.
+TOPIC_TAXONOMY_CONFIG_PATH = Path("config/topic_taxonomy.json")
+
+_TOPIC_CATALOG_CACHE: list[dict] | None = None
+
+
+def _load_topic_catalog(config_path: Path = TOPIC_TAXONOMY_CONFIG_PATH) -> list[dict]:
+    """Load canonical topic catalog from config.
+
+    Preferred source:
+      config.topic_taxonomy.json -> "catalog_topics": [{id, label, description, aliases}]
+
+    Fallback when catalog_topics is missing:
+      Derive a coarse catalog from direction_rules labels.
+    """
+    global _TOPIC_CATALOG_CACHE
+    if _TOPIC_CATALOG_CACHE is not None:
+        return _TOPIC_CATALOG_CACHE
+
+    catalog: list[dict] = []
+    try:
+        if config_path.exists():
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                raw = payload.get("catalog_topics", [])
+                if isinstance(raw, list):
+                    for item in raw:
+                        if not isinstance(item, dict):
+                            continue
+                        label = str(item.get("label", "")).strip()
+                        topic_id = str(item.get("id", "")).strip()
+                        if not label or not topic_id:
+                            continue
+                        aliases_raw = item.get("aliases", [])
+                        aliases = [str(a).strip() for a in aliases_raw if isinstance(a, str) and str(a).strip()]
+                        catalog.append(
+                            {
+                                "id": topic_id,
+                                "label": label,
+                                "description": str(item.get("description", "")).strip(),
+                                "aliases": aliases,
+                            }
+                        )
+
+                # Fallback: build from direction rules if explicit catalog is absent.
+                if not catalog:
+                    rules = payload.get("direction_rules", [])
+                    if isinstance(rules, list):
+                        for idx, rule in enumerate(rules, 1):
+                            if not isinstance(rule, dict):
+                                continue
+                            label = str(rule.get("label", "")).strip()
+                            if not label:
+                                continue
+                            topic_id = f"dir_{idx:02d}"
+                            catalog.append(
+                                {
+                                    "id": topic_id,
+                                    "label": label,
+                                    "description": "Direcție tematică din taxonomia locală.",
+                                    "aliases": [],
+                                }
+                            )
+    except Exception:
+        catalog = []
+
+    _TOPIC_CATALOG_CACHE = catalog
+    return catalog
+
+
+def _format_topic_catalog(catalog: list[dict]) -> str:
+    if not catalog:
+        return "Catalog topics: (none provided)"
+    lines = ["Canonical topic catalog (prefer matching these):"]
+    for item in catalog:
+        aliases = item.get("aliases", [])
+        aliases_text = f" | aliases: {', '.join(aliases[:8])}" if aliases else ""
+        desc = item.get("description", "")
+        desc_text = f" | desc: {desc}" if desc else ""
+        lines.append(f"- {item['id']} | {item['label']}{desc_text}{aliases_text}")
+    return "\n".join(lines)
+
 # ---------------------------------------------------------------------------
 # Prompts — map-reduce
 # ---------------------------------------------------------------------------
@@ -122,30 +204,50 @@ Reguli:
 - Răspunde DOAR cu lista de puncte, fără titlu sau introducere."""
 
 # REDUCE prompt: merge all window bullet lists into structured JSON topic objects.
-REDUCE_SYSTEM = """You are extracting a structured topic list from a Romanian parliamentary session.
+REDUCE_SYSTEM_BASE = """You are extracting a structured topic list from a Romanian parliamentary session.
 
 You will receive bullet-list summaries from multiple windows covering the full session.
 Your job: merge them into a deduplicated list of up to 20 rich topic objects.
 
+You are given a canonical topic catalog. Use it as constraints:
+- First try to match each topic to ONE catalog topic.
+- If no catalog topic fits, emit it as a new topic with explicit reason.
+
 Output format — respond with ONLY valid JSON, no prose, no markdown:
 {
-  "topics": [
-    {"label": "LABEL_FROM_INPUT_MAX_10_WORDS", "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE", "law_id": "LAW_ID_FROM_INPUT_OR_NULL"},
-    {"label": "LABEL_FROM_INPUT_MAX_10_WORDS", "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE", "law_id": null}
+  "matched_topics": [
+    {
+      "catalog_topic_id": "ID_FROM_CATALOG",
+      "label": "CANONICAL_LABEL_FROM_CATALOG",
+      "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE",
+      "law_id": "LAW_ID_FROM_INPUT_OR_NULL",
+      "confidence": 0.0
+    }
+  ],
+  "new_topics": [
+    {
+      "label": "NEW_LABEL_MAX_10_WORDS",
+      "description": "DESCRIPTION_FROM_INPUT_ONE_SENTENCE",
+      "law_id": "LAW_ID_FROM_INPUT_OR_NULL",
+      "reason_no_match": "why catalog does not fit",
+      "confidence": 0.0
+    }
   ],
   "session_summary": "ONE_SENTENCE_SUMMARY_FROM_INPUT"
 }
 
 Rules:
-- label: MAXIMUM 10 words, in Romanian, specific to this session. If a law/bill is the topic, use its short title + identifier (e.g. "Reforma pensiilor speciale PL-x 45/2025"). Never cut a label mid-sentence — finish with a complete noun phrase.
-- description: one sentence in Romanian. MUST include: (a) what the topic is actually about (not just its name), (b) all specific details present in the input — amounts, ALL locations mentioned, institutions, percentages. If a law/bill is mentioned, state what it regulates. ONLY use facts that appear in the input text — do NOT invent amounts, locations, or details.
-- law_id: the bill/law/ordinance identifier if mentioned (e.g. "PL-x 45/2025", "OUG 114/2018", "nr. 360/2023"), otherwise null.
-- COMBINING duplicates: if two entries cover the same subject but mention different locations or amounts, COMBINE them into ONE entry whose label and description list ALL locations and amounts from both. Do NOT drop any location or amount that appears in the input.
-- Only drop an entry if it is truly identical (same subject, same location, same amount) to another.
-- CRITICAL: every label, description and law_id you output MUST be grounded in the input text above. Do NOT copy from examples or invent details not present in the input.
-- Drop generic entries like "buget", "legislativ", "procedura" unless paired with a specific amount/date/institution.
-- Keep up to 20 topics. Prefer specificity over quantity.
-- Do NOT include "(fără subiecte identificate)" lines."""
+- label: MAXIMUM 10 words, in Romanian, specific to this session. If a law/bill is the topic, use its short title + identifier (e.g. "Reforma pensiilor speciale PL-x 45/2025"). Never cut a label mid-sentence.
+- description: one sentence in Romanian. Include what the topic is about and all concrete details present in input (amounts, locations, institutions, percentages). Do NOT invent.
+- law_id: bill/law/ordinance identifier when present, otherwise null.
+- COMBINING duplicates: merge overlapping mentions into one topic and keep all details.
+- Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
+- Keep total matched_topics + new_topics <= 20.
+- Do NOT include "(fără subiecte identificate)" entries."""
+
+
+def _build_reduce_system(catalog: list[dict]) -> str:
+    return REDUCE_SYSTEM_BASE + "\n\n" + _format_topic_catalog(catalog)
 
 
 def _build_window_message(session_header: str, window_chunks: list[dict], window_num: int, total_windows: int) -> str:
@@ -314,36 +416,110 @@ def _batch_prose(prose_list: list[str], max_chars: int) -> list[list[str]]:
     return batches
 
 
-def _parse_topics(raw: str) -> list[dict]:
-    """Parse and normalise a reduce JSON response into a list of topic dicts."""
+def _to_confidence(value) -> float:
+    try:
+        conf = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(1.0, conf))
+
+
+def _parse_topics_payload(raw: str) -> dict:
+    """Parse and normalise LLM response.
+
+    Supports both:
+    - legacy format: {"topics": [...], "session_summary": "..."}
+    - constrained format: {"matched_topics": [...], "new_topics": [...], "session_summary": "..."}
+
+    Returns:
+      {
+        "topics": [...],          # flattened enriched list for DB storage
+        "matched_topics": [...],  # canonical matches
+        "new_topics": [...],      # proposed new topics
+        "session_summary": "..."
+      }
+    """
     if raw.startswith("```"):
         raw = "\n".join(ln for ln in raw.splitlines() if not ln.startswith("```")).strip()
     parsed = json.loads(raw)
-    topics_raw = parsed.get("topics", [])
-    if not isinstance(topics_raw, list):
-        raise ValueError("'topics' is not a list")
-    topics: list[dict] = []
+    if not isinstance(parsed, dict):
+        raise ValueError("Top-level JSON must be an object")
+
+    matched_raw = parsed.get("matched_topics")
+    new_raw = parsed.get("new_topics")
+    topics_raw = parsed.get("topics")
+    session_summary = str(parsed.get("session_summary", "")).strip()
+
+    # Legacy mode: convert topics -> matched_topics (without catalog id).
+    if matched_raw is None and new_raw is None:
+        matched_raw = topics_raw
+        new_raw = []
+
+    if not isinstance(matched_raw, list):
+        raise ValueError("'matched_topics' is not a list")
+    if not isinstance(new_raw, list):
+        raise ValueError("'new_topics' is not a list")
+
     seen: set[str] = set()
-    for item in topics_raw:
-        if isinstance(item, dict) and item.get("label"):
-            label = str(item["label"]).strip()[:MAX_TOPIC_LABEL_LENGTH]
-            if label.lower() in seen:
+    matched_topics: list[dict] = []
+    new_topics: list[dict] = []
+    topics_flat: list[dict] = []
+
+    for item in matched_raw:
+        if isinstance(item, str):
+            item = {"label": item}
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("label", "")).strip()[:MAX_TOPIC_LABEL_LENGTH]
+        if not label or label.lower() in seen:
+            continue
+        seen.add(label.lower())
+        entry = {
+            "catalog_topic_id": str(item.get("catalog_topic_id", "")).strip() or None,
+            "label": label,
+            "description": str(item.get("description", "")).strip()[:MAX_TOPIC_DESC_LENGTH],
+            "law_id": item.get("law_id") or None,
+            "confidence": _to_confidence(item.get("confidence", 0.0)),
+            "match_type": "catalog",
+            "is_new_topic": False,
+            "reason_no_match": "",
+        }
+        matched_topics.append(entry)
+        topics_flat.append(entry.copy())
+        if len(topics_flat) >= MAX_TOPICS_PER_SESSION:
+            break
+
+    if len(topics_flat) < MAX_TOPICS_PER_SESSION:
+        for item in new_raw:
+            if isinstance(item, str):
+                item = {"label": item}
+            if not isinstance(item, dict):
+                continue
+            label = str(item.get("label", "")).strip()[:MAX_TOPIC_LABEL_LENGTH]
+            if not label or label.lower() in seen:
                 continue
             seen.add(label.lower())
-            topics.append({
+            entry = {
+                "catalog_topic_id": None,
                 "label": label,
                 "description": str(item.get("description", "")).strip()[:MAX_TOPIC_DESC_LENGTH],
                 "law_id": item.get("law_id") or None,
-            })
-        elif isinstance(item, str) and item.strip():
-            label = item.strip()[:MAX_TOPIC_LABEL_LENGTH]
-            if label.lower() in seen:
-                continue
-            seen.add(label.lower())
-            topics.append({"label": label, "description": "", "law_id": None})
-        if len(topics) >= MAX_TOPICS_PER_SESSION:
-            break
-    return topics
+                "confidence": _to_confidence(item.get("confidence", 0.0)),
+                "match_type": "new_topic",
+                "is_new_topic": True,
+                "reason_no_match": str(item.get("reason_no_match", "")).strip()[:MAX_TOPIC_DESC_LENGTH],
+            }
+            new_topics.append(entry)
+            topics_flat.append(entry.copy())
+            if len(topics_flat) >= MAX_TOPICS_PER_SESSION:
+                break
+
+    return {
+        "topics": topics_flat,
+        "matched_topics": matched_topics,
+        "new_topics": new_topics,
+        "session_summary": session_summary,
+    }
 
 
 def _call_reduce_once(
@@ -354,31 +530,34 @@ def _call_reduce_once(
     session_id: str = "",
     session_date: str = "",
     build_prompts_only: bool = False,
-) -> list[dict]:
-    """Run one reduce LLM call over a list of prose strings. Returns parsed topic list.
+) -> dict:
+    """Run one reduce LLM call over a list of prose strings. Returns parsed payload.
 
     In build_prompts_only mode the prompt is saved and an empty list is returned.
     """
     reduce_msg = _build_reduce_message(session_header, prose_list)
+    catalog = _load_topic_catalog()
+    reduce_system = _build_reduce_system(catalog)
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, REDUCE_SYSTEM, reduce_msg, json_mode=True, max_tokens=2048,
+                client, reduce_system, reduce_msg, json_mode=True, max_tokens=2048,
                 prompt_label=label.lower().replace(" ", "_"),
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
             )
-            topics = _parse_topics(raw)
+            payload = _parse_topics_payload(raw)
+            topics = payload.get("topics", [])
             print(f"  {label}: {len(topics)} topics from {len(prose_list)} inputs ({len(reduce_msg)} chars)")
-            return topics
+            return payload
         except _BuildPromptsOnly:
             print(f"  {label}: prompt saved (build-prompts mode)")
-            return []  # no retries — prompt is saved, nothing to parse
+            return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
         except (json.JSONDecodeError, ValueError) as exc:
             print(f"  {label} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY_S)
-    return []
+    return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
 
 
 def _reduce(
@@ -401,21 +580,22 @@ def _reduce(
     print(f"  Reduce: {len(window_results)} window(s), {total_chars} chars → {len(batches)} batch(es)")
 
     if len(batches) == 1:
-        topics = _call_reduce_once(
+        payload = _call_reduce_once(
             client, session_header, batches[0], "Reduce",
             session_id=session_id, session_date=session_date,
             build_prompts_only=build_prompts_only,
         )
-        return {"topics": topics, "session_summary": ""}
+        return payload
 
     # Stage 1: reduce each batch to an intermediate topic list.
     intermediate_prose: list[str] = []
     for b_idx, batch in enumerate(batches, 1):
-        partial = _call_reduce_once(
+        partial_payload = _call_reduce_once(
             client, session_header, batch, f"Reduce stage-1 batch {b_idx}/{len(batches)}",
             session_id=session_id, session_date=session_date,
             build_prompts_only=build_prompts_only,
         )
+        partial = partial_payload.get("topics", [])
         if partial:
             lines = []
             for t in partial:
@@ -425,36 +605,57 @@ def _reduce(
             intermediate_prose.append("\n".join(lines))
 
     # Stage 2: merge all intermediate lists into the final result.
-    final_topics = _call_reduce_once(
+    final_payload = _call_reduce_once(
         client, session_header, intermediate_prose, "Reduce stage-2 final",
         session_id=session_id, session_date=session_date,
         build_prompts_only=build_prompts_only,
     )
-    return {"topics": final_topics, "session_summary": ""}
+    return final_payload
 
 
-SINGLE_PASS_SYSTEM = """You are an expert analyst of Romanian Parliament plenary sessions.
+SINGLE_PASS_SYSTEM_BASE = """You are an expert analyst of Romanian Parliament plenary sessions.
 
 You will receive the full transcript of one session as a numbered list of speech fragments.
 Your task: read the entire text and produce a structured list of up to 20 specific topics debated.
 
+You are given a canonical topic catalog. Use it as constraints:
+- First match each topic to ONE catalog topic.
+- If there is no adequate match, emit as `new_topics` with reason.
+
 Output format — respond with ONLY valid JSON, no prose, no markdown fences:
 {
-  "topics": [
-    {"label": "LABEL_MAX_10_WORDS_IN_ROMANIAN", "description": "ONE_SENTENCE_IN_ROMANIAN_WITH_ALL_DETAILS", "law_id": "IDENTIFIER_OR_NULL"},
-    ...
+  "matched_topics": [
+    {
+      "catalog_topic_id": "ID_FROM_CATALOG",
+      "label": "CANONICAL_LABEL_FROM_CATALOG",
+      "description": "ONE_SENTENCE_IN_ROMANIAN_WITH_ALL_DETAILS",
+      "law_id": "IDENTIFIER_OR_NULL",
+      "confidence": 0.0
+    }
+  ],
+  "new_topics": [
+    {
+      "label": "NEW_LABEL_MAX_10_WORDS_IN_ROMANIAN",
+      "description": "ONE_SENTENCE_IN_ROMANIAN_WITH_ALL_DETAILS",
+      "law_id": "IDENTIFIER_OR_NULL",
+      "reason_no_match": "why catalog does not fit",
+      "confidence": 0.0
+    }
   ],
   "session_summary": "ONE_SENTENCE_OVERVIEW"
 }
 
 Rules:
-- label: maximum 10 words in Romanian. If a law/bill is the topic include its identifier (e.g. "Reforma pensiilor PL-x 45/2025"). Never cut a label mid-phrase.
-- description: one sentence in Romanian. Must include: (a) what the topic is actually about, (b) all specific details from the text — amounts, ALL locations, institutions, percentages. If a law is mentioned, state what it regulates.
-- law_id: bill/law/ordinance identifier if present (e.g. "PL-x 45/2025", "OUG 114/2018"), otherwise null.
-- COMBINING: if multiple speeches cover the same subject with different locations or amounts, COMBINE into ONE entry listing ALL details.
-- CRITICAL: every label, description and law_id MUST be grounded in the text. Do NOT invent details.
-- Drop generic entries like "buget", "legislație", "procedură" unless paired with a specific amount/date/institution.
-- Keep up to 20 topics. Prefer specificity over quantity."""
+- label: maximum 10 words in Romanian. If a law/bill is the topic include its identifier.
+- description: one sentence in Romanian with concrete details present in text.
+- law_id: bill/law/ordinance identifier if present, otherwise null.
+- Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
+- Keep matched_topics + new_topics <= 20.
+- CRITICAL: every field MUST be grounded in the text. Do NOT invent details."""
+
+
+def _build_single_pass_system(catalog: list[dict]) -> str:
+    return SINGLE_PASS_SYSTEM_BASE + "\n\n" + _format_topic_catalog(catalog)
 
 
 def _build_single_pass_message(session_header: str, chunks: list[dict]) -> str:
@@ -481,28 +682,31 @@ def _call_single_pass(
     and the session text fits within LARGE_CTX_THRESHOLD_CHARS.
     """
     user_msg = _build_single_pass_message(session_header, chunks)
+    catalog = _load_topic_catalog()
+    single_pass_system = _build_single_pass_system(catalog)
     total_chars = len(user_msg)
     print(f"  Single-pass: {len(chunks)} chunks, {total_chars:,} chars in one call")
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, SINGLE_PASS_SYSTEM, user_msg, json_mode=True, max_tokens=2048,
+                client, single_pass_system, user_msg, json_mode=True, max_tokens=2048,
                 prompt_label="single_pass",
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
             )
-            topics = _parse_topics(raw)
+            payload = _parse_topics_payload(raw)
+            topics = payload.get("topics", [])
             print(f"  Single-pass result: {len(topics)} topics  (first 120 chars: {raw[:120]!r})")
-            return {"topics": topics, "session_summary": ""}
+            return payload
         except _BuildPromptsOnly:
             print(f"  Single-pass: prompt saved (build-prompts mode)")
-            return {"topics": [], "session_summary": ""}
+            return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
         except (json.JSONDecodeError, ValueError) as exc:
             print(f"  Single-pass attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY_S)
-    return {"topics": [], "session_summary": ""}
+    return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
 
 
 def _call_map_reduce(
@@ -689,8 +893,11 @@ def extract_session_topics(
         return {"ok": True, "prompts_only": True}
 
     topics = llm_data.get("topics", [])
+    matched_topics = llm_data.get("matched_topics", [])
+    new_topics = llm_data.get("new_topics", [])
     session_summary = llm_data.get("session_summary", "")
     print(f"  session_summary={session_summary!r}")
+    print(f"  matched_topics={len(matched_topics)}  new_topics={len(new_topics)}")
     for t in topics:
         print(f"    - {t.get('label')} | {t.get('description', '')[:80]} | law_id={t.get('law_id')}")
 
@@ -849,8 +1056,10 @@ def ingest_external_outputs(db_path: Path, run_id: str) -> int:
       session_topics_{session_date}_{session_id}_{timestamp}_{model_safe}_{label}.txt
 
     File content: the raw JSON response from the external model — just the
-    JSON object, e.g.:
+    JSON object, e.g. either legacy:
       {"topics": [...], "session_summary": "..."}
+    or constrained:
+      {"matched_topics": [...], "new_topics": [...], "session_summary": "..."}
 
     Any file that has already been ingested (tracked by a .done sidecar) is
     skipped.  Returns the number of successfully ingested files.
@@ -911,13 +1120,15 @@ def ingest_external_outputs(db_path: Path, run_id: str) -> int:
                     continue
 
                 try:
-                    llm_data = _parse_topics(raw_text)
+                    payload = _parse_topics_payload(raw_text)
+                    llm_data = payload.get("topics", [])
                 except (json.JSONDecodeError, ValueError):
                     # Try extracting from a {"topics": [...]} wrapper.
                     try:
                         wrapper = json.loads(raw_text)
                         if isinstance(wrapper, dict):
-                            llm_data = _parse_topics(json.dumps(wrapper))
+                            payload = _parse_topics_payload(json.dumps(wrapper))
+                            llm_data = payload.get("topics", [])
                         else:
                             raise ValueError("not a dict")
                     except Exception as exc:
