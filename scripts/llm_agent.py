@@ -75,11 +75,14 @@ DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
 DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+EST_CHARS_PER_TOKEN = 3.8
+LOG_TOKEN_USAGE_PER_CALL = False
 
 MAX_RETRIES = 3
 RETRY_DELAY_S = 10
 MISSING_RECOVERY_MAX_ROUNDS = 3
 MISSING_RECOVERY_CHUNK_SIZE = 12
+PREVIOUS_CONTEXT_WINDOW = 9
 
 # Hard timeout per LLM batch request. Larger batches take longer to generate.
 # 600s (10 min) gives headroom for a full session on a slow M1.
@@ -96,17 +99,103 @@ OLLAMA_NUM_CTX = 32768
 # truncation/omission risk in long sessions.
 BATCH_CHAR_BUDGET = 40_000
 
+_LLM_USAGE = {
+    "calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "estimated_prompt_tokens": 0,
+    "estimated_completion_tokens": 0,
+    "calls_with_actual_usage": 0,
+}
+
+
+def _reset_usage_stats() -> None:
+    for key in _LLM_USAGE:
+        _LLM_USAGE[key] = 0
+
+
+def _estimate_tokens_from_text(text: str) -> int:
+    if not text:
+        return 0
+    return max(1, int(round(len(text) / EST_CHARS_PER_TOKEN)))
+
+
+def _extract_usage_tokens(response) -> tuple[int | None, int | None]:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None, None
+
+    def pick(container, keys: tuple[str, ...]) -> int | None:
+        for key in keys:
+            value = None
+            if isinstance(container, dict):
+                value = container.get(key)
+            else:
+                value = getattr(container, key, None)
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    prompt_tokens = pick(usage, ("prompt_tokens", "input_tokens", "prompt_eval_count"))
+    completion_tokens = pick(usage, ("completion_tokens", "output_tokens", "eval_count"))
+    return prompt_tokens, completion_tokens
+
+
+def _record_llm_usage(
+    response,
+    system_prompt: str,
+    user_prompt: str,
+    output_text: str,
+    call_label: str = "",
+) -> None:
+    prompt_tokens, completion_tokens = _extract_usage_tokens(response)
+    est_prompt = _estimate_tokens_from_text(system_prompt) + _estimate_tokens_from_text(user_prompt)
+    est_completion = _estimate_tokens_from_text(output_text)
+
+    _LLM_USAGE["calls"] += 1
+    _LLM_USAGE["estimated_prompt_tokens"] += est_prompt
+    _LLM_USAGE["estimated_completion_tokens"] += est_completion
+
+    if prompt_tokens is not None and completion_tokens is not None:
+        _LLM_USAGE["calls_with_actual_usage"] += 1
+        _LLM_USAGE["prompt_tokens"] += prompt_tokens
+        _LLM_USAGE["completion_tokens"] += completion_tokens
+
+    if LOG_TOKEN_USAGE_PER_CALL:
+        label = call_label or "call"
+        if prompt_tokens is not None and completion_tokens is not None:
+            total = prompt_tokens + completion_tokens
+            print(f"      [tokens] {label}: prompt={prompt_tokens} completion={completion_tokens} total={total}")
+        else:
+            total_est = est_prompt + est_completion
+            print(f"      [tokens~] {label}: prompt~={est_prompt} completion~={est_completion} total~={total_est}")
+
+
+def _usage_summary_payload() -> dict:
+    return {
+        "calls": int(_LLM_USAGE["calls"]),
+        "calls_with_actual_usage": int(_LLM_USAGE["calls_with_actual_usage"]),
+        "prompt_tokens": int(_LLM_USAGE["prompt_tokens"]),
+        "completion_tokens": int(_LLM_USAGE["completion_tokens"]),
+        "estimated_prompt_tokens": int(_LLM_USAGE["estimated_prompt_tokens"]),
+        "estimated_completion_tokens": int(_LLM_USAGE["estimated_completion_tokens"]),
+    }
+
 # ---------------------------------------------------------------------------
 # System prompt — batch mode
 # ---------------------------------------------------------------------------
 
-BATCH_SYSTEM_PROMPT = """You are a parliamentary debate analyst specialising in the Romanian Parliament (Camera Deputaților).
+BATCH_SYSTEM_PROMPT = """You are a parliamentary debate analyst specialising in the Romanian Parliament (Camera Deputaților and Senat).
 
 You will receive a numbered list of speeches from a single parliamentary session.
 Classify EVERY speech and return results as a JSON array.
 
 ## Classification labels
-- `constructive`: speaker genuinely advances the public good — proposes solutions, amendments, or substantive analysis aimed at better outcomes for citizens.
+- `constructive`: speaker genuinely advances the public good through substantive policy contribution aimed at better outcomes for citizens.
   Typical constructive behaviors include:
   - proposes a policy, amendment, or concrete solution
   - adds evidence, facts, or relevant reasoning
@@ -114,25 +203,37 @@ Classify EVERY speech and return results as a JSON array.
   - asks substantive questions that improve debate
   - attempts compromise, refinement, or better implementation
 - `neutral`: procedural / logistical / non-substantive — voting instructions, quorum calls, greetings, short interjections, chair time-keeping lines (e.g. "Vă rog, aveți cuvântul.", "Mulțumesc.").
+  Typical neutral behaviors include:
+  - procedural remarks
+  - vote announcements
+  - chair interventions without substantive policy content
 - `non_constructive`: serves narrow interests (party, career, sponsor) or blocks debate — rhetorical attacks, filibustering, partisan positioning without substance, conspiracy claims.
+  Typical non-constructive behaviors include:
+  - personal attacks
+  - guilt by association
+  - slogans without substance
+  - repeated partisan talking points with no argument
+  - obstruction without substantive justification
+  - mockery replacing argument
 
 ## Key rule
 Being on-topic is NOT sufficient for `constructive`. A speech can be fully on-topic yet `non_constructive` if it primarily serves narrow interests or blocks progress.
+Ideology, party, and policy direction must not affect label decisions; only the content of the speech should be considered.
 
 ## Edge cases
 - On-topic but purely self-serving or partisan → `non_constructive`
-- Mixed content → classify by the dominant portion
-- Legitimate opposition WITH evidence or concrete alternatives → `constructive`
-- Opposition that is purely rhetorical or blocking → `non_constructive`
+- Mixed content that includes constructive behavior → `constructive` with lower confidence (adjust confidence by portion of each type of behavior)
+- Legitimate opposition or criticism WITH evidence, explanations, or concrete alternatives → `constructive`
+- Opposition that is purely rhetorical or blocking without evidence or concrete alternatives → `non_constructive`
 - ≤2 sentences, no policy substance, or pure chair line → `neutral`
 - Formal report speeches that present analysis/recommendations to plen (e.g. committee report + approval proposal) → `constructive`
-- For mixed speeches with both attacks and policy proposals: if concrete policy content is substantial, do NOT use `non_constructive` unless attacks clearly dominate.
+- Emotional tone is not enough to classify as non-constructive; a harsh but evidence-based intervention can still be constructive
 
 ## Topic extraction
-For each speech: extract up to 5 short topics (1–4 words each, in Romanian) reflecting specific policy areas or legislative themes covered by THAT speech.
-Return [] if none apply. Do NOT hallucinate topics not present in the text.
-Prefer concrete noun phrases (e.g. "pensiile speciale", "buget local", "PL-x 45/2025"), not generic labels ("politică", "dezbatere", "discurs politic").
-If a session topic clearly matches, reuse its wording for consistency.
+For each speech: select up to 3 topics ONLY from the provided session topics list.
+If none apply, return [].
+Do NOT invent new topics outside the session topics list.
+You may associate a topic from context when the speech is a response to previous interventions on that topic (even if the label is implied rather than repeated verbatim).
 
 ## Output format
 Respond with ONLY a valid JSON array — one object per speech, in the SAME ORDER as the input, no prose, no markdown fences:
@@ -177,6 +278,7 @@ def _build_batch_message(
     session: dict,
     session_topics: list,
     speeches: list[dict],
+    context_speeches: list[dict] | None = None,
 ) -> str:
     """Build the user message for one batch of speeches.
 
@@ -195,6 +297,16 @@ def _build_batch_message(
     topics_text = _format_session_topics(session_topics)
     if topics_text:
         parts.append(f"## Session topics (grounding context)\n{topics_text}")
+
+    if context_speeches:
+        parts.append(
+            f"## Previous speeches for context ({len(context_speeches)}; do NOT classify)"
+        )
+        for sp in context_speeches:
+            parts.append(
+                f"[ctx {sp['speech_index']}] Speaker: {sp['raw_speaker']}\n"
+                f"{sp['text'].strip()}"
+            )
 
     # Numbered speeches
     parts.append(f"## Speeches to classify ({len(speeches)} in this batch)")
@@ -255,6 +367,7 @@ def _call_llm_batch(
     session_topics: list,
     speeches: list[dict],
     batch_label: str = "batch",
+    context_speeches: list[dict] | None = None,
     build_prompts_only: bool = False,
 ) -> list[dict]:
     """
@@ -265,7 +378,12 @@ def _call_llm_batch(
     ``"draft"`` timestamp and ``_BuildPromptsOnly`` is raised instead of
     calling the LLM.
     """
-    user_msg = _build_batch_message(session, session_topics, speeches)
+    user_msg = _build_batch_message(
+        session,
+        session_topics,
+        speeches,
+        context_speeches=context_speeches,
+    )
 
     # json_object mode requires the response to be a single JSON object, not an array.
     # We wrap the array in an object and unwrap it after parsing.
@@ -313,7 +431,9 @@ def _call_llm_batch(
         timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
     )
-    content = _strip_json_fences(response.choices[0].message.content or "")
+    raw_content = response.choices[0].message.content or ""
+    content = _strip_json_fences(raw_content)
+    _record_llm_usage(response, wrapped_system, user_msg, raw_content, call_label=batch_label)
     parsed = json.loads(content)
 
     # Unwrap from {"results": [...]} if present, otherwise try to use top-level list.
@@ -713,6 +833,7 @@ def _recheck_single_speech(
     sp: dict,
     config: dict,
     parent_batch_label: str,
+    context_speeches: list[dict] | None = None,
 ) -> dict | None:
     """Reclassify one speech when initial output looks misaligned/ungrounded."""
     last_exc: Exception | None = None
@@ -725,6 +846,7 @@ def _recheck_single_speech(
                 session_topics=session_topics,
                 speeches=[sp],
                 batch_label=f"{parent_batch_label}_recheck_{sp['speech_index']}",
+                context_speeches=context_speeches,
                 build_prompts_only=False,
             )
             if not raw_results:
@@ -852,175 +974,152 @@ def classify_session_batch(
     if not all_speeches:
         return {"classified": 0, "errors": 0, "error_log": []}
 
-    # Split into greedy char-budget batches.
-    batches = _greedy_batches(all_speeches, BATCH_CHAR_BUDGET)
-    total_batches = len(batches)
-    total_chars = sum(len(sp["text"]) for sp in all_speeches)
+    target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
+    total_chars = sum(len(sp["text"]) for sp in target_speeches)
     print(
-        f"  Session {session_id}: {len(all_speeches)} speeches, {total_chars:,} chars "
-        f"→ {total_batches} batch(es)"
+        f"  Session {session_id}: single-speech mode for {len(target_speeches)} intervention(s), "
+        f"{total_chars:,} chars total, context window={PREVIOUS_CONTEXT_WINDOW}"
     )
 
     classified = 0
     errors = 0
     error_log: list[dict] = []
 
-    for b_idx, batch in enumerate(batches, 1):
-        batch_chars = sum(len(sp["text"]) for sp in batch)
+    for t_idx, sp in enumerate(target_speeches, 1):
+        iid = sp["intervention_id"]
+        prev_context = [
+            s for s in all_speeches if s["speech_index"] < sp["speech_index"]
+        ][-PREVIOUS_CONTEXT_WINDOW:]
         print(
-            f"  Batch {b_idx}/{total_batches}: {len(batch)} speeches, {batch_chars:,} chars"
+            f"  Speech {t_idx}/{len(target_speeches)}: idx={sp['speech_index']} "
+            f"context={len(prev_context)}"
         )
 
-        # Call LLM with retries.
         raw_results: list[dict] = []
         last_exc: Exception | None = None
-        batch_label = f"batch_{b_idx}of{total_batches}"
+        call_label = f"single_{t_idx}of{len(target_speeches)}_ix{sp['speech_index']}"
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 raw_results = _call_llm_batch(
-                    client, provider, session, session_topics, batch,
-                    batch_label=batch_label,
+                    client=client,
+                    provider=provider,
+                    session=session,
+                    session_topics=session_topics,
+                    speeches=[sp],
+                    batch_label=call_label,
+                    context_speeches=prev_context,
                     build_prompts_only=build_prompts_only,
                 )
                 print(f"    LLM returned {len(raw_results)} result(s)")
                 break
             except _BuildPromptsOnly:
-                print(f"    Batch {b_idx}/{total_batches}: prompt saved (build-prompts mode)")
-                break  # no retries — prompt is already saved
+                print(
+                    f"    Speech {t_idx}/{len(target_speeches)}: prompt saved "
+                    "(build-prompts mode)"
+                )
+                break
             except Exception as exc:
                 last_exc = exc
-                print(f"    Batch {b_idx} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+                print(
+                    f"    Speech idx={sp['speech_index']} attempt "
+                    f"{attempt}/{MAX_RETRIES} failed: {exc}"
+                )
                 if attempt < MAX_RETRIES:
                     time.sleep(RETRY_DELAY_S)
 
         if build_prompts_only:
-            continue  # skip result processing — nothing to store
+            continue
 
         if not raw_results:
             msg = str(last_exc) if last_exc else "empty response"
-            print(f"    Batch {b_idx} failed: {msg}")
-            for sp in batch:
-                if sp["intervention_id"] in id_set:
-                    errors += 1
-                    error_log.append({
-                        "intervention_id": sp["intervention_id"],
-                        "error": {"code": "LLM_BATCH_ERROR", "message": msg},
-                    })
+            errors += 1
+            error_log.append({
+                "intervention_id": iid,
+                "error": {"code": "LLM_SINGLE_ERROR", "message": msg},
+            })
             continue
 
-        # Build index: speech_index → raw result from LLM.
-        result_by_index = _index_results_by_speech_index(raw_results)
-
-        missing_speeches = [sp for sp in batch if sp["speech_index"] not in result_by_index]
-        if missing_speeches:
+        aligned_by_index = _realign_results_to_speeches([sp], raw_results)
+        raw = aligned_by_index.get(sp["speech_index"])
+        if raw is None:
             print(
-                f"    Initial batch incomplete: {len(result_by_index)}/{len(batch)} "
-                "results. Attempting targeted recovery..."
+                f"    No result for speech_index={sp['speech_index']} ({iid}); "
+                "forcing single-speech recovery..."
             )
-            recovered = _recover_missing_batch_results(
+            recovered_payload = _recheck_single_speech(
                 client=client,
                 provider=provider,
                 session=session,
                 session_topics=session_topics,
-                batch_label=batch_label,
-                missing_speeches=missing_speeches,
+                sp=sp,
+                config=config,
+                parent_batch_label=f"{call_label}_missing",
+                context_speeches=prev_context,
             )
-            if recovered:
-                for idx, item in recovered.items():
-                    result_by_index.setdefault(idx, item)
+            if recovered_payload is not None:
+                payload = recovered_payload
                 print(
-                    f"    Recovery merged: now {len(result_by_index)}/{len(batch)} "
-                    "results available"
+                    f"      Recovered speech_index={sp['speech_index']} via single-speech retry."
                 )
-
-        # Realign results in case the model shifted speech_index values while
-        # providing quote evidence from adjacent speeches.
-        aligned_by_index = _realign_results_to_speeches(batch, list(result_by_index.values()))
-
-        # Match LLM results back to speeches in the batch.
-        for sp in batch:
-            iid = sp["intervention_id"]
-            if iid not in id_set:
-                continue  # Not a target — skip storing
-
-            raw = aligned_by_index.get(sp["speech_index"])
-            if raw is None:
-                print(
-                    f"    No result for speech_index={sp['speech_index']} ({iid}); "
-                    "forcing single-speech recovery..."
-                )
-                recovered_payload = _recheck_single_speech(
-                    client=client,
-                    provider=provider,
-                    session=session,
-                    session_topics=session_topics,
-                    sp=sp,
-                    config=config,
-                    parent_batch_label=f"{batch_label}_missing",
-                )
-                if recovered_payload is not None:
-                    payload = recovered_payload
-                    print(
-                        f"      Recovered speech_index={sp['speech_index']} via single-speech retry."
-                    )
-                else:
-                    errors += 1
-                    error_log.append({
-                        "intervention_id": iid,
-                        "error": {
-                            "code": "MISSING_IN_BATCH",
-                            "message": f"speech_index {sp['speech_index']} not in LLM output",
-                        },
-                    })
-                    continue
-            else:
-                try:
-                    raw_for_validation = dict(raw)
-                    raw_for_validation["_speech_text"] = sp["text"]
-                    payload = _validate_one(raw_for_validation, config, session_topics)
-                except ValueError as exc:
-                    print(f"    Validation error for {iid}: {exc}")
-                    errors += 1
-                    error_log.append({
-                        "intervention_id": iid,
-                        "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
-                    })
-                    continue
-
-            if payload.get("_needs_recheck"):
-                print(f"      Rechecking speech_index={sp['speech_index']} (ungrounded result)...")
-                rechecked = _recheck_single_speech(
-                    client=client,
-                    provider=provider,
-                    session=session,
-                    session_topics=session_topics,
-                    sp=sp,
-                    config=config,
-                    parent_batch_label=batch_label,
-                )
-                if rechecked is not None:
-                    payload = rechecked
-
-            print(
-                f"    [{sp['speech_index']}] {sp['raw_speaker'][:40]!r}  "
-                f"label={payload['constructiveness_label']}  "
-                f"confidence={payload['confidence']:.2f}  "
-                f"topics={payload['topics']}"
-            )
-            if payload["reasoning"]:
-                print(f"      reasoning: {payload['reasoning']}")
-
-            payload = {k: v for k, v in payload.items() if not k.startswith("_")}
-            store_result = server.call(
-                "store_intervention_analysis",
-                {"intervention_id": iid, **payload},
-            )
-            if store_result.get("ok"):
-                classified += 1
             else:
                 errors += 1
-                err_info = store_result.get("error", {})
-                error_log.append({"intervention_id": iid, "error": err_info})
+                error_log.append({
+                    "intervention_id": iid,
+                    "error": {
+                        "code": "MISSING_IN_SINGLE",
+                        "message": f"speech_index {sp['speech_index']} not in LLM output",
+                    },
+                })
+                continue
+        else:
+            try:
+                raw_for_validation = dict(raw)
+                raw_for_validation["_speech_text"] = sp["text"]
+                payload = _validate_one(raw_for_validation, config, session_topics)
+            except ValueError as exc:
+                print(f"    Validation error for {iid}: {exc}")
+                errors += 1
+                error_log.append({
+                    "intervention_id": iid,
+                    "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
+                })
+                continue
+
+        if payload.get("_needs_recheck"):
+            print(f"      Rechecking speech_index={sp['speech_index']} (ungrounded result)...")
+            rechecked = _recheck_single_speech(
+                client=client,
+                provider=provider,
+                session=session,
+                session_topics=session_topics,
+                sp=sp,
+                config=config,
+                parent_batch_label=call_label,
+                context_speeches=prev_context,
+            )
+            if rechecked is not None:
+                payload = rechecked
+
+        print(
+            f"    [{sp['speech_index']}] {sp['raw_speaker'][:40]!r}  "
+            f"label={payload['constructiveness_label']}  "
+            f"confidence={payload['confidence']:.2f}  "
+            f"topics={payload['topics']}"
+        )
+        if payload["reasoning"]:
+            print(f"      reasoning: {payload['reasoning']}")
+
+        payload = {k: v for k, v in payload.items() if not k.startswith("_")}
+        store_result = server.call(
+            "store_intervention_analysis",
+            {"intervention_id": iid, **payload},
+        )
+        if store_result.get("ok"):
+            classified += 1
+        else:
+            errors += 1
+            err_info = store_result.get("error", {})
+            error_log.append({"intervention_id": iid, "error": err_info})
 
     return {"classified": classified, "errors": errors, "error_log": error_log}
 
@@ -1081,6 +1180,7 @@ def run_agent(
     When ``build_prompts_only=True`` prompts are built and saved but no LLM
     calls are made and nothing is stored to the DB.
     """
+    _reset_usage_stats()
     client = _build_client(provider, model)
 
     # Group intervention_ids by session_id (preserving order within each session).
@@ -1133,6 +1233,7 @@ def run_agent(
         "classified": classified,
         "errors": errors,
         "error_log": error_log,
+        "usage": _usage_summary_payload(),
     }
 
 
@@ -1422,6 +1523,12 @@ def main() -> int:
             "to the DB.  No LLM calls are made."
         ),
     )
+    parser.add_argument(
+        "--log-token-usage-per-call",
+        action="store_true",
+        default=os.environ.get("VOTEZ_LOG_TOKEN_USAGE_PER_CALL", "").lower() in ("1", "true", "yes"),
+        help="Print prompt/completion token usage for each LLM call (or estimates if provider does not return usage).",
+    )
     args = parser.parse_args()
 
     if not args.run_id:
@@ -1437,6 +1544,9 @@ def main() -> int:
 
     db_path = Path(args.db_path)
     init_db(db_path)
+
+    global LOG_TOKEN_USAGE_PER_CALL
+    LOG_TOKEN_USAGE_PER_CALL = bool(args.log_token_usage_per_call)
 
     # --ingest-external-outputs: read external model responses and store to DB.
     if args.ingest_external_outputs:
@@ -1487,6 +1597,24 @@ def main() -> int:
             f"\nAgent finished: {summary['classified']}/{summary['total']} classified, "
             f"{summary['errors']} error(s)."
         )
+    usage = summary.get("usage", {})
+    if usage:
+        if int(usage.get("calls_with_actual_usage", 0)) > 0:
+            print(
+                "Token usage (LLM-reported): "
+                f"calls={usage.get('calls', 0)}  "
+                f"prompt={usage.get('prompt_tokens', 0)}  "
+                f"completion={usage.get('completion_tokens', 0)}  "
+                f"total={int(usage.get('prompt_tokens', 0)) + int(usage.get('completion_tokens', 0))}"
+            )
+        else:
+            print(
+                "Token usage (estimated): "
+                f"calls={usage.get('calls', 0)}  "
+                f"prompt~={usage.get('estimated_prompt_tokens', 0)}  "
+                f"completion~={usage.get('estimated_completion_tokens', 0)}  "
+                f"total~={int(usage.get('estimated_prompt_tokens', 0)) + int(usage.get('estimated_completion_tokens', 0))}"
+            )
     if summary["error_log"]:
         print("Errors:")
         for entry in summary["error_log"]:

@@ -56,6 +56,8 @@ DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
 DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+EST_CHARS_PER_TOKEN = 3.8
+LOG_TOKEN_USAGE_PER_CALL = False
 
 # Single-pass mode: each chunk is capped at this length before being concatenated
 # into one large prompt. This is different from MAP_CHUNK_CHARS (used in map-reduce)
@@ -98,6 +100,92 @@ LLM_REQUEST_TIMEOUT_S = 300
 OLLAMA_NUM_CTX = 32768
 # Fallback num_ctx for small-context models (llama3.1:8b-8k).
 OLLAMA_NUM_CTX_SMALL = 8192
+
+_LLM_USAGE = {
+    "calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "estimated_prompt_tokens": 0,
+    "estimated_completion_tokens": 0,
+    "calls_with_actual_usage": 0,
+}
+
+
+def _reset_usage_stats() -> None:
+    for key in _LLM_USAGE:
+        _LLM_USAGE[key] = 0
+
+
+def _estimate_tokens_from_text(text: str) -> int:
+    if not text:
+        return 0
+    return max(1, int(round(len(text) / EST_CHARS_PER_TOKEN)))
+
+
+def _extract_usage_tokens(response) -> tuple[int | None, int | None]:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None, None
+
+    def pick(container, keys: tuple[str, ...]) -> int | None:
+        for key in keys:
+            value = None
+            if isinstance(container, dict):
+                value = container.get(key)
+            else:
+                value = getattr(container, key, None)
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    prompt_tokens = pick(usage, ("prompt_tokens", "input_tokens", "prompt_eval_count"))
+    completion_tokens = pick(usage, ("completion_tokens", "output_tokens", "eval_count"))
+    return prompt_tokens, completion_tokens
+
+
+def _record_llm_usage(
+    response,
+    system_prompt: str,
+    user_prompt: str,
+    output_text: str,
+    call_label: str = "",
+) -> None:
+    prompt_tokens, completion_tokens = _extract_usage_tokens(response)
+    est_prompt = _estimate_tokens_from_text(system_prompt) + _estimate_tokens_from_text(user_prompt)
+    est_completion = _estimate_tokens_from_text(output_text)
+
+    _LLM_USAGE["calls"] += 1
+    _LLM_USAGE["estimated_prompt_tokens"] += est_prompt
+    _LLM_USAGE["estimated_completion_tokens"] += est_completion
+
+    if prompt_tokens is not None and completion_tokens is not None:
+        _LLM_USAGE["calls_with_actual_usage"] += 1
+        _LLM_USAGE["prompt_tokens"] += prompt_tokens
+        _LLM_USAGE["completion_tokens"] += completion_tokens
+
+    if LOG_TOKEN_USAGE_PER_CALL:
+        label = call_label or "call"
+        if prompt_tokens is not None and completion_tokens is not None:
+            total = prompt_tokens + completion_tokens
+            print(f"    [tokens] {label}: prompt={prompt_tokens} completion={completion_tokens} total={total}")
+        else:
+            total_est = est_prompt + est_completion
+            print(f"    [tokens~] {label}: prompt~={est_prompt} completion~={est_completion} total~={total_est}")
+
+
+def _usage_summary_payload() -> dict:
+    return {
+        "calls": int(_LLM_USAGE["calls"]),
+        "calls_with_actual_usage": int(_LLM_USAGE["calls_with_actual_usage"]),
+        "prompt_tokens": int(_LLM_USAGE["prompt_tokens"]),
+        "completion_tokens": int(_LLM_USAGE["completion_tokens"]),
+        "estimated_prompt_tokens": int(_LLM_USAGE["estimated_prompt_tokens"]),
+        "estimated_completion_tokens": int(_LLM_USAGE["estimated_completion_tokens"]),
+    }
 
 # Topic catalog config used to constrain LLM output to known canonical topics.
 TOPIC_TAXONOMY_CONFIG_PATH = Path("config/topic_taxonomy.json")
@@ -372,7 +460,9 @@ def _chat(
         timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
     )
-    return response.choices[0].message.content or ""
+    content = response.choices[0].message.content or ""
+    _record_llm_usage(response, system, user, content, call_label=prompt_label)
+    return content
 
 
 def _group_into_windows(chunks: list[dict], max_chars: int) -> list[list[dict]]:
@@ -1006,6 +1096,7 @@ def run_session_topics(
     reprocess: bool = False,
     build_prompts_only: bool = False,
 ) -> dict:
+    _reset_usage_stats()
     client = _build_client(provider, model)
 
     total = len(session_ids)
@@ -1040,7 +1131,13 @@ def run_session_topics(
                     print(f"  ✗ error: {err_info.get('code')}: {err_info.get('message')}")
                     error_log.append({"session_id": session_id, "error": err_info})
 
-    return {"total": total, "extracted": extracted, "errors": errors, "error_log": error_log}
+    return {
+        "total": total,
+        "extracted": extracted,
+        "errors": errors,
+        "error_log": error_log,
+        "usage": _usage_summary_payload(),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1216,6 +1313,12 @@ def main() -> int:
             "to the DB.  No LLM calls are made."
         ),
     )
+    parser.add_argument(
+        "--log-token-usage-per-call",
+        action="store_true",
+        default=os.environ.get("VOTEZ_LOG_TOKEN_USAGE_PER_CALL", "").lower() in ("1", "true", "yes"),
+        help="Print prompt/completion token usage for each LLM call (or estimates if provider does not return usage).",
+    )
     args = parser.parse_args()
 
     if not args.run_id:
@@ -1228,6 +1331,9 @@ def main() -> int:
 
     db_path = Path(args.db_path)
     init_db(db_path)
+
+    global LOG_TOKEN_USAGE_PER_CALL
+    LOG_TOKEN_USAGE_PER_CALL = bool(args.log_token_usage_per_call)
 
     # --ingest-external-outputs: read external model responses and store to DB.
     if args.ingest_external_outputs:
@@ -1282,6 +1388,24 @@ def main() -> int:
             f"\nSession topics finished: {summary['extracted']}/{summary['total']} extracted, "
             f"{summary['errors']} error(s)."
         )
+    usage = summary.get("usage", {})
+    if usage:
+        if int(usage.get("calls_with_actual_usage", 0)) > 0:
+            print(
+                "Token usage (LLM-reported): "
+                f"calls={usage.get('calls', 0)}  "
+                f"prompt={usage.get('prompt_tokens', 0)}  "
+                f"completion={usage.get('completion_tokens', 0)}  "
+                f"total={int(usage.get('prompt_tokens', 0)) + int(usage.get('completion_tokens', 0))}"
+            )
+        else:
+            print(
+                "Token usage (estimated): "
+                f"calls={usage.get('calls', 0)}  "
+                f"prompt~={usage.get('estimated_prompt_tokens', 0)}  "
+                f"completion~={usage.get('estimated_completion_tokens', 0)}  "
+                f"total~={int(usage.get('estimated_prompt_tokens', 0)) + int(usage.get('estimated_completion_tokens', 0))}"
+            )
     if summary["error_log"]:
         print("Errors:")
         for entry in summary["error_log"]:

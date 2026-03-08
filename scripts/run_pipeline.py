@@ -196,6 +196,11 @@ def main() -> int:
         help="Classify at most N interventions in LLM mode (0 = all). Useful for testing.",
     )
     parser.add_argument(
+        "--log-token-usage-per-call",
+        action="store_true",
+        help="Print prompt/completion token usage for each LLM call (or estimates if unavailable).",
+    )
+    parser.add_argument(
         "--reprocess-session-topics",
         action="store_true",
         help=(
@@ -261,6 +266,8 @@ def main() -> int:
         provider = args.llm_provider
         model_hint = args.llm_model or ("llama3.1:8b-8k" if provider == "ollama" else "gpt-4o-mini")
         print(f"  Provider:  {provider}  model={model_hint}")
+        if args.log_token_usage_per_call:
+            print("  Token log: per-call enabled")
         if args.build_prompts:
             print(f"  LLM steps: 3b) build topic prompts  3c) build intervention prompts")
         else:
@@ -391,6 +398,8 @@ def main() -> int:
                 "--provider", args.llm_provider,
                 "--ingest-external-outputs",
             ]
+            if args.log_token_usage_per_call:
+                topics_cmd += ["--log-token-usage-per-call"]
             if args.llm_model.strip():
                 topics_cmd += ["--model", args.llm_model.strip()]
             topics_proc = subprocess.run(topics_cmd, env=env)
@@ -408,6 +417,8 @@ def main() -> int:
                 "--provider", args.llm_provider,
                 "--ingest-external-outputs",
             ]
+            if args.log_token_usage_per_call:
+                llm_cmd += ["--log-token-usage-per-call"]
             if args.llm_model.strip():
                 llm_cmd += ["--model", args.llm_model.strip()]
             llm_proc = subprocess.run(llm_cmd, env=env)
@@ -430,6 +441,8 @@ def main() -> int:
                 sys.executable, "scripts/llm_session_topics.py",
                 "--provider", args.llm_provider,
             ]
+            if args.log_token_usage_per_call:
+                topics_cmd += ["--log-token-usage-per-call"]
             if args.llm_model.strip():
                 topics_cmd += ["--model", args.llm_model.strip()]
             if forced_session_id:
@@ -451,6 +464,8 @@ def main() -> int:
 
             # Step 3c: LLM intervention classification.
             llm_cmd = [sys.executable, "scripts/llm_agent.py", "--provider", args.llm_provider]
+            if args.log_token_usage_per_call:
+                llm_cmd += ["--log-token-usage-per-call"]
             if args.llm_model.strip():
                 llm_cmd += ["--model", args.llm_model.strip()]
             if forced_session_id:

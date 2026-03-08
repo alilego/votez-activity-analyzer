@@ -57,14 +57,14 @@
     "csat": "securitate_externa",
     "drone": "aparare",
     "drum": "infrastructura",
-    "drumuri": "infrastructura",
+    "drumuri": "drumuri",
     "educatie": "educatie",
     "elevi": "educatie",
     "energetic": "energie",
     "energetica": "energie",
     "energie": "energie",
     "fermieri": "agricultura",
-    "feroviar": "infrastructura",
+    "feroviar": "feroviar",
     "fiscal": "fiscalitate",
     "fiscala": "fiscalitate",
     "fiscale": "fiscalitate",
@@ -75,7 +75,7 @@
     "medicamente": "sanatate",
     "militar": "aparare",
     "militare": "aparare",
-    "nato": "securitate_externa",
+    "nato": "nato",
     "neconstitutionalitate": "constitutional",
     "ordine": "procedural",
     "pensie": "pensii",
@@ -104,1093 +104,1050 @@
     "taxelor": "taxe",
     "transport": "infrastructura",
     "ucraina": "rusia_ucraina",
-    "vot": "procedural"
+    "vot": "procedural",
+    "economie": "economie",
+    "macroeconomie": "economie",
+    "investitii": "investitii",
+    "fonduri": "fonduri",
+    "pnrr": "pnrr",
+    "imm": "imm",
+    "antreprenoriat": "antreprenoriat",
+    "industrie": "industrie",
+    "competitivitate": "competitivitate",
+    "rural": "rural",
+    "mediu": "mediu",
+    "clima": "clima",
+    "paduri": "paduri",
+    "ape": "ape",
+    "biodiversitate": "biodiversitate",
+    "mobilitate": "mobilitate",
+    "locuire": "locuire",
+    "urbanism": "urbanism",
+    "universitar": "universitar",
+    "cercetare": "cercetare",
+    "munca": "munca",
+    "salarii": "salarii",
+    "familie": "familie",
+    "copii": "copii",
+    "demografie": "demografie",
+    "sport": "sport",
+    "cultura": "cultura",
+    "patrimoniu": "patrimoniu",
+    "culte": "culte",
+    "digitalizare": "digitalizare",
+    "egov": "egov",
+    "ai": "ai",
+    "tehnologie": "tehnologie",
+    "cibernetic": "cibernetic",
+    "justitie": "justitie",
+    "administratie": "administratie",
+    "anticoruptie": "anticoruptie",
+    "integritate": "integritate",
+    "transparenta": "transparenta",
+    "drepturi": "drepturi",
+    "libertati": "libertati",
+    "egalitate": "egalitate",
+    "nediscriminare": "nediscriminare",
+    "minoritati": "minoritati",
+    "diaspora": "diaspora",
+    "regional": "regional",
+    "local": "local",
+    "adictii": "adictii",
+    "consumator": "consumator",
+    "imobiliar": "imobiliar",
+    "cadastru": "cadastru",
+    "retrocedari": "retrocedari",
+    "proprietate": "proprietate",
+    "date": "date_personale",
+    "urgenta": "urgenta",
+    "migratie": "migratie",
+    "azil": "azil",
+    "turism": "turism",
+    "electoral": "electoral",
+    "democratic": "democratic",
+    "legiferare": "legiferare",
+    "impact": "impact_legislativ",
+    "saracie": "saracie",
+    "coeziune": "coeziune_sociala"
   },
   "direction_rules": [
     {
-      "label": "politica externa si securitate",
+      "label": "Economie si fiscalitate",
       "mapped_tokens": [
-        "aparare",
-        "geopolitica",
-        "rusia_ucraina",
-        "securitate",
-        "securitate_externa",
-        "suveranitate"
-      ],
-      "raw_roots": [
-        "aparare",
-        "csat",
-        "diaspora",
-        "geopolitica",
-        "grupuri de prietenie",
-        "independenta solidara",
-        "nato",
-        "pace",
-        "paza obiective",
-        "politica externa",
-        "razboi",
-        "rusia",
-        "sanctiuni",
-        "securitate",
-        "sua",
-        "suveranitate",
-        "ucraina",
-        "ue",
-        "uniunea europeana"
-      ]
-    },
-    {
-      "label": "procedura parlamentara",
-      "mapped_tokens": [
-        "procedural"
-      ],
-      "raw_roots": [
-        "amendament",
-        "amendamente",
-        "comisie",
-        "cvorum",
-        "lucru in paralel",
-        "ora prim-ministrului",
-        "ordine",
-        "plen",
-        "procedura",
-        "regulament",
-        "respingere",
-        "retrimitere la comisie",
-        "sedinta",
-        "vot"
-      ]
-    },
-    {
-      "label": "economie si fiscalitate",
-      "mapped_tokens": [
-        "buget",
+        "economie",
         "fiscalitate",
-        "fonduri",
-        "impozite",
-        "investitii",
-        "pnrr",
-        "taxe"
+        "taxe",
+        "impozite"
       ],
       "raw_roots": [
-        "austeritate",
-        "buget",
-        "cheltuieli",
-        "datorie publica",
-        "finante",
+        "economie",
         "fiscal",
-        "fonduri",
-        "imm",
-        "impoz",
-        "industrie",
-        "investitii",
-        "minerit",
-        "multinationale",
-        "pensii",
-        "pensii de serviciu",
-        "pensiile speciale",
-        "pnrr",
-        "privatizare",
-        "reconversie profesionala",
-        "salariu minim",
-        "saracie",
-        "servicii publice",
         "tax",
-        "tva",
-        "valea jiului"
+        "impoz",
+        "inflatie",
+        "deficit",
+        "venituri bugetare"
       ]
     },
     {
-      "label": "energie si mediu",
+      "label": "Buget de stat si executie bugetara",
+      "mapped_tokens": [
+        "buget"
+      ],
+      "raw_roots": [
+        "buget de stat",
+        "executie bugetara",
+        "rectificare",
+        "credite bugetare",
+        "cheltuieli bugetare"
+      ]
+    },
+    {
+      "label": "Investitii publice si fonduri europene",
+      "mapped_tokens": [
+        "investitii",
+        "fonduri",
+        "pnrr"
+      ],
+      "raw_roots": [
+        "investitii publice",
+        "fonduri europene",
+        "pnrr",
+        "cofinantare",
+        "program operational"
+      ]
+    },
+    {
+      "label": "IMM-uri si antreprenoriat",
+      "mapped_tokens": [
+        "imm",
+        "antreprenoriat"
+      ],
+      "raw_roots": [
+        "imm",
+        "microintreprinderi",
+        "startup",
+        "antreprenor",
+        "mediul de afaceri"
+      ]
+    },
+    {
+      "label": "Industrie si competitivitate",
+      "mapped_tokens": [
+        "industrie",
+        "competitivitate"
+      ],
+      "raw_roots": [
+        "industrie",
+        "productie industriala",
+        "competitivitate",
+        "lant de valoare",
+        "productivitate"
+      ]
+    },
+    {
+      "label": "Agricultura si dezvoltare rurala",
+      "mapped_tokens": [
+        "agricultura",
+        "rural"
+      ],
+      "raw_roots": [
+        "agricultura",
+        "fermier",
+        "irigatii",
+        "subventii apiA",
+        "dezvoltare rurala"
+      ]
+    },
+    {
+      "label": "Energie si resurse naturale",
       "mapped_tokens": [
         "energie"
       ],
       "raw_roots": [
-        "apele romane",
-        "carbon",
-        "certificat emisii",
-        "certificat verde",
-        "certificate verzi",
         "energie",
-        "energie regenerabila",
-        "energie termica",
-        "facturi energie",
-        "hidroelectrica",
-        "piata energiei",
+        "gaz",
+        "electricitate",
+        "resurse naturale",
         "pret energie",
-        "resurse nationale",
-        "salrom"
+        "hidrocarburi"
       ]
     },
     {
-      "label": "infrastructura si transport",
+      "label": "Mediu si schimbari climatice",
       "mapped_tokens": [
-        "infrastructura"
+        "mediu",
+        "clima"
       ],
       "raw_roots": [
-        "aeroport",
-        "autostr",
-        "control spatiu aerian",
-        "drum",
+        "mediu",
+        "schimbari climatice",
+        "emisii",
+        "decarbonizare",
+        "poluare"
+      ]
+    },
+    {
+      "label": "Paduri ape si biodiversitate",
+      "mapped_tokens": [
+        "paduri",
+        "ape",
+        "biodiversitate"
+      ],
+      "raw_roots": [
+        "paduri",
+        "apele romane",
+        "biodiversitate",
+        "fond forestier",
+        "arii protejate"
+      ]
+    },
+    {
+      "label": "Infrastructura rutiera",
+      "mapped_tokens": [
+        "infrastructura",
+        "drumuri"
+      ],
+      "raw_roots": [
+        "autostrada",
+        "drum national",
+        "infrastructura rutiera",
+        "centura",
+        "pod rutier"
+      ]
+    },
+    {
+      "label": "Infrastructura feroviara",
+      "mapped_tokens": [
+        "feroviar"
+      ],
+      "raw_roots": [
+        "cale ferata",
         "feroviar",
-        "port",
-        "risc seismic",
-        "transport",
-        "tulcea"
+        "cfr",
+        "gara",
+        "material rulant"
       ]
     },
     {
-      "label": "agricultura si dezvoltare rurala",
+      "label": "Transport urban si mobilitate",
       "mapped_tokens": [
-        "agricultura"
+        "mobilitate",
+        "transport_urban"
       ],
       "raw_roots": [
-        "agricultura",
-        "despagubiri",
-        "ferme de familie",
-        "fermier",
-        "fond cinegetic",
-        "irig",
-        "rural"
+        "transport public",
+        "mobilitate urbana",
+        "metrou",
+        "tramvai",
+        "autobuz"
       ]
     },
     {
-      "label": "sanatate",
+      "label": "Locuire si dezvoltare urbana",
+      "mapped_tokens": [
+        "locuire",
+        "urbanism"
+      ],
+      "raw_roots": [
+        "locuire",
+        "locuinte",
+        "urbanism",
+        "dezvoltare urbana",
+        "ansamblu rezidential"
+      ]
+    },
+    {
+      "label": "Sanatate publica",
       "mapped_tokens": [
         "sanatate"
       ],
       "raw_roots": [
-        "cass",
-        "medical",
-        "medicament",
-        "profesia medic",
-        "reforma sanatatii",
-        "salarizare medici",
-        "sanatate",
+        "sanatate publica",
+        "preventie",
+        "vaccinare",
+        "asistenta medicala",
         "spital"
       ]
     },
     {
-      "label": "educatie",
+      "label": "Reforma sistemului medical",
+      "mapped_tokens": [
+        "reforma_sanatate"
+      ],
+      "raw_roots": [
+        "reforma sanatatii",
+        "finantare spitale",
+        "resursa umana medicala",
+        "management sanitar"
+      ]
+    },
+    {
+      "label": "Educatie preuniversitara",
       "mapped_tokens": [
         "educatie"
       ],
       "raw_roots": [
-        "burse",
-        "curriculum",
-        "educatie",
-        "elev",
-        "invatamant",
+        "invatamant preuniversitar",
         "scoala",
-        "student",
-        "univers"
+        "elev",
+        "bacalaureat",
+        "curriculum"
       ]
     },
     {
-      "label": "justitie si constitutional",
+      "label": "Invatamant superior si cercetare",
       "mapped_tokens": [
+        "universitar",
+        "cercetare"
+      ],
+      "raw_roots": [
+        "universitate",
+        "invatamant superior",
+        "cercetare",
+        "doctorat",
+        "inovare"
+      ]
+    },
+    {
+      "label": "Munca salarii si dialog social",
+      "mapped_tokens": [
+        "munca",
+        "salarii"
+      ],
+      "raw_roots": [
+        "piata muncii",
+        "salariu minim",
+        "contract colectiv",
+        "dialog social",
+        "somaj"
+      ]
+    },
+    {
+      "label": "Pensii si protectie sociala",
+      "mapped_tokens": [
+        "pensii",
+        "protectie_sociala"
+      ],
+      "raw_roots": [
+        "pensii",
+        "protectie sociala",
+        "beneficii sociale",
+        "indemnizatii",
+        "ajutor social"
+      ]
+    },
+    {
+      "label": "Familie copii si politici demografice",
+      "mapped_tokens": [
+        "familie",
+        "copii",
+        "demografie"
+      ],
+      "raw_roots": [
+        "familie",
+        "copii",
+        "alocatii",
+        "natalitate",
+        "politici demografice"
+      ]
+    },
+    {
+      "label": "Tineret si sport",
+      "mapped_tokens": [
+        "tineret",
+        "sport"
+      ],
+      "raw_roots": [
+        "tineret",
+        "sport",
+        "federatii sportive",
+        "club sportiv",
+        "performanta sportiva"
+      ]
+    },
+    {
+      "label": "Cultura patrimoniu si culte",
+      "mapped_tokens": [
+        "cultura",
+        "patrimoniu",
+        "culte"
+      ],
+      "raw_roots": [
+        "cultura",
+        "patrimoniu",
+        "muzeu",
+        "teatru",
+        "culte"
+      ]
+    },
+    {
+      "label": "Digitalizare si guvernare electronica",
+      "mapped_tokens": [
+        "digitalizare",
+        "egov"
+      ],
+      "raw_roots": [
+        "digitalizare",
+        "guvernare electronica",
+        "servicii publice digitale",
+        "interoperabilitate",
+        "cloud guvernamental"
+      ]
+    },
+    {
+      "label": "Inteligenta artificiala si tehnologii emergente",
+      "mapped_tokens": [
+        "ai",
+        "tehnologie"
+      ],
+      "raw_roots": [
+        "inteligenta artificiala",
+        "ai",
+        "tehnologii emergente",
+        "automatizare",
+        "algoritmi"
+      ]
+    },
+    {
+      "label": "Securitate cibernetica",
+      "mapped_tokens": [
+        "cibernetic"
+      ],
+      "raw_roots": [
+        "securitate cibernetica",
+        "incident cibernetic",
+        "atac cibernetic",
+        "infrastructura digitala critica"
+      ]
+    },
+    {
+      "label": "Justitie si stat de drept",
+      "mapped_tokens": [
+        "justitie",
+        "stat_de_drept",
         "constitutional"
       ],
       "raw_roots": [
-        "abuzuri",
-        "anpc",
-        "antifrauda",
+        "justitie",
+        "stat de drept",
         "ccr",
-        "cna",
-        "cod civil",
-        "constitut",
-        "constitutional",
-        "contraventii",
-        "coruptie",
         "csm",
-        "diicot",
+        "constitutional",
+        "procurori"
+      ]
+    },
+    {
+      "label": "Reforma administratiei publice",
+      "mapped_tokens": [
+        "administratie",
+        "reforma_admin"
+      ],
+      "raw_roots": [
+        "administratie publica",
+        "debirocratizare",
+        "reforma administrativa",
+        "functionari publici"
+      ]
+    },
+    {
+      "label": "Integritate anticoruptie si transparenta",
+      "mapped_tokens": [
+        "anticoruptie",
+        "transparenta",
+        "integritate"
+      ],
+      "raw_roots": [
+        "anticoruptie",
+        "integritate",
+        "transparenta",
+        "conflict de interese",
+        "achizitii publice"
+      ]
+    },
+    {
+      "label": "Drepturi fundamentale si libertati civile",
+      "mapped_tokens": [
+        "drepturi",
+        "libertati"
+      ],
+      "raw_roots": [
         "drepturi fundamentale",
-        "justit",
-        "prescriptie penala",
-        "proprietate privata",
-        "retrocedare",
-        "retrocedari",
-        "retrocedari ilegale",
-        "stat de drept"
+        "libertati civile",
+        "drepturile omului",
+        "viata privata"
       ]
     },
     {
-      "label": "digitalizare si tehnologie",
+      "label": "Egalitate de sanse si nediscriminare",
       "mapped_tokens": [
-        "digitalizare"
+        "egalitate",
+        "nediscriminare"
       ],
       "raw_roots": [
-        "ai",
-        "cibern",
-        "dezinformare",
-        "digital",
-        "eurohpc",
-        "inteligenta artificiala",
-        "propaganda",
-        "tehnolog"
+        "egalitate de sanse",
+        "nediscriminare",
+        "discriminare",
+        "incluziune"
       ]
     },
     {
-      "label": "media si comunicare publica",
-      "mapped_tokens": [
-        "radiodifuziune",
-        "tvr"
-      ],
-      "raw_roots": [
-        "libertatea de exprimare",
-        "radiodifuziune",
-        "tvr"
-      ]
-    },
-    {
-      "label": "administratie publica si guvernare",
-      "mapped_tokens": [
-        "guvern",
-        "transparenta"
-      ],
-      "raw_roots": [
-        "administr",
-        "alegeri prezidentiale",
-        "ans",
-        "claritate legislativa",
-        "comisia europeana",
-        "critica politica",
-        "critica presedinte",
-        "curtea de conturi",
-        "demisie presedinte",
-        "finantare electorala",
-        "guvern",
-        "iasi",
-        "lege organica",
-        "minister",
-        "numire presedinte ca",
-        "numiri politice",
-        "prelungire program",
-        "proiect de tara",
-        "proprietate",
-        "responsabilitate institutionala",
-        "transfer autoritate",
-        "transfer imobil",
-        "transfer proprietate",
-        "transparent",
-        "usr",
-        "vicepremieri"
-      ]
-    },
-    {
-      "label": "cultura si patrimoniu",
-      "mapped_tokens": [
-        "patrimoniu"
-      ],
-      "raw_roots": [
-        "brancusi",
-        "cultura",
-        "festival",
-        "identitate nationala",
-        "muze",
-        "patrimoniu",
-        "salina",
-        "valori nationale"
-      ]
-    },
-    {
-      "label": "social si drepturi civile",
+      "label": "Politici pentru minoritati nationale",
       "mapped_tokens": [
         "minoritati"
       ],
       "raw_roots": [
-        "anul copilului",
-        "basarabia",
-        "corneliu vadim tudor",
-        "cumintenia pamantului",
-        "democratie",
-        "extremism",
-        "federatia rusa",
-        "holodomor",
-        "istoria evreilor",
-        "masuri represive",
-        "minoritati",
-        "pasapoarte",
-        "permise auto",
-        "putin",
-        "romani diaspora",
-        "unitate nationala",
-        "violenta domestica"
+        "minoritati nationale",
+        "minoritate",
+        "limba materna",
+        "reprezentare minoritati"
       ]
     },
     {
-      "label": "proces legislativ si reforme",
-      "mapped_tokens": [],
+      "label": "Diaspora si relatia cu romanii din afara tarii",
+      "mapped_tokens": [
+        "diaspora"
+      ],
       "raw_roots": [
-        "cod fiscal",
-        "hg ",
-        "legea nr",
-        "og ",
-        "oug ",
-        "phcd",
-        "pl-x",
-        "reglementare"
+        "diaspora",
+        "romanii din afara tarii",
+        "consulate",
+        "servicii consulare"
       ]
     },
     {
-      "label": "justitie si constitutional",
-      "mapped_tokens": [],
+      "label": "Securitate nationala si aparare",
+      "mapped_tokens": [
+        "aparare",
+        "securitate"
+      ],
       "raw_roots": [
-        "ejtn"
+        "securitate nationala",
+        "aparare",
+        "armata",
+        "mapn",
+        "rezerva operationala"
+      ]
+    },
+    {
+      "label": "Ordine publica si siguranta cetateanului",
+      "mapped_tokens": [
+        "ordine_publica",
+        "siguranta"
+      ],
+      "raw_roots": [
+        "ordine publica",
+        "siguranta cetateanului",
+        "politie",
+        "jandarmerie",
+        "criminalitate"
+      ]
+    },
+    {
+      "label": "Politica externa si afaceri europene",
+      "mapped_tokens": [
+        "politica_externa",
+        "eu"
+      ],
+      "raw_roots": [
+        "politica externa",
+        "afaceri europene",
+        "consiliul ue",
+        "diplomatie"
+      ]
+    },
+    {
+      "label": "Politici NATO si cooperare strategica",
+      "mapped_tokens": [
+        "nato",
+        "cooperare_strategica"
+      ],
+      "raw_roots": [
+        "nato",
+        "cooperare strategica",
+        "parteneriat strategic",
+        "alianta nord-atlantica"
+      ]
+    },
+    {
+      "label": "Politici regionale si dezvoltare locala",
+      "mapped_tokens": [
+        "regional",
+        "local"
+      ],
+      "raw_roots": [
+        "dezvoltare regionala",
+        "dezvoltare locala",
+        "consiliu judetean",
+        "administratie locala"
+      ]
+    },
+    {
+      "label": "Sanatate mintala si adictii",
+      "mapped_tokens": [
+        "sanatate_mintala",
+        "adictii"
+      ],
+      "raw_roots": [
+        "sanatate mintala",
+        "depresie",
+        "adictii",
+        "dependenta",
+        "psihiatrie"
+      ]
+    },
+    {
+      "label": "Protectia consumatorului",
+      "mapped_tokens": [
+        "consumator"
+      ],
+      "raw_roots": [
+        "protectia consumatorului",
+        "anpc",
+        "practici comerciale",
+        "drepturile consumatorilor"
+      ]
+    },
+    {
+      "label": "Piata imobiliara si cadastru",
+      "mapped_tokens": [
+        "imobiliar",
+        "cadastru"
+      ],
+      "raw_roots": [
+        "piata imobiliara",
+        "cadastru",
+        "carte funciara",
+        "tranzactii imobiliare"
+      ]
+    },
+    {
+      "label": "Cadastru proprietate si retrocedari",
+      "mapped_tokens": [
+        "proprietate",
+        "retrocedari"
+      ],
+      "raw_roots": [
+        "retrocedari",
+        "drept de proprietate",
+        "proprietate",
+        "restituire"
+      ]
+    },
+    {
+      "label": "Protectia datelor si viata privata",
+      "mapped_tokens": [
+        "date_personale",
+        "viata_privata"
+      ],
+      "raw_roots": [
+        "protectia datelor",
+        "date personale",
+        "gdpr",
+        "viata privata"
+      ]
+    },
+    {
+      "label": "Protectia infrastructurilor critice",
+      "mapped_tokens": [
+        "infrastructuri_critice"
+      ],
+      "raw_roots": [
+        "infrastructuri critice",
+        "rezilienta infrastructurii",
+        "obiective strategice"
+      ]
+    },
+    {
+      "label": "Managementul situatiilor de urgenta",
+      "mapped_tokens": [
+        "urgenta",
+        "isu"
+      ],
+      "raw_roots": [
+        "situatii de urgenta",
+        "isu",
+        "dezastre",
+        "interventie de urgenta"
+      ]
+    },
+    {
+      "label": "Politici privind migratia si azilul",
+      "mapped_tokens": [
+        "migratie",
+        "azil"
+      ],
+      "raw_roots": [
+        "migratie",
+        "azil",
+        "refugiati",
+        "frontiera externa"
+      ]
+    },
+    {
+      "label": "Turism si economie locala",
+      "mapped_tokens": [
+        "turism"
+      ],
+      "raw_roots": [
+        "turism",
+        "destinatie turistica",
+        "sezon turistic",
+        "economie locala"
+      ]
+    },
+    {
+      "label": "Reforma electorala si procese democratice",
+      "mapped_tokens": [
+        "electoral",
+        "democratic"
+      ],
+      "raw_roots": [
+        "reforma electorala",
+        "alegeri",
+        "proces democratic",
+        "autoritatea electorala"
+      ]
+    },
+    {
+      "label": "Procedura parlamentara si calitatea legiferarii",
+      "mapped_tokens": [
+        "procedural",
+        "legiferare"
+      ],
+      "raw_roots": [
+        "procedura parlamentara",
+        "regulament",
+        "calitatea legiferarii",
+        "comisie",
+        "ordine de zi"
+      ]
+    },
+    {
+      "label": "Evaluarea impactului legislativ",
+      "mapped_tokens": [
+        "impact_legislativ"
+      ],
+      "raw_roots": [
+        "impact legislativ",
+        "evaluare ex-ante",
+        "evaluare ex-post",
+        "analiza de impact"
+      ]
+    },
+    {
+      "label": "Coeziune sociala si reducerea saraciei",
+      "mapped_tokens": [
+        "coeziune_sociala",
+        "saracie"
+      ],
+      "raw_roots": [
+        "coeziune sociala",
+        "reducerea saraciei",
+        "excluziune sociala",
+        "incluziune sociala"
       ]
     }
   ],
   "catalog_topics": [
     {
-      "id": "tp_ordine_de_zi",
-      "label": "ordine de zi",
-      "description": "Canonical topic from current corpus frequency rank 1.",
-      "aliases": [
-        "procedură parlamentară",
-        "procedură legislativă",
-        "vot",
-        "vot proiect",
-        "procedură",
-        "vot procedură"
-      ]
-    },
-    {
-      "id": "tp_suveranitate",
-      "label": "suveranitate",
-      "description": "Canonical topic from current corpus frequency rank 2.",
-      "aliases": [
-        "suveranism"
-      ]
-    },
-    {
-      "id": "tp_nato",
-      "label": "NATO",
-      "description": "Canonical topic from current corpus frequency rank 3.",
-      "aliases": [
-        "CSAT"
-      ]
-    },
-    {
-      "id": "tp_ccr",
-      "label": "CCR",
-      "description": "Canonical topic from current corpus frequency rank 4.",
-      "aliases": [
-        "Constituție",
-        "neconstituționalitate"
-      ]
-    },
-    {
-      "id": "tp_rusia",
-      "label": "Rusia",
-      "description": "Canonical topic from current corpus frequency rank 5.",
-      "aliases": [
-        "Ucraina"
-      ]
-    },
-    {
-      "id": "tp_siguran_na_ional",
-      "label": "siguranță națională",
-      "description": "Canonical topic from current corpus frequency rank 6.",
-      "aliases": [
-        "securitate națională"
-      ]
-    },
-    {
-      "id": "tp_politic_extern",
-      "label": "politică externă",
-      "description": "Canonical topic from current corpus frequency rank 7.",
-      "aliases": []
-    },
-    {
-      "id": "tp_agricultur",
-      "label": "agricultură",
-      "description": "Canonical topic from current corpus frequency rank 8.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pnrr",
-      "label": "PNRR",
-      "description": "Canonical topic from current corpus frequency rank 9.",
-      "aliases": []
-    },
-    {
-      "id": "tp_austeritate",
-      "label": "austeritate",
-      "description": "Canonical topic from current corpus frequency rank 10.",
-      "aliases": []
-    },
-    {
-      "id": "tp_comisie_de_anchet",
-      "label": "comisie de anchetă",
-      "description": "Canonical topic from current corpus frequency rank 11.",
-      "aliases": [
-        "comisie anchetă"
-      ]
-    },
-    {
-      "id": "tp_drone",
-      "label": "drone",
-      "description": "Canonical topic from current corpus frequency rank 12.",
-      "aliases": [
-        "apărare"
-      ]
-    },
-    {
-      "id": "tp_finan_e_publice_locale",
-      "label": "finanțe publice locale",
-      "description": "Canonical topic from current corpus frequency rank 13.",
-      "aliases": []
-    },
-    {
-      "id": "tp_constantin_br_ncu_i",
-      "label": "Constantin Brâncuși",
-      "description": "Canonical topic from current corpus frequency rank 14.",
-      "aliases": []
-    },
-    {
-      "id": "tp_salina_praid",
-      "label": "Salina Praid",
-      "description": "Canonical topic from current corpus frequency rank 15.",
-      "aliases": []
-    },
-    {
-      "id": "tp_educa_ie",
-      "label": "educație",
-      "description": "Canonical topic from current corpus frequency rank 16.",
-      "aliases": []
-    },
-    {
-      "id": "tp_fonduri_europene",
-      "label": "fonduri europene",
-      "description": "Canonical topic from current corpus frequency rank 17.",
-      "aliases": []
-    },
-    {
-      "id": "tp_infrastructur",
-      "label": "infrastructură",
-      "description": "Canonical topic from current corpus frequency rank 18.",
-      "aliases": [
-        "autostrada A8",
-        "autostrăzi A7",
-        "e-Transport",
-        "transport feroviar"
-      ]
-    },
-    {
-      "id": "tp_respingere_proiect",
-      "label": "respingere proiect",
-      "description": "Canonical topic from current corpus frequency rank 19.",
-      "aliases": []
-    },
-    {
-      "id": "tp_retroced_ri",
-      "label": "retrocedări",
-      "description": "Canonical topic from current corpus frequency rank 20.",
-      "aliases": []
-    },
-    {
-      "id": "tp_s_n_tate",
-      "label": "sănătate",
-      "description": "Canonical topic from current corpus frequency rank 21.",
-      "aliases": [
-        "medicamente",
-        "spitale"
-      ]
-    },
-    {
-      "id": "tp_transparen",
-      "label": "transparență",
-      "description": "Canonical topic from current corpus frequency rank 22.",
-      "aliases": []
-    },
-    {
-      "id": "tp_strategia_de_ap_rare",
-      "label": "Strategia de Apărare",
-      "description": "Canonical topic from current corpus frequency rank 23.",
-      "aliases": []
-    },
-    {
-      "id": "tp_control_spa_iu_aerian",
-      "label": "control spațiu aerian",
-      "description": "Canonical topic from current corpus frequency rank 24.",
-      "aliases": []
-    },
-    {
-      "id": "tp_energie",
-      "label": "energie",
-      "description": "Canonical topic from current corpus frequency rank 25.",
-      "aliases": []
-    },
-    {
-      "id": "tp_geopolitic",
-      "label": "geopolitică",
-      "description": "Canonical topic from current corpus frequency rank 26.",
-      "aliases": []
-    },
-    {
-      "id": "tp_numiri_politice",
-      "label": "numiri politice",
-      "description": "Canonical topic from current corpus frequency rank 27.",
-      "aliases": []
-    },
-    {
-      "id": "tp_edin_plen_comun",
-      "label": "ședință plen comun",
-      "description": "Canonical topic from current corpus frequency rank 28.",
-      "aliases": []
-    },
-    {
-      "id": "tp_guvern",
-      "label": "Guvern",
-      "description": "Canonical topic from current corpus frequency rank 29.",
-      "aliases": []
-    },
-    {
-      "id": "tp_tvr",
-      "label": "TVR",
-      "description": "Canonical topic from current corpus frequency rank 30.",
-      "aliases": []
-    },
-    {
-      "id": "tp_uniunea_european",
-      "label": "Uniunea Europeană",
-      "description": "Canonical topic from current corpus frequency rank 31.",
-      "aliases": []
-    },
-    {
-      "id": "tp_abuzuri",
-      "label": "abuzuri",
-      "description": "Canonical topic from current corpus frequency rank 32.",
-      "aliases": []
-    },
-    {
-      "id": "tp_critic_politic",
-      "label": "critică politică",
-      "description": "Canonical topic from current corpus frequency rank 33.",
-      "aliases": []
-    },
-    {
-      "id": "tp_demisie_pre_edinte",
-      "label": "demisie președinte",
-      "description": "Canonical topic from current corpus frequency rank 34.",
-      "aliases": []
-    },
-    {
-      "id": "tp_digitalizare",
-      "label": "digitalizare",
-      "description": "Canonical topic from current corpus frequency rank 35.",
-      "aliases": []
-    },
-    {
-      "id": "tp_facilit_i_fiscale",
-      "label": "facilități fiscale",
-      "description": "Canonical topic from current corpus frequency rank 36.",
-      "aliases": []
-    },
-    {
-      "id": "tp_inteligen_artificial",
-      "label": "inteligență artificială",
-      "description": "Canonical topic from current corpus frequency rank 37.",
-      "aliases": []
-    },
-    {
-      "id": "tp_investi_ii",
-      "label": "investiții",
-      "description": "Canonical topic from current corpus frequency rank 38.",
-      "aliases": []
-    },
-    {
-      "id": "tp_patrimoniu_cultural",
-      "label": "patrimoniu cultural",
-      "description": "Canonical topic from current corpus frequency rank 39.",
-      "aliases": []
-    },
-    {
-      "id": "tp_prelungire_program",
-      "label": "prelungire program",
-      "description": "Canonical topic from current corpus frequency rank 40.",
-      "aliases": []
-    },
-    {
-      "id": "tp_retrocedare",
-      "label": "retrocedare",
-      "description": "Canonical topic from current corpus frequency rank 41.",
-      "aliases": []
-    },
-    {
-      "id": "tp_securitate_regional",
-      "label": "securitate regională",
-      "description": "Canonical topic from current corpus frequency rank 42.",
-      "aliases": []
-    },
-    {
-      "id": "tp_transfer_imobil",
-      "label": "transfer imobil",
-      "description": "Canonical topic from current corpus frequency rank 43.",
-      "aliases": []
-    },
-    {
-      "id": "tp_vot_final",
-      "label": "vot final",
-      "description": "Canonical topic from current corpus frequency rank 44.",
-      "aliases": []
-    },
-    {
-      "id": "tp_anul_br_ncu_i",
-      "label": "Anul Brâncuși",
-      "description": "Canonical topic from current corpus frequency rank 45.",
-      "aliases": []
-    },
-    {
-      "id": "tp_cod_civil",
-      "label": "Cod civil",
-      "description": "Canonical topic from current corpus frequency rank 46.",
-      "aliases": []
-    },
-    {
-      "id": "tp_cod_fiscal",
-      "label": "Cod fiscal",
-      "description": "Canonical topic from current corpus frequency rank 47.",
-      "aliases": []
-    },
-    {
-      "id": "tp_imm_uri",
-      "label": "IMM-uri",
-      "description": "Canonical topic from current corpus frequency rank 48.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pl_x_5_2025",
-      "label": "PL-X 5/2025",
-      "description": "Canonical topic from current corpus frequency rank 49.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pl_x_6_2025",
-      "label": "PL-X 6/2025",
-      "description": "Canonical topic from current corpus frequency rank 50.",
-      "aliases": []
-    },
-    {
-      "id": "tp_radiodifuziune",
-      "label": "Radiodifuziune",
-      "description": "Canonical topic from current corpus frequency rank 51.",
-      "aliases": []
-    },
-    {
-      "id": "tp_salrom",
-      "label": "Salrom",
-      "description": "Canonical topic from current corpus frequency rank 52.",
-      "aliases": []
-    },
-    {
-      "id": "tp_alegeri_preziden_iale",
-      "label": "alegeri prezidențiale",
-      "description": "Canonical topic from current corpus frequency rank 53.",
-      "aliases": []
-    },
-    {
-      "id": "tp_contraven_ii",
-      "label": "contravenții",
-      "description": "Canonical topic from current corpus frequency rank 54.",
+      "id": "cat_01",
+      "label": "Economie si fiscalitate",
+      "description": "Politici macroeconomice, taxe, impozite si impactul fiscal asupra economiei.",
       "aliases": []
-    },
-    {
-      "id": "tp_cvorum",
-      "label": "cvorum",
-      "description": "Canonical topic from current corpus frequency rank 55.",
-      "aliases": []
-    },
-    {
-      "id": "tp_dezinformare",
-      "label": "dezinformare",
-      "description": "Canonical topic from current corpus frequency rank 56.",
-      "aliases": []
-    },
-    {
-      "id": "tp_evaziune_fiscal",
-      "label": "evaziune fiscală",
-      "description": "Canonical topic from current corpus frequency rank 57.",
-      "aliases": []
-    },
-    {
-      "id": "tp_federa_ii_sportive",
-      "label": "federații sportive",
-      "description": "Canonical topic from current corpus frequency rank 58.",
-      "aliases": []
-    },
-    {
-      "id": "tp_grupuri_de_prietenie",
-      "label": "grupuri de prietenie",
-      "description": "Canonical topic from current corpus frequency rank 59.",
-      "aliases": []
-    },
-    {
-      "id": "tp_investi_ii_publice",
-      "label": "investiții publice",
-      "description": "Canonical topic from current corpus frequency rank 60.",
-      "aliases": []
-    },
-    {
-      "id": "tp_misiuni_militare",
-      "label": "misiuni militare",
-      "description": "Canonical topic from current corpus frequency rank 61.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pace",
-      "label": "pace",
-      "description": "Canonical topic from current corpus frequency rank 62.",
-      "aliases": []
-    },
-    {
-      "id": "tp_paza_obiective",
-      "label": "paza obiective",
-      "description": "Canonical topic from current corpus frequency rank 63.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pensii_de_serviciu",
-      "label": "pensii de serviciu",
-      "description": "Canonical topic from current corpus frequency rank 64.",
-      "aliases": []
-    },
-    {
-      "id": "tp_pensiile_speciale",
-      "label": "pensiile speciale",
-      "description": "Canonical topic from current corpus frequency rank 65.",
-      "aliases": []
-    },
-    {
-      "id": "tp_prescrip_ie_penal",
-      "label": "prescripție penală",
-      "description": "Canonical topic from current corpus frequency rank 66.",
-      "aliases": []
-    },
-    {
-      "id": "tp_privatizare",
-      "label": "privatizare",
-      "description": "Canonical topic from current corpus frequency rank 67.",
-      "aliases": []
-    },
-    {
-      "id": "tp_raport_comisie",
-      "label": "raport comisie",
-      "description": "Canonical topic from current corpus frequency rank 68.",
-      "aliases": []
-    },
-    {
-      "id": "tp_reforma_s_n_t_ii",
-      "label": "reforma sănătății",
-      "description": "Canonical topic from current corpus frequency rank 69.",
-      "aliases": []
-    },
-    {
-      "id": "tp_reform_administrativ",
-      "label": "reformă administrativă",
-      "description": "Canonical topic from current corpus frequency rank 70.",
-      "aliases": []
-    },
-    {
-      "id": "tp_rom_ni_diaspora",
-      "label": "români diaspora",
-      "description": "Canonical topic from current corpus frequency rank 71.",
-      "aliases": [
-        "români din diaspora"
-      ]
     },
     {
-      "id": "tp_r_zboi_ucraina",
-      "label": "război Ucraina",
-      "description": "Canonical topic from current corpus frequency rank 72.",
+      "id": "cat_02",
+      "label": "Buget de stat si executie bugetara",
+      "description": "Elaborarea, adoptarea si executia bugetului public la nivel national.",
       "aliases": []
     },
     {
-      "id": "tp_sanc_iuni_interna_ionale",
-      "label": "sancțiuni internaționale",
-      "description": "Canonical topic from current corpus frequency rank 73.",
+      "id": "cat_03",
+      "label": "Investitii publice si fonduri europene",
+      "description": "Programe de investitii finantate national sau din fonduri UE, inclusiv PNRR.",
       "aliases": []
     },
     {
-      "id": "tp_servicii_publice",
-      "label": "servicii publice",
-      "description": "Canonical topic from current corpus frequency rank 74.",
+      "id": "cat_04",
+      "label": "IMM-uri si antreprenoriat",
+      "description": "Masuri de sprijin pentru intreprinderi mici, start-up-uri si mediul de afaceri.",
       "aliases": []
     },
     {
-      "id": "tp_stat_de_drept",
-      "label": "stat de drept",
-      "description": "Canonical topic from current corpus frequency rank 75.",
+      "id": "cat_05",
+      "label": "Industrie si competitivitate",
+      "description": "Productie industriala, lanturi de valoare si competitivitatea economiei romanesti.",
       "aliases": []
     },
     {
-      "id": "tp_taxa_pe_st_lp",
-      "label": "taxa pe stâlp",
-      "description": "Canonical topic from current corpus frequency rank 76.",
+      "id": "cat_06",
+      "label": "Agricultura si dezvoltare rurala",
+      "description": "Politici agricole, ferme, irigatii si dezvoltarea comunitatilor rurale.",
       "aliases": []
     },
     {
-      "id": "tp_taxe",
-      "label": "taxe",
-      "description": "Canonical topic from current corpus frequency rank 77.",
+      "id": "cat_07",
+      "label": "Energie si resurse naturale",
+      "description": "Productie, preturi, securitate energetica si utilizarea resurselor naturale.",
       "aliases": []
     },
     {
-      "id": "tp_transfer_autoritate",
-      "label": "transfer autoritate",
-      "description": "Canonical topic from current corpus frequency rank 78.",
+      "id": "cat_08",
+      "label": "Mediu si schimbari climatice",
+      "description": "Protectia mediului, reducerea poluarii si adaptarea la schimbarile climatice.",
       "aliases": []
     },
     {
-      "id": "tp_transfer_proprietate",
-      "label": "transfer proprietate",
-      "description": "Canonical topic from current corpus frequency rank 79.",
+      "id": "cat_09",
+      "label": "Paduri ape si biodiversitate",
+      "description": "Gestionarea fondului forestier, apelor si conservarea biodiversitatii.",
       "aliases": []
     },
     {
-      "id": "tp_violen_domestic",
-      "label": "violență domestică",
-      "description": "Canonical topic from current corpus frequency rank 80.",
+      "id": "cat_10",
+      "label": "Infrastructura rutiera",
+      "description": "Autostrazi, drumuri nationale si siguranta rutiera.",
       "aliases": []
     },
     {
-      "id": "tp_ans",
-      "label": "ANS",
-      "description": "Canonical topic from current corpus frequency rank 81.",
+      "id": "cat_11",
+      "label": "Infrastructura feroviara",
+      "description": "Cai ferate, modernizare retele si servicii feroviare.",
       "aliases": []
     },
     {
-      "id": "tp_apele_rom_ne",
-      "label": "Apele Române",
-      "description": "Canonical topic from current corpus frequency rank 82.",
+      "id": "cat_12",
+      "label": "Transport urban si mobilitate",
+      "description": "Transport public local, mobilitate durabila si infrastructura urbana.",
       "aliases": []
     },
     {
-      "id": "tp_comisia_cultur",
-      "label": "Comisia cultură",
-      "description": "Canonical topic from current corpus frequency rank 83.",
+      "id": "cat_13",
+      "label": "Locuire si dezvoltare urbana",
+      "description": "Politici de locuire, urbanism si regenerare urbana.",
       "aliases": []
     },
     {
-      "id": "tp_curtea_constitu_ional",
-      "label": "Curtea Constituțională",
-      "description": "Canonical topic from current corpus frequency rank 84.",
+      "id": "cat_14",
+      "label": "Sanatate publica",
+      "description": "Acces la servicii medicale, preventie si indicatori de sanatate a populatiei.",
       "aliases": []
     },
     {
-      "id": "tp_curtea_de_conturi",
-      "label": "Curtea de Conturi",
-      "description": "Canonical topic from current corpus frequency rank 85.",
+      "id": "cat_15",
+      "label": "Reforma sistemului medical",
+      "description": "Organizarea sistemului sanitar, finantare, resursa umana si eficienta serviciilor.",
       "aliases": []
     },
     {
-      "id": "tp_legea_sportului",
-      "label": "Legea sportului",
-      "description": "Canonical topic from current corpus frequency rank 86.",
+      "id": "cat_16",
+      "label": "Educatie preuniversitara",
+      "description": "Scoli, curriculum, evaluare si acces echitabil la educatie.",
       "aliases": []
     },
     {
-      "id": "tp_oug_41_2016",
-      "label": "OUG 41/2016",
-      "description": "Canonical topic from current corpus frequency rank 87.",
+      "id": "cat_17",
+      "label": "Invatamant superior si cercetare",
+      "description": "Universitati, finantarea cercetarii si inovare academica.",
       "aliases": []
     },
     {
-      "id": "tp_ora_prim_ministrului",
-      "label": "Ora prim-ministrului",
-      "description": "Canonical topic from current corpus frequency rank 88.",
+      "id": "cat_18",
+      "label": "Munca salarii si dialog social",
+      "description": "Piata muncii, salarii, negociere colectiva si protectia lucratorilor.",
       "aliases": []
     },
     {
-      "id": "tp_putin",
-      "label": "Putin",
-      "description": "Canonical topic from current corpus frequency rank 89.",
+      "id": "cat_19",
+      "label": "Pensii si protectie sociala",
+      "description": "Sistemul de pensii, beneficii sociale si sustenabilitatea protectiei sociale.",
       "aliases": []
     },
     {
-      "id": "tp_regulament_camer",
-      "label": "Regulament Cameră",
-      "description": "Canonical topic from current corpus frequency rank 90.",
+      "id": "cat_20",
+      "label": "Familie copii si politici demografice",
+      "description": "Sprijin pentru familii, copii si masuri privind evolutia demografica.",
       "aliases": []
     },
     {
-      "id": "tp_tva",
-      "label": "TVA",
-      "description": "Canonical topic from current corpus frequency rank 91.",
+      "id": "cat_21",
+      "label": "Tineret si sport",
+      "description": "Politici pentru participarea tinerilor si dezvoltarea sportului.",
       "aliases": []
     },
     {
-      "id": "tp_tulcea",
-      "label": "Tulcea",
-      "description": "Canonical topic from current corpus frequency rank 92.",
+      "id": "cat_22",
+      "label": "Cultura patrimoniu si culte",
+      "description": "Patrimoniu cultural, politici culturale si relatia statului cu cultele.",
       "aliases": []
     },
     {
-      "id": "tp_ue",
-      "label": "UE",
-      "description": "Canonical topic from current corpus frequency rank 93.",
+      "id": "cat_23",
+      "label": "Digitalizare si guvernare electronica",
+      "description": "Transformare digitala a administratiei si servicii publice electronice.",
       "aliases": []
     },
     {
-      "id": "tp_usr",
-      "label": "USR",
-      "description": "Canonical topic from current corpus frequency rank 94.",
+      "id": "cat_24",
+      "label": "Inteligenta artificiala si tehnologii emergente",
+      "description": "Reglementare si utilizare a IA si a tehnologiilor noi.",
       "aliases": []
     },
     {
-      "id": "tp_valea_jiului",
-      "label": "Valea Jiului",
-      "description": "Canonical topic from current corpus frequency rank 95.",
+      "id": "cat_25",
+      "label": "Securitate cibernetica",
+      "description": "Protectia sistemelor informatice si rezilienta la atacuri cibernetice.",
       "aliases": []
     },
     {
-      "id": "tp_administra_ie_local",
-      "label": "administrație locală",
-      "description": "Canonical topic from current corpus frequency rank 96.",
+      "id": "cat_26",
+      "label": "Justitie si stat de drept",
+      "description": "Independenta justitiei, functionarea institutiilor judiciare si legalitate.",
       "aliases": []
     },
     {
-      "id": "tp_administra_ie_public",
-      "label": "administrație publică",
-      "description": "Canonical topic from current corpus frequency rank 97.",
+      "id": "cat_27",
+      "label": "Reforma administratiei publice",
+      "description": "Modernizarea administratiei, debirocratizare si eficienta institutionala.",
       "aliases": []
     },
     {
-      "id": "tp_amendamente",
-      "label": "amendamente",
-      "description": "Canonical topic from current corpus frequency rank 98.",
+      "id": "cat_28",
+      "label": "Integritate anticoruptie si transparenta",
+      "description": "Prevenirea coruptiei, transparenta decizionala si responsabilitate publica.",
       "aliases": []
     },
     {
-      "id": "tp_ap_rare_na_ional",
-      "label": "apărare națională",
-      "description": "Canonical topic from current corpus frequency rank 99.",
+      "id": "cat_29",
+      "label": "Drepturi fundamentale si libertati civile",
+      "description": "Protectia drepturilor omului si a libertatilor civile.",
       "aliases": []
     },
     {
-      "id": "tp_buget",
-      "label": "buget",
-      "description": "Canonical topic from current corpus frequency rank 100.",
+      "id": "cat_30",
+      "label": "Egalitate de sanse si nediscriminare",
+      "description": "Masuri pentru egalitate de tratament si combaterea discriminarii.",
       "aliases": []
     },
     {
-      "id": "tp_buget_public",
-      "label": "buget public",
-      "description": "Canonical topic from current corpus frequency rank 101.",
+      "id": "cat_31",
+      "label": "Politici pentru minoritati nationale",
+      "description": "Drepturi, reprezentare si incluziune pentru minoritatile nationale.",
       "aliases": []
     },
     {
-      "id": "tp_bugete_locale",
-      "label": "bugete locale",
-      "description": "Canonical topic from current corpus frequency rank 102.",
+      "id": "cat_32",
+      "label": "Diaspora si relatia cu romanii din afara tarii",
+      "description": "Servicii, drepturi si politici dedicate cetatenilor romani din diaspora.",
       "aliases": []
     },
     {
-      "id": "tp_burse",
-      "label": "burse",
-      "description": "Canonical topic from current corpus frequency rank 103.",
+      "id": "cat_33",
+      "label": "Securitate nationala si aparare",
+      "description": "Aparare nationala, capabilitati militare si politici de securitate.",
       "aliases": []
     },
     {
-      "id": "tp_certificate_verzi",
-      "label": "certificate verzi",
-      "description": "Canonical topic from current corpus frequency rank 104.",
+      "id": "cat_34",
+      "label": "Ordine publica si siguranta cetateanului",
+      "description": "Politie, prevenirea criminalitatii si siguranta comunitatilor.",
       "aliases": []
     },
     {
-      "id": "tp_cheltuieli_preziden_iale",
-      "label": "cheltuieli prezidențiale",
-      "description": "Canonical topic from current corpus frequency rank 105.",
+      "id": "cat_35",
+      "label": "Politica externa si afaceri europene",
+      "description": "Pozitionarea externa a Romaniei si coordonarea in cadrul UE.",
       "aliases": []
     },
     {
-      "id": "tp_cheltuieli_publice",
-      "label": "cheltuieli publice",
-      "description": "Canonical topic from current corpus frequency rank 106.",
+      "id": "cat_36",
+      "label": "Politici NATO si cooperare strategica",
+      "description": "Angajamente NATO si parteneriate strategice de securitate.",
       "aliases": []
     },
     {
-      "id": "tp_claritate_legislativ",
-      "label": "claritate legislativă",
-      "description": "Canonical topic from current corpus frequency rank 107.",
+      "id": "cat_37",
+      "label": "Politici regionale si dezvoltare locala",
+      "description": "Dezvoltare teritoriala, echilibru regional si finantare locala.",
       "aliases": []
     },
     {
-      "id": "tp_coali_ie_guvernare",
-      "label": "coaliție guvernare",
-      "description": "Canonical topic from current corpus frequency rank 108.",
+      "id": "cat_38",
+      "label": "Sanatate mintala si adictii",
+      "description": "Servicii de sanatate mintala, preventie si tratament al adictiilor.",
       "aliases": []
     },
     {
-      "id": "tp_competen_a_guvernului",
-      "label": "competența Guvernului",
-      "description": "Canonical topic from current corpus frequency rank 109.",
+      "id": "cat_39",
+      "label": "Protectia consumatorului",
+      "description": "Drepturile consumatorilor, calitatea produselor si practici comerciale.",
       "aliases": []
     },
     {
-      "id": "tp_constitu_ionalitate",
-      "label": "constituționalitate",
-      "description": "Canonical topic from current corpus frequency rank 110.",
+      "id": "cat_40",
+      "label": "Piata imobiliara si cadastru",
+      "description": "Reglementarea pietei imobiliare, cadastru si evidenta proprietatii.",
       "aliases": []
     },
     {
-      "id": "tp_corup_ie",
-      "label": "corupție",
-      "description": "Canonical topic from current corpus frequency rank 111.",
+      "id": "cat_41",
+      "label": "Cadastru proprietate si retrocedari",
+      "description": "Regimul juridic al proprietatii, retrocedari si litigii conexe.",
       "aliases": []
     },
     {
-      "id": "tp_critic_guvern",
-      "label": "critică guvern",
-      "description": "Canonical topic from current corpus frequency rank 112.",
+      "id": "cat_42",
+      "label": "Protectia datelor si viata privata",
+      "description": "Reguli privind datele personale si garantiile de confidentialitate.",
       "aliases": []
     },
     {
-      "id": "tp_critic_pre_edinte",
-      "label": "critică președinte",
-      "description": "Canonical topic from current corpus frequency rank 113.",
+      "id": "cat_43",
+      "label": "Protectia infrastructurilor critice",
+      "description": "Securizarea infrastructurilor esentiale pentru functionarea statului.",
       "aliases": []
     },
     {
-      "id": "tp_curriculum",
-      "label": "curriculum",
-      "description": "Canonical topic from current corpus frequency rank 114.",
+      "id": "cat_44",
+      "label": "Managementul situatiilor de urgenta",
+      "description": "Pregatire, interventie si coordonare in caz de dezastre sau crize.",
       "aliases": []
     },
     {
-      "id": "tp_datorie_public",
-      "label": "datorie publică",
-      "description": "Canonical topic from current corpus frequency rank 115.",
+      "id": "cat_45",
+      "label": "Politici privind migratia si azilul",
+      "description": "Gestionarea migratiei, azilului si integrarii persoanelor vulnerabile.",
       "aliases": []
     },
     {
-      "id": "tp_democra_ie",
-      "label": "democrație",
-      "description": "Canonical topic from current corpus frequency rank 116.",
+      "id": "cat_46",
+      "label": "Turism si economie locala",
+      "description": "Dezvoltarea turismului si impactul economic la nivel local.",
       "aliases": []
     },
     {
-      "id": "tp_desp_gubiri",
-      "label": "despăgubiri",
-      "description": "Canonical topic from current corpus frequency rank 117.",
+      "id": "cat_47",
+      "label": "Reforma electorala si procese democratice",
+      "description": "Reguli electorale, participare civica si calitatea procesului democratic.",
       "aliases": []
     },
     {
-      "id": "tp_digitalizare_anaf",
-      "label": "digitalizare ANAF",
-      "description": "Canonical topic from current corpus frequency rank 118.",
+      "id": "cat_48",
+      "label": "Procedura parlamentara si calitatea legiferarii",
+      "description": "Reguli parlamentare, etape legislative si calitatea procesului normativ.",
       "aliases": []
     },
     {
-      "id": "tp_drepturi_fundamentale",
-      "label": "drepturi fundamentale",
-      "description": "Canonical topic from current corpus frequency rank 119.",
+      "id": "cat_49",
+      "label": "Evaluarea impactului legislativ",
+      "description": "Analiza efectelor economice, sociale si institutionale ale legilor.",
       "aliases": []
     },
     {
-      "id": "tp_energie_regenerabil",
-      "label": "energie regenerabilă",
-      "description": "Canonical topic from current corpus frequency rank 120.",
+      "id": "cat_50",
+      "label": "Coeziune sociala si reducerea saraciei",
+      "description": "Politici publice pentru incluziune sociala si combaterea saraciei.",
       "aliases": []
     }
   ]
