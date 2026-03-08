@@ -374,6 +374,93 @@ def _topic_direction(topic: str) -> str:
     return "altele"
 
 
+_LAW_ID_PATTERNS: list[tuple[str, str]] = [
+    ("PL-x", r"\bpl[-\s]?x\s*(\d{1,4})(?:/(\d{4}))?\b"),
+    ("OUG", r"\boug\s*(\d{1,4})(?:/(\d{4}))?\b"),
+    ("OG", r"\bog\s*(\d{1,4})(?:/(\d{4}))?\b"),
+    ("HG", r"\bhg\s*(\d{1,4})(?:/(\d{4}))?\b"),
+    ("Legea nr.", r"\blegea?\s*nr\.?\s*(\d{1,4})(?:/(\d{4}))?\b"),
+]
+
+_AUTHORSHIP_CONTEXT_PATTERNS = [
+    re.compile(r"\bam initiat\b"),
+    re.compile(r"\bam depus\b"),
+    re.compile(r"\bam semnat\b"),
+    re.compile(r"\bsunt(?:em)?\s+(?:co)?initiator(?:ii|i)?\b"),
+    re.compile(r"\b(?:co)?initiator(?:ii|i)?\s+sunt(?:em)?\b"),
+    re.compile(r"\binitiativa\s+(?:mea|noastra)\b"),
+    re.compile(r"\bpropunerea\s+(?:mea|noastra)\s+legislativa\b"),
+    re.compile(r"\bproiectul\s+(?:meu|nostru)\s+de\s+lege\b"),
+]
+
+_AMENDMENT_CONTEXT_PATTERNS = [
+    re.compile(r"\bam depus\s+amendament"),
+    re.compile(r"\bam depus\s+amendamente"),
+    re.compile(r"\bam propus\s+amendament"),
+    re.compile(r"\bam propus\s+amendamente"),
+    re.compile(r"\bam introdus\s+amendament"),
+    re.compile(r"\bam formulat\s+amendament"),
+    re.compile(r"\bamendamentul\s+(?:meu|nostru)\b"),
+    re.compile(r"\bamendamentele\s+(?:mele|noastre)\b"),
+]
+
+_AMENDMENT_NUMBER_PATTERN = re.compile(r"\bamendament(?:ul|ele)?(?:\s+nr\.?)?\s*(\d{1,5}(?:/\d{2,4})?)\b")
+
+
+def _extract_all_law_ids(text: str) -> set[str]:
+    normalized = _normalize_topic_text(text)
+    out: set[str] = set()
+    for label, pattern in _LAW_ID_PATTERNS:
+        for match in re.finditer(pattern, normalized, flags=re.IGNORECASE):
+            number = str(match.group(1)).strip()
+            year = str(match.group(2)).strip() if match.group(2) else ""
+            if not number:
+                continue
+            identifier = f"{number}/{year}" if year else number
+            out.add(f"{label} {identifier}")
+    return out
+
+
+def _extract_legislation_contributions(text: str) -> tuple[set[str], set[str], int, int]:
+    """
+    Returns:
+    - authored_bill_ids (deduplicated by identifier)
+    - amendment_ids (deduplicated by amendment number + optional bill id)
+    - generic_authored_bill_events (fallback events without explicit bill id)
+    - generic_amendment_events (fallback events without explicit amendment id)
+    """
+    normalized = _normalize_topic_text(text)
+    law_ids = _extract_all_law_ids(normalized)
+
+    has_authorship_context = any(p.search(normalized) for p in _AUTHORSHIP_CONTEXT_PATTERNS)
+    has_amendment_context = any(p.search(normalized) for p in _AMENDMENT_CONTEXT_PATTERNS)
+
+    authored_bill_ids: set[str] = set()
+    generic_authored_bill_events = 0
+    if has_authorship_context:
+        authored_bill_ids.update(law_ids)
+        has_generic_bill_reference = re.search(r"\b(proiect(?:ul)?\s+de\s+lege|propunere(?:a)?\s+legislativa)\b", normalized)
+        if not authored_bill_ids and has_generic_bill_reference:
+            generic_authored_bill_events = 1
+
+    amendment_ids: set[str] = set()
+    generic_amendment_events = 0
+    if has_amendment_context:
+        law_context = sorted(law_ids)[0] if law_ids else ""
+        for match in _AMENDMENT_NUMBER_PATTERN.finditer(normalized):
+            amendment_no = str(match.group(1)).strip()
+            if not amendment_no:
+                continue
+            if law_context:
+                amendment_ids.add(f"{law_context}|amendament {amendment_no}")
+            else:
+                amendment_ids.add(f"amendament {amendment_no}")
+        if not amendment_ids:
+            generic_amendment_events = 1
+
+    return authored_bill_ids, amendment_ids, generic_authored_bill_events, generic_amendment_events
+
+
 class TopicCanonicalizer:
     def __init__(self) -> None:
         self._key_counts: Counter[str] = Counter()
@@ -577,6 +664,10 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
                 "name": member_name,
                 "party_id": party_id,
                 "party_name": party_id,
+                "authored_bill_ids": set(),
+                "amendment_ids": set(),
+                "generic_bills_authored_events": 0,
+                "generic_amendments_added_events": 0,
                 "counts": {"constructive": 0, "neutral": 0, "non_constructive": 0},
                 "topics_counter": Counter(),
                 "directions_counter": Counter(),
@@ -584,6 +675,13 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
             }
 
         md = member_data[member_id]
+        authored_bill_ids, amendment_ids, generic_bill_events, generic_amendment_events = _extract_legislation_contributions(
+            text or ""
+        )
+        md["authored_bill_ids"].update(authored_bill_ids)
+        md["amendment_ids"].update(amendment_ids)
+        md["generic_bills_authored_events"] += generic_bill_events
+        md["generic_amendments_added_events"] += generic_amendment_events
         md["counts"][constructiveness_label] += 1
         md["topics_counter"].update(topics)
         md["directions_counter"].update(_topic_direction(t) for t in topics)
@@ -637,6 +735,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
     for member_id in sorted(member_data.keys()):
         md = member_data[member_id]
         counts = md["counts"]
+        bills_authored_total = len(md["authored_bill_ids"]) + int(md["generic_bills_authored_events"])
+        amendments_added_total = len(md["amendment_ids"]) + int(md["generic_amendments_added_events"])
         interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
         top_topics = _top_topics(md["topics_counter"])
         top_directions = _top_directions(md["directions_counter"])
@@ -648,6 +748,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
                 "party_id": md["party_id"],
                 "party_name": md["party_name"],
                 "interventions_total": interventions_total,
+                "bills_authored_total": bills_authored_total,
+                "amendments_added_total": amendments_added_total,
                 "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
                 "non_constructive_count": counts["non_constructive"],
@@ -664,6 +766,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
             "party_name": md["party_name"],
             "stats": {
                 "interventions_total": interventions_total,
+                "bills_authored_total": bills_authored_total,
+                "amendments_added_total": amendments_added_total,
                 "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
                 "non_constructive_count": counts["non_constructive"],
@@ -710,6 +814,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
             "neutral": sum(m["neutral_count"] for m in members),
             "non_constructive": sum(m["non_constructive_count"] for m in members),
         }
+        bills_authored_total = sum(int(m.get("bills_authored_total", 0)) for m in members)
+        amendments_added_total = sum(int(m.get("amendments_added_total", 0)) for m in members)
         interventions_total = counts["constructive"] + counts["neutral"] + counts["non_constructive"]
 
         topic_counter: Counter[str] = Counter()
@@ -728,6 +834,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
             "party_name": party_name,
             "members_count": len(members),
             "interventions_total": interventions_total,
+            "bills_authored_total": bills_authored_total,
+            "amendments_added_total": amendments_added_total,
             "constructive_count": counts["constructive"],
             "neutral_count": counts["neutral"],
             "non_constructive_count": counts["non_constructive"],
@@ -743,6 +851,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
             "stats": {
                 "members_count": len(members),
                 "interventions_total": interventions_total,
+                "bills_authored_total": bills_authored_total,
+                "amendments_added_total": amendments_added_total,
                 "constructive_count": counts["constructive"],
                 "neutral_count": counts["neutral"],
                 "non_constructive_count": counts["non_constructive"],
@@ -755,6 +865,8 @@ def export_outputs(db_path: Path, output_dir: Path, taxonomy_config_path: Path =
                     "member_id": m["member_id"],
                     "name": m["name"],
                     "interventions_total": m["interventions_total"],
+                    "bills_authored_total": int(m.get("bills_authored_total", 0)),
+                    "amendments_added_total": int(m.get("amendments_added_total", 0)),
                     "constructive_count": m["constructive_count"],
                     "neutral_count": m["neutral_count"],
                     "non_constructive_count": m["non_constructive_count"],

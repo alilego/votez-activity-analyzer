@@ -222,6 +222,19 @@ def _extract_source_member_id(row: dict, chamber: str) -> str:
     return hashlib.sha1(name.encode("utf-8")).hexdigest()
 
 
+def _extract_non_negative_int(row: dict, keys: tuple[str, ...]) -> int:
+    for key in keys:
+        if key not in row:
+            continue
+        value = row.get(key)
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            continue
+        return max(0, parsed)
+    return 0
+
+
 def _merge_speech_text(speech: dict) -> str:
     parts = []
     for key in ("text", "text2", "text3"):
@@ -444,6 +457,29 @@ def _load_registry_members() -> tuple[list[dict], dict[str, list[str]], dict[str
                 "name": name,
                 "normalized_name": normalized_name,
                 "party_id": str(row.get("party", "")).strip() or None,
+                "bills_authored_total": _extract_non_negative_int(
+                    row,
+                    (
+                        "bills_authored_total",
+                        "bills_authored",
+                        "total_bills_authored",
+                        "initiated_bills_count",
+                        "proiecte_initiate_total",
+                        "proiecte_initiate",
+                    ),
+                ),
+                "amendments_added_total": _extract_non_negative_int(
+                    row,
+                    (
+                        "amendments_added_total",
+                        "amendments_added",
+                        "total_amendments_added",
+                        "amendments_count",
+                        "proposed_amendments_count",
+                        "amendamente_adaugate_total",
+                        "amendamente_adaugate",
+                    ),
+                ),
                 "profile_url": str(row.get("profile_url", "")).strip() or None,
                 "circumscriptie": (
                     str(row.get("circumscriptie", "")).strip() if row.get("circumscriptie") is not None else None
@@ -508,15 +544,17 @@ def _persist_run_data(
             """
             INSERT INTO members (
                 member_id, source_member_id, chamber, name, normalized_name,
-                party_id, profile_url, circumscriptie, updated_at
+                party_id, bills_authored_total, amendments_added_total, profile_url, circumscriptie, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(member_id) DO UPDATE SET
                 source_member_id = excluded.source_member_id,
                 chamber = excluded.chamber,
                 name = excluded.name,
                 normalized_name = excluded.normalized_name,
                 party_id = excluded.party_id,
+                bills_authored_total = excluded.bills_authored_total,
+                amendments_added_total = excluded.amendments_added_total,
                 profile_url = excluded.profile_url,
                 circumscriptie = excluded.circumscriptie,
                 updated_at = CURRENT_TIMESTAMP
@@ -528,6 +566,8 @@ def _persist_run_data(
                 member["name"],
                 member["normalized_name"],
                 member["party_id"],
+                member["bills_authored_total"],
+                member["amendments_added_total"],
                 member["profile_url"],
                 member["circumscriptie"],
             ),

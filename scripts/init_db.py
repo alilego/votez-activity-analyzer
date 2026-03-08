@@ -64,6 +64,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             name TEXT NOT NULL,
             normalized_name TEXT NOT NULL,
             party_id TEXT,
+            bills_authored_total INTEGER NOT NULL DEFAULT 0,
+            amendments_added_total INTEGER NOT NULL DEFAULT 0,
             profile_url TEXT,
             circumscriptie TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -186,6 +188,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             iv.member_id,
             m.name AS member_name,
             m.party_id,
+            m.bills_authored_total,
+            m.amendments_added_total,
             iv.text,
             iv.text_hash,
             ia.relevance_label,
@@ -212,7 +216,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '8')
+        VALUES('schema_version', '9')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )
@@ -221,6 +225,8 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'",
         "ALTER TABLE session_topics ADD COLUMN topics_source TEXT NOT NULL DEFAULT 'keyword_baseline_v1'",
         "ALTER TABLE intervention_analysis ADD COLUMN reasoning TEXT",
+        "ALTER TABLE members ADD COLUMN bills_authored_total INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE members ADD COLUMN amendments_added_total INTEGER NOT NULL DEFAULT 0",
     ]:
         try:
             conn.execute(migration)

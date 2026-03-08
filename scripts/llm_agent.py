@@ -107,6 +107,12 @@ Classify EVERY speech and return results as a JSON array.
 
 ## Classification labels
 - `constructive`: speaker genuinely advances the public good — proposes solutions, amendments, or substantive analysis aimed at better outcomes for citizens.
+  Typical constructive behaviors include:
+  - proposes a policy, amendment, or concrete solution
+  - adds evidence, facts, or relevant reasoning
+  - clarifies legal, technical, or policy consequences
+  - asks substantive questions that improve debate
+  - attempts compromise, refinement, or better implementation
 - `neutral`: procedural / logistical / non-substantive — voting instructions, quorum calls, greetings, short interjections, chair time-keeping lines (e.g. "Vă rog, aveți cuvântul.", "Mulțumesc.").
 - `non_constructive`: serves narrow interests (party, career, sponsor) or blocks debate — rhetorical attacks, filibustering, partisan positioning without substance, conspiracy claims.
 
@@ -939,26 +945,47 @@ def classify_session_batch(
 
             raw = aligned_by_index.get(sp["speech_index"])
             if raw is None:
-                print(f"    No result for speech_index={sp['speech_index']} ({iid})")
-                errors += 1
-                error_log.append({
-                    "intervention_id": iid,
-                    "error": {"code": "MISSING_IN_BATCH", "message": f"speech_index {sp['speech_index']} not in LLM output"},
-                })
-                continue
-
-            try:
-                raw_for_validation = dict(raw)
-                raw_for_validation["_speech_text"] = sp["text"]
-                payload = _validate_one(raw_for_validation, config, session_topics)
-            except ValueError as exc:
-                print(f"    Validation error for {iid}: {exc}")
-                errors += 1
-                error_log.append({
-                    "intervention_id": iid,
-                    "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
-                })
-                continue
+                print(
+                    f"    No result for speech_index={sp['speech_index']} ({iid}); "
+                    "forcing single-speech recovery..."
+                )
+                recovered_payload = _recheck_single_speech(
+                    client=client,
+                    provider=provider,
+                    session=session,
+                    session_topics=session_topics,
+                    sp=sp,
+                    config=config,
+                    parent_batch_label=f"{batch_label}_missing",
+                )
+                if recovered_payload is not None:
+                    payload = recovered_payload
+                    print(
+                        f"      Recovered speech_index={sp['speech_index']} via single-speech retry."
+                    )
+                else:
+                    errors += 1
+                    error_log.append({
+                        "intervention_id": iid,
+                        "error": {
+                            "code": "MISSING_IN_BATCH",
+                            "message": f"speech_index {sp['speech_index']} not in LLM output",
+                        },
+                    })
+                    continue
+            else:
+                try:
+                    raw_for_validation = dict(raw)
+                    raw_for_validation["_speech_text"] = sp["text"]
+                    payload = _validate_one(raw_for_validation, config, session_topics)
+                except ValueError as exc:
+                    print(f"    Validation error for {iid}: {exc}")
+                    errors += 1
+                    error_log.append({
+                        "intervention_id": iid,
+                        "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
+                    })
+                    continue
 
             if payload.get("_needs_recheck"):
                 print(f"      Rechecking speech_index={sp['speech_index']} (ungrounded result)...")
