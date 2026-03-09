@@ -40,6 +40,7 @@ import os
 import sqlite3
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -100,6 +101,8 @@ LLM_REQUEST_TIMEOUT_S = 300
 OLLAMA_NUM_CTX = 32768
 # Fallback num_ctx for small-context models (llama3.1:8b-8k).
 OLLAMA_NUM_CTX_SMALL = 8192
+TOPICS_MAX_OUTPUT_TOKENS = 3072
+RUN_OUTPUTS_DIR = Path("state/run_outputs")
 
 _LLM_USAGE = {
     "calls": 0,
@@ -186,6 +189,46 @@ def _usage_summary_payload() -> dict:
         "estimated_prompt_tokens": int(_LLM_USAGE["estimated_prompt_tokens"]),
         "estimated_completion_tokens": int(_LLM_USAGE["estimated_completion_tokens"]),
     }
+
+
+def _safe_filename_part(text: str) -> str:
+    out = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in (text or ""))
+    return out.strip("_") or "unknown"
+
+
+def _save_failed_llm_output(
+    *,
+    run_id: str,
+    session_id: str,
+    session_date: str,
+    model: str,
+    stage: str,
+    error: str,
+    raw_text: str,
+) -> Path:
+    """Persist malformed or unrecoverable LLM output for post-mortem debugging."""
+    RUN_OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_part = _safe_filename_part(run_id or "manual")
+    session_part = _safe_filename_part(str(session_id))
+    model_part = _safe_filename_part(model.replace(":", "-"))
+    stage_part = _safe_filename_part(stage)
+    filename = f"run_{run_part}_session_topics_error_{session_part}_{ts}_{model_part}_{stage_part}.txt"
+    out_path = RUN_OUTPUTS_DIR / filename
+    content = (
+        "=== METADATA ===\n"
+        f"run_id       : {run_id or 'manual'}\n"
+        f"session_id   : {session_id}\n"
+        f"session_date : {session_date}\n"
+        f"model        : {model}\n"
+        f"stage        : {stage}\n"
+        f"error        : {error}\n"
+        f"saved_at     : {ts}\n\n"
+        "=== RAW LLM OUTPUT ===\n"
+        f"{raw_text}\n"
+    )
+    out_path.write_text(content, encoding="utf-8")
+    return out_path
 
 # Topic catalog config used to constrain LLM output to known canonical topics.
 TOPIC_TAXONOMY_CONFIG_PATH = Path("config/topic_taxonomy.json")
@@ -331,7 +374,17 @@ Rules:
 - COMBINING duplicates: merge overlapping mentions into one topic and keep all details.
 - Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
 - Keep total matched_topics + new_topics <= 20.
-- Do NOT include "(fără subiecte identificate)" entries."""
+- Do NOT include "(fără subiecte identificate)" entries.
+- Keep output compact to avoid truncation:
+  - target 8-12 topics (maximum remains 20 only if clearly needed)
+  - `description`: max 24 words
+  - `session_summary`: max 35 words
+  - `reason_no_match`: max 12 words
+- JSON safety:
+  - return exactly one JSON object and nothing else
+  - all string values must be closed
+  - escape internal double quotes as \\"
+  - do not include raw newlines inside string values (use spaces)"""
 
 
 def _build_reduce_system(catalog: list[dict]) -> str:
@@ -455,7 +508,7 @@ def _chat(
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        temperature=0.2,
+        temperature=0.0 if json_mode else 0.2,
         max_tokens=max_tokens,
         timeout=LLM_REQUEST_TIMEOUT_S,
         **extra_kwargs,
@@ -612,6 +665,82 @@ def _parse_topics_payload(raw: str) -> dict:
     }
 
 
+def _repair_topics_json(
+    client,
+    raw_text: str,
+    label: str,
+    session_id: str = "",
+    session_date: str = "",
+    run_id: str = "",
+    build_prompts_only: bool = False,
+) -> dict | None:
+    """Attempt to repair malformed topic JSON without re-running full extraction."""
+    system = """You repair malformed JSON output for Romanian parliamentary session topics.
+
+Return ONLY valid JSON object in this schema:
+{
+  "matched_topics": [
+    {
+      "catalog_topic_id": "string or null",
+      "label": "string",
+      "description": "string",
+      "law_id": "string or null",
+      "confidence": 0.0
+    }
+  ],
+  "new_topics": [
+    {
+      "label": "string",
+      "description": "string",
+      "law_id": "string or null",
+      "reason_no_match": "string",
+      "confidence": 0.0
+    }
+  ],
+  "session_summary": "string"
+}
+
+Rules:
+- Keep original content; only repair syntax/structure.
+- Do NOT invent new facts.
+- If a field is missing, use null/empty string/empty list appropriately.
+- Output JSON only, no markdown fences."""
+    user = (
+        "Repair this malformed JSON into valid schema-compliant JSON.\n\n"
+        "Malformed output:\n"
+        f"{raw_text}"
+    )
+    try:
+        repaired_raw = _chat(
+            client=client,
+            system=system,
+            user=user,
+            json_mode=True,
+            max_tokens=3072,
+            prompt_label=f"{label}_json_repair",
+            session_id=session_id,
+            session_date=session_date,
+            build_prompts_only=build_prompts_only,
+        )
+        return _parse_topics_payload(repaired_raw)
+    except Exception as exc:
+        print(f"  JSON repair failed ({label}): {exc}")
+        try:
+            path = _save_failed_llm_output(
+                run_id=run_id,
+                session_id=session_id,
+                session_date=session_date,
+                model=getattr(client, "_model", ""),
+                stage=f"{label}_repair_failed",
+                error=str(exc),
+                raw_text=raw_text,
+            )
+            print(f"  Saved failed raw output: {path}")
+        except Exception:
+            pass
+        return None
+
+
 def _call_reduce_once(
     client,
     session_header: str,
@@ -619,6 +748,7 @@ def _call_reduce_once(
     label: str,
     session_id: str = "",
     session_date: str = "",
+    run_id: str = "",
     build_prompts_only: bool = False,
 ) -> dict:
     """Run one reduce LLM call over a list of prose strings. Returns parsed payload.
@@ -631,12 +761,54 @@ def _call_reduce_once(
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, reduce_system, reduce_msg, json_mode=True, max_tokens=2048,
+                client, reduce_system, reduce_msg, json_mode=True, max_tokens=TOPICS_MAX_OUTPUT_TOKENS,
                 prompt_label=label.lower().replace(" ", "_"),
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
             )
-            payload = _parse_topics_payload(raw)
+            try:
+                payload = _parse_topics_payload(raw)
+            except (json.JSONDecodeError, ValueError) as exc:
+                print(f"  {label}: parse failed, attempting JSON repair: {exc}")
+                try:
+                    path = _save_failed_llm_output(
+                        run_id=run_id,
+                        session_id=session_id,
+                        session_date=session_date,
+                        model=getattr(client, "_model", ""),
+                        stage=f"{label.lower().replace(' ', '_')}_parse_failed_raw",
+                        error=str(exc),
+                        raw_text=raw,
+                    )
+                    print(f"  Saved failed raw output: {path}")
+                except Exception:
+                    pass
+                repaired = _repair_topics_json(
+                    client=client,
+                    raw_text=raw,
+                    label=label.lower().replace(" ", "_"),
+                    session_id=session_id,
+                    session_date=session_date,
+                    run_id=run_id,
+                    build_prompts_only=build_prompts_only,
+                )
+                if repaired is None:
+                    try:
+                        path = _save_failed_llm_output(
+                            run_id=run_id,
+                            session_id=session_id,
+                            session_date=session_date,
+                            model=getattr(client, "_model", ""),
+                            stage=f"{label.lower().replace(' ', '_')}_parse_failed",
+                            error=str(exc),
+                            raw_text=raw,
+                        )
+                        print(f"  Saved failed raw output: {path}")
+                    except Exception:
+                        pass
+                    raise
+                payload = repaired
+                print(f"  {label}: JSON repair succeeded")
             topics = payload.get("topics", [])
             print(f"  {label}: {len(topics)} topics from {len(prose_list)} inputs ({len(reduce_msg)} chars)")
             return payload
@@ -656,6 +828,7 @@ def _reduce(
     window_results: list[str],
     session_id: str = "",
     session_date: str = "",
+    run_id: str = "",
     build_prompts_only: bool = False,
 ) -> dict:
     """Two-stage reduce.
@@ -673,6 +846,7 @@ def _reduce(
         payload = _call_reduce_once(
             client, session_header, batches[0], "Reduce",
             session_id=session_id, session_date=session_date,
+            run_id=run_id,
             build_prompts_only=build_prompts_only,
         )
         return payload
@@ -683,6 +857,7 @@ def _reduce(
         partial_payload = _call_reduce_once(
             client, session_header, batch, f"Reduce stage-1 batch {b_idx}/{len(batches)}",
             session_id=session_id, session_date=session_date,
+            run_id=run_id,
             build_prompts_only=build_prompts_only,
         )
         partial = partial_payload.get("topics", [])
@@ -698,6 +873,7 @@ def _reduce(
     final_payload = _call_reduce_once(
         client, session_header, intermediate_prose, "Reduce stage-2 final",
         session_id=session_id, session_date=session_date,
+        run_id=run_id,
         build_prompts_only=build_prompts_only,
     )
     return final_payload
@@ -741,7 +917,17 @@ Rules:
 - law_id: bill/law/ordinance identifier if present, otherwise null.
 - Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
 - Keep matched_topics + new_topics <= 20.
-- CRITICAL: every field MUST be grounded in the text. Do NOT invent details."""
+- CRITICAL: every field MUST be grounded in the text. Do NOT invent details.
+- Keep output compact to avoid truncation:
+  - target 8-12 topics (maximum remains 20 only if clearly needed)
+  - `description`: max 24 words
+  - `session_summary`: max 35 words
+  - `reason_no_match`: max 12 words
+- JSON safety:
+  - return exactly one JSON object and nothing else
+  - all string values must be closed
+  - escape internal double quotes as \\"
+  - do not include raw newlines inside string values (use spaces)"""
 
 
 def _build_single_pass_system(catalog: list[dict]) -> str:
@@ -763,6 +949,7 @@ def _call_single_pass(
     chunks: list[dict],
     session_id: str = "",
     session_date: str = "",
+    run_id: str = "",
     build_prompts_only: bool = False,
 ) -> dict:
     """Single-pass topic extraction for large-context models.
@@ -780,12 +967,54 @@ def _call_single_pass(
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, single_pass_system, user_msg, json_mode=True, max_tokens=2048,
+                client, single_pass_system, user_msg, json_mode=True, max_tokens=TOPICS_MAX_OUTPUT_TOKENS,
                 prompt_label="single_pass",
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
             )
-            payload = _parse_topics_payload(raw)
+            try:
+                payload = _parse_topics_payload(raw)
+            except (json.JSONDecodeError, ValueError) as exc:
+                print(f"  Single-pass parse failed, attempting JSON repair: {exc}")
+                try:
+                    path = _save_failed_llm_output(
+                        run_id=run_id,
+                        session_id=session_id,
+                        session_date=session_date,
+                        model=getattr(client, "_model", ""),
+                        stage="single_pass_parse_failed_raw",
+                        error=str(exc),
+                        raw_text=raw,
+                    )
+                    print(f"  Saved failed raw output: {path}")
+                except Exception:
+                    pass
+                repaired = _repair_topics_json(
+                    client=client,
+                    raw_text=raw,
+                    label="single_pass",
+                    session_id=session_id,
+                    session_date=session_date,
+                    run_id=run_id,
+                    build_prompts_only=build_prompts_only,
+                )
+                if repaired is None:
+                    try:
+                        path = _save_failed_llm_output(
+                            run_id=run_id,
+                            session_id=session_id,
+                            session_date=session_date,
+                            model=getattr(client, "_model", ""),
+                            stage="single_pass_parse_failed",
+                            error=str(exc),
+                            raw_text=raw,
+                        )
+                        print(f"  Saved failed raw output: {path}")
+                    except Exception:
+                        pass
+                    raise
+                payload = repaired
+                print("  Single-pass JSON repair succeeded")
             topics = payload.get("topics", [])
             print(f"  Single-pass result: {len(topics)} topics  (first 120 chars: {raw[:120]!r})")
             return payload
@@ -805,6 +1034,7 @@ def _call_map_reduce(
     substantive_chunks: list[dict],
     session_id: str = "",
     session_date: str = "",
+    run_id: str = "",
     build_prompts_only: bool = False,
 ) -> dict:
     """
@@ -853,7 +1083,7 @@ def _call_map_reduce(
     # so the reduce-step prompts are also generated (with a placeholder input).
     reduce_input = non_empty if non_empty else (["placeholder"] if build_prompts_only else [])
     return _reduce(client, session_header, reduce_input, session_id=session_id,
-                   session_date=session_date, build_prompts_only=build_prompts_only)
+                   session_date=session_date, run_id=run_id, build_prompts_only=build_prompts_only)
 
 
 # ---------------------------------------------------------------------------
@@ -863,6 +1093,7 @@ def _call_map_reduce(
 def extract_session_topics(
     server: MCPServer,
     session_id: str,
+    run_id: str,
     model: str,
     client,
     provider: str,
@@ -944,6 +1175,7 @@ def extract_session_topics(
             llm_data = _call_single_pass(
                 client, session_header, single_pass_chunks,
                 session_id=session_id, session_date=session_date,
+                run_id=run_id,
                 build_prompts_only=build_prompts_only,
             )
         else:
@@ -959,6 +1191,7 @@ def extract_session_topics(
             llm_data = _call_map_reduce(
                 client, session_header, substantive_chunks,
                 session_id=session_id, session_date=session_date,
+                run_id=run_id,
                 build_prompts_only=build_prompts_only,
             )
     else:
@@ -976,6 +1209,7 @@ def extract_session_topics(
         llm_data = _call_map_reduce(
             client, session_header, substantive_chunks,
             session_id=session_id, session_date=session_date,
+            run_id=run_id,
             build_prompts_only=build_prompts_only,
         )
 
@@ -1112,6 +1346,7 @@ def run_session_topics(
                 result = extract_session_topics(
                     server=server,
                     session_id=session_id,
+                    run_id=run_id,
                     model=model,
                     client=client,
                     provider=provider,

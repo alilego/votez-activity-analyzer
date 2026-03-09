@@ -109,6 +109,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             relevance_label TEXT NOT NULL, -- constructive | neutral | non_constructive | unknown
             relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1',
             topics_json TEXT NOT NULL, -- JSON array of strings
+            layer_a_json TEXT, -- JSON object with Layer A rubric signals (3-layer pipeline)
             confidence REAL, -- nullable in scaffolding stage
             evidence_chunk_ids_json TEXT NOT NULL, -- JSON array of strings
             analysis_version TEXT NOT NULL DEFAULT 'scaffold_v1',
@@ -195,6 +196,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             ia.relevance_label,
             ia.relevance_source,
             ia.topics_json,
+            ia.layer_a_json,
             ia.confidence,
             st.topics_json AS session_topics_json,
             ia.evidence_chunk_ids_json,
@@ -216,7 +218,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '9')
+        VALUES('schema_version', '10')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )
@@ -225,6 +227,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         "ALTER TABLE intervention_analysis ADD COLUMN relevance_source TEXT NOT NULL DEFAULT 'constructiveness_baseline_v1'",
         "ALTER TABLE session_topics ADD COLUMN topics_source TEXT NOT NULL DEFAULT 'keyword_baseline_v1'",
         "ALTER TABLE intervention_analysis ADD COLUMN reasoning TEXT",
+        "ALTER TABLE intervention_analysis ADD COLUMN layer_a_json TEXT",
         "ALTER TABLE members ADD COLUMN bills_authored_total INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE members ADD COLUMN amendments_added_total INTEGER NOT NULL DEFAULT 0",
     ]:

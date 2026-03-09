@@ -60,6 +60,27 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from init_db import DEFAULT_DB_PATH, init_db
+from intervention_layers.orchestrator import (
+    build_shortcut_decision,
+    decision_from_layer_b,
+    decision_from_layer_c,
+    merge_for_compatibility,
+)
+from intervention_layers.prompts import (
+    LAYER_A_SYSTEM_PROMPT,
+    LAYER_B_SYSTEM_PROMPT,
+    LAYER_C_SYSTEM_PROMPT,
+    build_layer_a_user_message,
+    build_layer_b_user_message,
+    build_layer_c_user_message,
+)
+from intervention_layers.qa import evaluate_qa_triggers
+from intervention_layers.rules import apply_deterministic_rules
+from intervention_layers.schemas import (
+    validate_layer_a_item,
+    validate_layer_b_item,
+    validate_layer_c_item,
+)
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -71,6 +92,7 @@ DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
 DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+DEFAULT_PIPELINE_ARCHITECTURE = "three_layer"
 EST_CHARS_PER_TOKEN = 3.8
 LOG_TOKEN_USAGE_PER_CALL = False
 
@@ -434,6 +456,71 @@ def _strip_json_fences(content: str) -> str:
     return content
 
 
+def _looks_like_result_item(obj: dict) -> bool:
+    """Heuristic: determine whether a dict is a single classification result item."""
+    if not isinstance(obj, dict):
+        return False
+    if "speech_index" not in obj:
+        return False
+    keys = set(obj.keys())
+    known_markers = {
+        "constructiveness_label",
+        "policy_proposal",
+        "policy_analysis",
+        "public_interest_orientation",
+        "partisan_rhetoric",
+        "legislative_engagement",
+        "procedural_content",
+        "argumentation_quality",
+        "final_label",
+        "final_confidence",
+        "qa_action",
+    }
+    return bool(keys & known_markers)
+
+
+def _coerce_results_payload(parsed):
+    """
+    Normalize model output into a list[dict] results payload.
+    Accepts common wrappers and single-item objects.
+    Raises ValueError when no valid results container can be found.
+    """
+    if isinstance(parsed, list):
+        return parsed
+
+    if isinstance(parsed, dict):
+        # Common wrappers used by models.
+        for key in ("results", "speeches", "items", "data", "output", "result"):
+            if key not in parsed:
+                continue
+            value = parsed.get(key)
+            if isinstance(value, list):
+                return value
+            if isinstance(value, dict):
+                if _looks_like_result_item(value):
+                    return [value]
+                # Nested {"results":[...]} style.
+                nested = value.get("results")
+                if isinstance(nested, list):
+                    return nested
+            if isinstance(value, str):
+                value_str = value.strip()
+                if not value_str:
+                    continue
+                if value_str[:1] in ("{", "["):
+                    try:
+                        reparsed = json.loads(value_str)
+                    except json.JSONDecodeError:
+                        continue
+                    return _coerce_results_payload(reparsed)
+
+        # Model sometimes returns a single object directly.
+        if _looks_like_result_item(parsed):
+            return [parsed]
+
+    raise ValueError("LLM output does not contain a valid results payload")
+
+
 # ---------------------------------------------------------------------------
 # LLM call
 # ---------------------------------------------------------------------------
@@ -447,11 +534,14 @@ def _call_llm(
     provider: str,
     session: dict,
     session_topics: list,
-    speeches: list[dict],
+    speeches: list[dict] | None = None,
     call_label: str = "call",
     context_speeches: list[dict] | None = None,
     build_prompts_only: bool = False,
-) -> list[dict]:
+    system_prompt: str | None = None,
+    user_message_override: str | None = None,
+    return_raw: bool = False,
+) -> list[dict] | tuple[str, list[dict]]:
     """
     Call the LLM for one prompt payload (typically one target speech).
     Returns a list of raw classification dicts. Raises ValueError on parse failure.
@@ -460,17 +550,21 @@ def _call_llm(
     ``"draft"`` timestamp and ``_BuildPromptsOnly`` is raised instead of
     calling the LLM.
     """
-    user_msg = _build_intervention_message(
-        session,
-        session_topics,
-        speeches,
-        context_speeches=context_speeches,
-    )
+    speeches = speeches or []
+    if user_message_override is not None:
+        user_msg = user_message_override
+    else:
+        user_msg = _build_intervention_message(
+            session,
+            session_topics,
+            speeches,
+            context_speeches=context_speeches,
+        )
 
     # json_object mode requires the response to be a single JSON object, not an array.
     # We wrap the array in an object and unwrap it after parsing.
     wrapped_system = (
-        INTERVENTION_SYSTEM_PROMPT
+        (system_prompt or INTERVENTION_SYSTEM_PROMPT)
         + '\n\nIMPORTANT: wrap your array in a JSON object: {"results": [...]}'
     )
 
@@ -517,17 +611,12 @@ def _call_llm(
     content = _strip_json_fences(raw_content)
     _record_llm_usage(response, wrapped_system, user_msg, raw_content, call_label=call_label)
     parsed = json.loads(content)
-
-    # Unwrap from {"results": [...]} if present, otherwise try to use top-level list.
-    if isinstance(parsed, dict):
-        results = parsed.get("results", parsed.get("speeches", []))
-    elif isinstance(parsed, list):
-        results = parsed
-    else:
-        raise ValueError(f"Unexpected LLM output type: {type(parsed)}")
+    results = _coerce_results_payload(parsed)
 
     if not isinstance(results, list):
         raise ValueError(f"LLM did not return a list: {results!r}")
+    if return_raw:
+        return raw_content, results
     return results
 
 
@@ -650,10 +739,8 @@ def _is_procedural_interruption_speech(text: str) -> bool:
     # Chair/facilitator interjections are usually very short procedural lines.
     if len(key) > 260:
         return False
-    markers = (
-        "multumesc",
-        "multumim",
-        "va rog",
+    words = _word_tokens(key)
+    strong_markers = (
         "se pregateste",
         "are cuvantul",
         "propuneri la ordinea de zi",
@@ -663,7 +750,34 @@ def _is_procedural_interruption_speech(text: str) -> bool:
         "domnul deputat",
         "doamna deputat",
     )
-    return any(marker in key for marker in markers)
+    if any(marker in key for marker in strong_markers):
+        return True
+
+    weak_markers = ("multumesc", "multumim", "va rog")
+    if any(marker in key for marker in weak_markers) and len(words) <= 8:
+        return True
+
+    # Very short floor interjections like "(din sală): Nu." / "Da." are procedural
+    # unless they carry explicit attack vocabulary.
+    short_reply_tokens = {"da", "nu", "prezent", "absent", "abtinere", "contra", "pentru"}
+    short_attack_tokens = {
+        "hot", "hoti", "hotilor", "rusine", "mincinos", "mincinoasa",
+        "corupt", "corupti", "penal", "penali", "tradator", "tradatori",
+        "mafiot", "mafioti",
+    }
+    if len(words) <= 4 and words:
+        if words[-1] in short_reply_tokens and not any(w in short_attack_tokens for w in words):
+            return True
+
+    # Ultra-short handoff lines: "Domnul X.", "Doamna Y." etc.
+    if len(words) <= 4 and words:
+        if words[0] in {"domnul", "doamna"}:
+            return True
+    # Short floor interruption like "(din sală): Ordinea de zi!".
+    if "ordinea de zi" in key and len(words) <= 6:
+        return True
+
+    return False
 
 
 def _merge_continuation_text(all_speeches: list[dict], current_pos: int) -> tuple[str, list[int]]:
@@ -902,20 +1016,31 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
 
     reasoning = str(item.get("reasoning", "")).strip()
     evidence_quote = str(item.get("evidence_quote", "")).strip().strip("\"“”")
+    # speech_text is attached dynamically by caller to avoid changing MCP schema.
+    speech_text = str(item.get("_speech_text", ""))
 
     # Deterministic procedural short-circuit to reduce false non-neutral labels.
+    text_is_clear_procedural = _is_procedural_interruption_speech(speech_text)
     procedural_short_circuit = (
-        procedural_content == "yes"
-        and policy_proposal != "yes"
-        and policy_analysis != "yes"
-        and legislative_engagement != "yes"
-        and public_interest_orientation != "yes"
-        and partisan_rhetoric != "yes"
+        (
+            procedural_content == "yes"
+            and policy_proposal == "no"
+            and policy_analysis == "no"
+            and legislative_engagement == "no"
+        )
+        or (
+            text_is_clear_procedural
+            and policy_proposal != "yes"
+            and policy_analysis != "yes"
+            and legislative_engagement != "yes"
+        )
     )
     if procedural_short_circuit:
         if label != "neutral":
             label = "neutral"
             reasoning = ""
+        if text_is_clear_procedural:
+            procedural_content = "yes"
         confidence = max(confidence, 0.75)
 
     # Encourage grounded reasoning by requiring quote overlap with speech text.
@@ -923,8 +1048,6 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
         quote_key = _text_key(evidence_quote)
     else:
         quote_key = ""
-    # speech_text is attached dynamically by caller to avoid changing MCP schema.
-    speech_text = str(item.get("_speech_text", ""))
     speech_key = _text_key(speech_text)
     has_grounding = bool(quote_key and len(quote_key) >= 24 and quote_key in speech_key)
     if not evidence_quote:
@@ -938,8 +1061,12 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
         has_grounding = bool(quote_key and len(quote_key) >= 24 and quote_key in speech_key)
 
     if not has_grounding:
-        confidence = min(confidence, 0.6)
-        quote_note = "fără citat valid din discurs"
+        if procedural_short_circuit:
+            # Very short procedural lines often cannot provide a stable 6-20 word quote.
+            quote_note = ""
+        else:
+            confidence = min(confidence, 0.6)
+            quote_note = "fără citat valid din discurs"
     else:
         quote_note = ""
 
@@ -969,9 +1096,262 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
         "topics": topics,
         "confidence": confidence,
         "evidence_chunk_ids": [],  # no RAG here — speech + local session context are provided
+        "evidence_quote": evidence_quote,
         "reasoning": reasoning,
         "_needs_recheck": not has_grounding or not reasoning_grounded,
     }
+
+
+def _call_layer_with_validation(
+    *,
+    layer_name: str,
+    client,
+    provider: str,
+    session: dict,
+    call_label: str,
+    system_prompt: str,
+    user_message: str,
+    validator,
+    build_prompts_only: bool,
+) -> dict:
+    """
+    Call one layer prompt, validate schema, and retry with repair guidance on failures.
+    Returns a validated object.
+    """
+    repair_note = ""
+    last_error: Exception | None = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            msg = user_message if not repair_note else f"{user_message}\n\n{repair_note}"
+            raw_content, raw_results = _call_llm(
+                client=client,
+                provider=provider,
+                session=session,
+                session_topics=[],
+                speeches=[],
+                call_label=f"{call_label}_{layer_name}_a{attempt}",
+                build_prompts_only=build_prompts_only,
+                system_prompt=system_prompt,
+                user_message_override=msg,
+                return_raw=True,
+            )
+            print(f"      [{layer_name}] raw: {raw_content[:260].replace(chr(10), ' ')}")
+            if not raw_results:
+                raise ValueError(f"{layer_name}: empty LLM output")
+            raw_item = raw_results[0]
+            print(f"      [{layer_name}] parsed: {json.dumps(raw_item, ensure_ascii=False)[:260]}")
+            validated = validator(raw_item)
+            return validated
+        except _BuildPromptsOnly:
+            raise
+        except Exception as exc:
+            last_error = exc
+            print(f"      [{layer_name}] validation/call failed attempt {attempt}/{MAX_RETRIES}: {exc}")
+            repair_note = (
+                "SCHEMA REPAIR REQUIRED. Return a corrected JSON object that strictly matches the required fields "
+                f"for {layer_name}. Error: {exc}"
+            )
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    raise ValueError(f"{layer_name} failed after {MAX_RETRIES} attempts: {last_error}")
+
+
+def _enforce_decision_guidance(layer_a: dict, decision: dict) -> tuple[dict, bool]:
+    """
+    Deterministically align final decision with rubric guidance when Layer B/C drifts.
+    Returns (possibly adjusted decision, changed_flag).
+    """
+    policy_proposal = str(layer_a.get("policy_proposal", "partial"))
+    policy_analysis = str(layer_a.get("policy_analysis", "partial"))
+    legislative_engagement = str(layer_a.get("legislative_engagement", "partial"))
+    procedural_content = str(layer_a.get("procedural_content", "partial"))
+    partisan_rhetoric = str(layer_a.get("partisan_rhetoric", "partial"))
+    public_interest_orientation = str(layer_a.get("public_interest_orientation", "partial"))
+
+    target_label: str | None = None
+    # Conflict-resolution order from prompt guidance.
+    if partisan_rhetoric == "yes" and policy_proposal == "no" and policy_analysis == "no":
+        target_label = "non_constructive"
+    elif (
+        procedural_content == "yes"
+        and policy_proposal in {"no", "partial"}
+        and policy_analysis in {"no", "partial"}
+        and legislative_engagement in {"no", "partial"}
+        and public_interest_orientation in {"no", "partial"}
+        and partisan_rhetoric in {"no", "partial"}
+    ):
+        target_label = "neutral"
+    elif (
+        (policy_proposal == "yes" or policy_analysis == "yes" or legislative_engagement == "yes")
+        and partisan_rhetoric != "yes"
+    ):
+        target_label = "constructive"
+
+    if not target_label:
+        return decision, False
+    if str(decision.get("constructiveness_label", "")) == target_label:
+        return decision, False
+
+    adjusted = dict(decision)
+    adjusted["constructiveness_label"] = target_label
+    current_conf = float(adjusted.get("confidence", 0.5))
+    if target_label == "constructive":
+        # When we correct a missed constructive decision from mixed signals,
+        # keep confidence in the low/mid band unless the rubric is very strong.
+        arg_quality = str(layer_a.get("argumentation_quality", "weak"))
+        strong_constructive = (
+            policy_proposal == "yes"
+            or (policy_analysis == "yes" and arg_quality == "strong")
+            or (legislative_engagement == "yes" and arg_quality in {"strong", "weak"})
+        )
+        floor = 0.72 if strong_constructive else 0.65
+    elif target_label == "neutral":
+        floor = 0.75
+    else:
+        floor = 0.70
+    adjusted["confidence"] = max(current_conf, floor)
+    # Keep reasoning/evidence grounded in target speech via Layer A fields.
+    la_reasoning = str(layer_a.get("reasoning") or "").strip()
+    la_quote = str(layer_a.get("evidence_quote") or "").strip()
+    if la_reasoning:
+        adjusted["reasoning"] = la_reasoning
+    if la_quote:
+        adjusted["evidence_quote"] = la_quote
+    return adjusted, True
+
+
+def _classify_single_speech_three_layer(
+    *,
+    client,
+    provider: str,
+    session: dict,
+    session_topics: list,
+    sp_for_llm: dict,
+    prev_context: list[dict],
+    config: dict,
+    call_label: str,
+    build_prompts_only: bool,
+) -> dict | None:
+    """
+    3-layer classification for a single target speech.
+    Returns normalized final payload or None in build-prompts mode.
+    """
+    max_topics = min(3, int(config.get("max_topics_per_intervention", 3)))
+
+    # Layer A
+    user_a = build_layer_a_user_message(
+        session=session,
+        session_topics=session_topics,
+        target_speech=sp_for_llm,
+        context_speeches=prev_context,
+    )
+    layer_a = _call_layer_with_validation(
+        layer_name="layer_a",
+        client=client,
+        provider=provider,
+        session=session,
+        call_label=call_label,
+        system_prompt=LAYER_A_SYSTEM_PROMPT,
+        user_message=user_a,
+        validator=validate_layer_a_item,
+        build_prompts_only=build_prompts_only,
+    )
+
+    if build_prompts_only:
+        return None
+
+    # Deterministic shortcuts/candidates
+    deterministic = apply_deterministic_rules(layer_a)
+    if deterministic.get("shortcut_label"):
+        print(f"      [rules] shortcut: {deterministic.get('shortcut_reason')}")
+        shortcut_decision = build_shortcut_decision(layer_a, deterministic)
+        merged_shortcut = merge_for_compatibility(
+            layer_a=layer_a,
+            decision=shortcut_decision or {},
+            qa_action="confirmed",
+        )
+        merged_for_validation = dict(merged_shortcut)
+        merged_for_validation["_speech_text"] = sp_for_llm["text"]
+        final_payload = _validate_one(merged_for_validation, config, session_topics)
+        final_payload["_qa_action"] = "confirmed"
+        final_payload["_layer_a"] = layer_a
+        return final_payload
+
+    if deterministic.get("candidate_labels"):
+        print(f"      [rules] candidates: {deterministic['candidate_labels']}")
+
+    # Layer B
+    user_b = build_layer_b_user_message(
+        session=session,
+        session_topics=session_topics,
+        target_speech=sp_for_llm,
+        layer_a_output=layer_a,
+        context_speeches=prev_context,
+    )
+    layer_b = _call_layer_with_validation(
+        layer_name="layer_b",
+        client=client,
+        provider=provider,
+        session=session,
+        call_label=call_label,
+        system_prompt=LAYER_B_SYSTEM_PROMPT,
+        user_message=user_b,
+        validator=lambda raw: validate_layer_b_item(raw, max_topics=max_topics),
+        build_prompts_only=build_prompts_only,
+    )
+    decision = decision_from_layer_b(layer_b)
+    qa_action = "confirmed"
+
+    # Layer C trigger
+    qa_reasons = evaluate_qa_triggers(
+        layer_a=layer_a,
+        layer_b=layer_b,
+        speech_text=sp_for_llm["text"],
+        session_topics=session_topics,
+    )
+    if deterministic.get("candidate_labels"):
+        if decision["constructiveness_label"] not in deterministic["candidate_labels"]:
+            qa_reasons.append("deterministic_candidate_disagreement")
+    if qa_reasons:
+        print(f"      [qa] triggers: {qa_reasons}")
+        user_c = build_layer_c_user_message(
+            session=session,
+            session_topics=session_topics,
+            target_speech=sp_for_llm,
+            layer_a_output=layer_a,
+            layer_b_output=layer_b,
+            qa_reasons=qa_reasons,
+            context_speeches=prev_context,
+        )
+        layer_c = _call_layer_with_validation(
+            layer_name="layer_c",
+            client=client,
+            provider=provider,
+            session=session,
+            call_label=call_label,
+            system_prompt=LAYER_C_SYSTEM_PROMPT,
+            user_message=user_c,
+            validator=lambda raw: validate_layer_c_item(raw, max_topics=max_topics),
+            build_prompts_only=build_prompts_only,
+        )
+        decision = decision_from_layer_c(layer_c)
+        qa_action = layer_c.get("qa_action", "revised_confidence")
+
+    decision, rule_adjusted = _enforce_decision_guidance(layer_a, decision)
+    if rule_adjusted:
+        print("      [rules] post-check adjusted final label to match rubric guidance")
+        qa_action = "revised_label"
+
+    merged = merge_for_compatibility(layer_a=layer_a, decision=decision, qa_action=qa_action)
+    print(f"      [final-merged] {json.dumps(merged, ensure_ascii=False)[:300]}")
+
+    # Final normalization + grounding checks using existing one-pass validator.
+    merged_for_validation = dict(merged)
+    merged_for_validation["_speech_text"] = sp_for_llm["text"]
+    final_payload = _validate_one(merged_for_validation, config, session_topics)
+    final_payload["_qa_action"] = qa_action
+    final_payload["_layer_a"] = layer_a
+    return final_payload
 
 
 def _recheck_single_speech(
@@ -1067,7 +1447,7 @@ def _realign_results_to_speeches(target_speeches: list[dict], items: list[dict])
 # Session-level intervention classification
 # ---------------------------------------------------------------------------
 
-def classify_session_interventions(
+def classify_session_interventions_one_pass(
     server: MCPServer,
     session_id: str,
     intervention_ids: list[str],
@@ -1078,7 +1458,7 @@ def classify_session_interventions(
     build_prompts_only: bool = False,
 ) -> dict:
     """
-    Classify all interventions in a session using one LLM call per target speech.
+    Legacy one-pass classifier: single LLM call directly to final schema.
 
     When ``build_prompts_only=True`` prompts are saved but no LLM calls are
     made and nothing is stored to the DB.
@@ -1174,6 +1554,8 @@ def classify_session_interventions(
                     context_speeches=prev_context,
                     build_prompts_only=build_prompts_only,
                 )
+                if not raw_results:
+                    raise ValueError("LLM returned empty results list")
                 print(f"    LLM returned {len(raw_results)} result(s)")
                 break
             except _BuildPromptsOnly:
@@ -1295,6 +1677,188 @@ def classify_session_interventions(
     return {"classified": classified, "errors": errors, "error_log": error_log}
 
 
+def classify_session_interventions_three_layer(
+    server: MCPServer,
+    session_id: str,
+    intervention_ids: list[str],
+    client,
+    provider: str,
+    config: dict,
+    db_path: Path,
+    build_prompts_only: bool = False,
+) -> dict:
+    """
+    3-layer classifier:
+    - Layer A rubric extraction
+    - Layer B final decision
+    - Layer C targeted QA/normalization
+    """
+    session_result = server.call("get_session", {"session_id": session_id})
+    session = session_result.get("session", {}) if session_result.get("ok") else {}
+    session["session_id"] = session_id
+
+    topics_result = server.call("get_session_topics", {"session_id": session_id})
+    session_topics: list = topics_result.get("topics", []) if topics_result.get("ok") else []
+
+    id_set = set(intervention_ids)
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT intervention_id, speech_index, raw_speaker, text
+            FROM interventions_raw
+            WHERE session_id = ? AND member_id IS NOT NULL
+            ORDER BY speech_index ASC
+            """,
+            (session_id,),
+        ).fetchall()
+
+    all_speeches = [
+        {
+            "intervention_id": r["intervention_id"],
+            "speech_index": r["speech_index"],
+            "raw_speaker": r["raw_speaker"],
+            "text": r["text"],
+        }
+        for r in rows
+    ]
+    if not all_speeches:
+        return {"classified": 0, "errors": 0, "error_log": []}
+
+    target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
+    pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
+    total_chars = sum(len(sp["text"]) for sp in target_speeches)
+    print(
+        f"  Session {session_id}: three-layer mode for {len(target_speeches)} intervention(s), "
+        f"{total_chars:,} chars total, context window={PREVIOUS_CONTEXT_WINDOW}"
+    )
+
+    classified = 0
+    errors = 0
+    error_log: list[dict] = []
+
+    for t_idx, sp in enumerate(target_speeches, 1):
+        iid = sp["intervention_id"]
+        speech_index = int(sp["speech_index"])
+        current_pos = pos_by_index.get(speech_index, -1)
+        sp_for_llm = dict(sp)
+        continuation_indices: list[int] = [speech_index]
+        if current_pos >= 0:
+            merged_text, merged_indices = _merge_continuation_text(all_speeches, current_pos)
+            if merged_text:
+                sp_for_llm["text"] = merged_text
+                continuation_indices = merged_indices
+        prev_context = [s for s in all_speeches if s["speech_index"] < sp["speech_index"]][-PREVIOUS_CONTEXT_WINDOW:]
+        call_label = f"single_{t_idx}of{len(target_speeches)}_ix{sp['speech_index']}"
+
+        print(
+            f"  Speech {t_idx}/{len(target_speeches)}: idx={sp['speech_index']} "
+            f"context={len(prev_context)}"
+        )
+        if len(continuation_indices) > 1:
+            print(
+                "    Continuation merge: "
+                f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
+            )
+
+        try:
+            payload = _classify_single_speech_three_layer(
+                client=client,
+                provider=provider,
+                session=session,
+                session_topics=session_topics,
+                sp_for_llm=sp_for_llm,
+                prev_context=prev_context,
+                config=config,
+                call_label=call_label,
+                build_prompts_only=build_prompts_only,
+            )
+        except _BuildPromptsOnly:
+            print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")
+            continue
+        except Exception as exc:
+            errors += 1
+            error_log.append(
+                {
+                    "intervention_id": iid,
+                    "error": {"code": "THREE_LAYER_ERROR", "message": str(exc)},
+                }
+            )
+            print(f"    [error] three-layer failed for {iid}: {exc}")
+            continue
+
+        if build_prompts_only or payload is None:
+            continue
+
+        print(
+            f"    [{sp['speech_index']}] {sp['raw_speaker'][:40]!r}  "
+            f"label={payload['constructiveness_label']}  "
+            f"proposal={payload.get('policy_proposal', '?')}  "
+            f"analysis={payload.get('policy_analysis', '?')}  "
+            f"public={payload.get('public_interest_orientation', '?')}  "
+            f"partisan={payload.get('partisan_rhetoric', '?')}  "
+            f"legislative={payload.get('legislative_engagement', '?')}  "
+            f"procedural={payload.get('procedural_content', '?')}  "
+            f"arg={payload.get('argumentation_quality', '?')}  "
+            f"confidence={payload['confidence']:.2f}  "
+            f"topics={payload['topics']}  "
+            f"qa={payload.get('_qa_action', 'confirmed')}"
+        )
+        if payload["reasoning"]:
+            print(f"      reasoning: {payload['reasoning']}")
+
+        layer_a_payload = payload.get("_layer_a")
+        to_store = {k: v for k, v in payload.items() if not k.startswith("_")}
+        if isinstance(layer_a_payload, dict):
+            to_store["layer_a"] = layer_a_payload
+        store_result = server.call(
+            "store_intervention_analysis",
+            {"intervention_id": iid, **to_store},
+        )
+        if store_result.get("ok"):
+            classified += 1
+        else:
+            errors += 1
+            err_info = store_result.get("error", {})
+            error_log.append({"intervention_id": iid, "error": err_info})
+
+    return {"classified": classified, "errors": errors, "error_log": error_log}
+
+
+def classify_session_interventions(
+    server: MCPServer,
+    session_id: str,
+    intervention_ids: list[str],
+    client,
+    provider: str,
+    config: dict,
+    db_path: Path,
+    build_prompts_only: bool = False,
+    pipeline_architecture: str = DEFAULT_PIPELINE_ARCHITECTURE,
+) -> dict:
+    if pipeline_architecture == "one_pass":
+        return classify_session_interventions_one_pass(
+            server=server,
+            session_id=session_id,
+            intervention_ids=intervention_ids,
+            client=client,
+            provider=provider,
+            config=config,
+            db_path=db_path,
+            build_prompts_only=build_prompts_only,
+        )
+    return classify_session_interventions_three_layer(
+        server=server,
+        session_id=session_id,
+        intervention_ids=intervention_ids,
+        client=client,
+        provider=provider,
+        config=config,
+        db_path=db_path,
+        build_prompts_only=build_prompts_only,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Main agent loop
 # ---------------------------------------------------------------------------
@@ -1342,10 +1906,11 @@ def run_agent(
     intervention_ids: list[str],
     model: str,
     provider: str = DEFAULT_PROVIDER,
+    pipeline_architecture: str = DEFAULT_PIPELINE_ARCHITECTURE,
     build_prompts_only: bool = False,
 ) -> dict:
     """
-    Classify all given interventions grouped by session (single-speech mode).
+    Classify all given interventions grouped by session.
     Returns a summary dict.
 
     When ``build_prompts_only=True`` prompts are built and saved but no LLM
@@ -1394,6 +1959,7 @@ def run_agent(
                 config=config,
                 db_path=db_path,
                 build_prompts_only=build_prompts_only,
+                pipeline_architecture=pipeline_architecture,
             )
             classified += result["classified"]
             errors += result["errors"]
@@ -1700,6 +2266,16 @@ def main() -> int:
         default=os.environ.get("VOTEZ_LOG_TOKEN_USAGE_PER_CALL", "").lower() in ("1", "true", "yes"),
         help="Print prompt/completion token usage for each LLM call (or estimates if provider does not return usage).",
     )
+    parser.add_argument(
+        "--pipeline-architecture",
+        choices=["three_layer", "one_pass"],
+        default=os.environ.get("VOTEZ_PIPELINE_ARCHITECTURE", DEFAULT_PIPELINE_ARCHITECTURE),
+        help=(
+            "Classification architecture. "
+            "'three_layer' = Layer A rubric + Layer B decision + Layer C QA. "
+            "'one_pass' = legacy single prompt."
+        ),
+    )
     args = parser.parse_args()
 
     if not args.run_id:
@@ -1744,7 +2320,7 @@ def main() -> int:
 
     mode_note = "  [BUILD-PROMPTS — writing to state/generated_prompts/]" if args.build_prompts else ""
     print(
-        f"LLM agent (single-speech mode): {len(intervention_ids)} intervention(s) "
+        f"LLM agent ({args.pipeline_architecture}): {len(intervention_ids)} intervention(s) "
         f"(run_id={args.run_id}){mode_note}"
     )
 
@@ -1754,6 +2330,7 @@ def main() -> int:
         intervention_ids=intervention_ids,
         model=model,
         provider=args.provider,
+        pipeline_architecture=args.pipeline_architecture,
         build_prompts_only=args.build_prompts,
     )
 

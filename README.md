@@ -225,6 +225,10 @@ python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai
 # Classify a single session (all its interventions) directly
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id>
 
+# Choose architecture explicitly (default: three_layer)
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --pipeline-architecture three_layer
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --pipeline-architecture one_pass
+
 # Build prompts for a single session without calling the LLM
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --build-prompts
 

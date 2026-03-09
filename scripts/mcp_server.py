@@ -20,6 +20,7 @@ Usage:
         "intervention_id": "iv:abc:5",
         "constructiveness_label": "constructive",
         "topics": ["proces legislativ"],
+        "layer_a": {"policy_proposal": "yes"},
         "confidence": 0.85,
         "evidence_chunk_ids": ["ch:8846:3", "ch:8846:5"],
     })
@@ -28,7 +29,9 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -73,6 +76,27 @@ def _err(code: str, message: str, **details) -> dict:
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _text_key(text: str) -> str:
+    out = "".join(ch for ch in unicodedata.normalize("NFKD", str(text or "")) if not unicodedata.combining(ch))
+    out = re.sub(r"\s+", " ", out.casefold()).strip()
+    return out
+
+
+def _word_tokens(text: str) -> list[str]:
+    return re.findall(r"[a-zA-ZăâîșțĂÂÎȘȚ]+", text or "")
+
+
+def _quote_grounded_in_speech(quote: str, speech_text: str) -> bool:
+    q = _text_key(quote)
+    s = _text_key(speech_text)
+    if not q or not s:
+        return False
+    if q not in s:
+        return False
+    q_tokens = _word_tokens(q)
+    return len(q_tokens) >= 3 or len(q) >= 24
 
 
 # ---------------------------------------------------------------------------
@@ -441,6 +465,7 @@ class MCPServer:
         intervention_id = params.get("intervention_id", "")
         label = params.get("constructiveness_label", "")
         topics_raw = params.get("topics", [])
+        layer_a_raw = params.get("layer_a")
         confidence = params.get("confidence")
         evidence_ids_raw = params.get("evidence_chunk_ids", [])
         reasoning = str(params.get("reasoning") or "").strip() or None
@@ -480,6 +505,19 @@ class MCPServer:
                 f"Too many topics: {len(topics)} > {MAX_TOPICS_PER_INTERVENTION}",
             )
 
+        # --- Validate: optional layer_a rubric payload ---
+        layer_a_obj: dict | None
+        layer_a_reasoning: str | None = None
+        layer_a_quote: str = ""
+        if layer_a_raw is None:
+            layer_a_obj = None
+        elif not isinstance(layer_a_raw, dict):
+            return _err("VALIDATION_ERROR", "layer_a must be an object when provided")
+        else:
+            layer_a_obj = layer_a_raw
+            layer_a_reasoning = str(layer_a_obj.get("reasoning") or "").strip() or None
+            layer_a_quote = str(layer_a_obj.get("evidence_quote") or "").strip()
+
         # --- Validate: confidence ---
         if confidence is None:
             return _err("VALIDATION_ERROR", "confidence is required")
@@ -492,12 +530,17 @@ class MCPServer:
 
         # --- Validate: intervention exists and get session_id ---
         iv_row = self._conn.execute(
-            "SELECT session_id FROM interventions_raw WHERE intervention_id = ?",
+            "SELECT session_id, text FROM interventions_raw WHERE intervention_id = ?",
             (intervention_id,),
         ).fetchone()
         if iv_row is None:
             return _err("NOT_FOUND", f"Intervention not found: {intervention_id}")
         session_id = iv_row["session_id"]
+        speech_text = str(iv_row["text"] or "")
+
+        # Prefer Layer A reasoning only when its evidence quote is grounded in this target speech.
+        if layer_a_reasoning and _quote_grounded_in_speech(layer_a_quote, speech_text):
+            reasoning = layer_a_reasoning
 
         # --- Validate: evidence_chunk_ids ---
         if not isinstance(evidence_ids_raw, list):
@@ -524,7 +567,7 @@ class MCPServer:
         # --- Idempotency: check if identical payload already stored ---
         existing = self._conn.execute(
             """
-            SELECT relevance_label, topics_json, confidence, evidence_chunk_ids_json, reasoning
+            SELECT relevance_label, topics_json, layer_a_json, confidence, evidence_chunk_ids_json, reasoning
             FROM intervention_analysis
             WHERE intervention_id = ?
             """,
@@ -532,12 +575,18 @@ class MCPServer:
         ).fetchone()
 
         new_topics_json = json.dumps(topics, ensure_ascii=True)
+        new_layer_a_json = (
+            json.dumps(layer_a_obj, ensure_ascii=True, sort_keys=True)
+            if layer_a_obj is not None
+            else None
+        )
         new_evidence_json = json.dumps(evidence_ids, ensure_ascii=True)
 
         if existing is not None:
             same = (
                 existing["relevance_label"] == label
                 and existing["topics_json"] == new_topics_json
+                and (existing["layer_a_json"] or None) == (new_layer_a_json or None)
                 and abs((existing["confidence"] or 0.0) - confidence) < 1e-9
                 and existing["evidence_chunk_ids_json"] == new_evidence_json
                 and (existing["reasoning"] or None) == reasoning
@@ -549,6 +598,7 @@ class MCPServer:
                         "intervention_id": intervention_id,
                         "constructiveness_label": label,
                         "topics": topics,
+                        "layer_a": layer_a_obj,
                         "confidence": confidence,
                         "evidence_chunk_ids": evidence_ids,
                     }
@@ -560,15 +610,16 @@ class MCPServer:
             """
             INSERT INTO intervention_analysis (
                 intervention_id, run_id, relevance_label, relevance_source,
-                topics_json, confidence, evidence_chunk_ids_json,
+                topics_json, layer_a_json, confidence, evidence_chunk_ids_json,
                 analysis_version, reasoning, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(intervention_id) DO UPDATE SET
                 run_id                 = excluded.run_id,
                 relevance_label        = excluded.relevance_label,
                 relevance_source       = excluded.relevance_source,
                 topics_json            = excluded.topics_json,
+                layer_a_json           = excluded.layer_a_json,
                 confidence             = excluded.confidence,
                 evidence_chunk_ids_json = excluded.evidence_chunk_ids_json,
                 analysis_version       = excluded.analysis_version,
@@ -581,6 +632,7 @@ class MCPServer:
                 label,
                 ANALYSIS_SOURCE,
                 new_topics_json,
+                new_layer_a_json,
                 confidence,
                 new_evidence_json,
                 ANALYSIS_VERSION,
@@ -593,7 +645,7 @@ class MCPServer:
         print(
             f"  DB {action}: {intervention_id}  label={label}  "
             f"confidence={confidence:.2f}  topics={topics}  "
-            f"evidence={evidence_ids}"
+            f"evidence={evidence_ids}  layer_a={'yes' if layer_a_obj is not None else 'no'}"
         )
 
         return _ok(
@@ -601,6 +653,7 @@ class MCPServer:
                 "intervention_id": intervention_id,
                 "constructiveness_label": label,
                 "topics": topics,
+                "layer_a": layer_a_obj,
                 "confidence": confidence,
                 "evidence_chunk_ids": evidence_ids,
             }
