@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-LLM agent for classifying parliamentary interventions — batch (full-session) mode.
+LLM agent for classifying parliamentary interventions in single-speech mode.
 
 Strategy
 --------
-Instead of one LLM call per intervention, we send ALL speeches of a session in a
-single call so the model has full conversational context.  When a session is too
-large to fit in the model's context window the speeches are split into greedy
-batches (consecutive, never cutting a speech in the middle) and each batch is
-sent as a separate call.
+Run one LLM call per target intervention speech, while including up to
+``PREVIOUS_CONTEXT_WINDOW`` previous speeches from the same session as context.
+This keeps prompts grounded in local debate flow and avoids multi-item
+alignment errors.
 
 Per-session flow
 ----------------
@@ -16,12 +15,11 @@ Per-session flow
   2. MCP get_session          → date, initial_notes
   3. MCP get_session_topics   → session-level topics (grounding context)
   4. Load all interventions for the session from the DB (ordered by speech_index)
-  5. Split into greedy char-budget batches (BATCH_CHAR_BUDGET)
-  6. For each batch:
-       a. Build a single user message with ALL speeches + full stenogram context
-       b. Call LLM → JSON array, one object per speech
-       c. Validate each item
-       d. MCP store_intervention_analysis for each item
+  5. For each target intervention:
+       a. Merge continuation fragments when the speaker resumes after procedural interruption(s)
+       b. Build one prompt with up to 9 previous speeches as context
+       c. Call LLM → JSON result for one target speech
+       d. Validate output and store via MCP
 
 Supported providers:
   openai  — requires OPENAI_API_KEY; model default: gpt-4o-mini
@@ -45,8 +43,6 @@ Usage:
   Single session (for debugging / prompt polishing):
     python3 scripts/llm_agent.py --session-id 8856 --run-id run_xyz
 
-  Single intervention (legacy debugging):
-    python3 scripts/llm_agent.py --intervention-id iv:abc:10 --run-id run_xyz
 """
 
 from __future__ import annotations
@@ -80,24 +76,13 @@ LOG_TOKEN_USAGE_PER_CALL = False
 
 MAX_RETRIES = 3
 RETRY_DELAY_S = 10
-MISSING_RECOVERY_MAX_ROUNDS = 3
-MISSING_RECOVERY_CHUNK_SIZE = 12
 PREVIOUS_CONTEXT_WINDOW = 9
 
-# Hard timeout per LLM batch request. Larger batches take longer to generate.
-# 600s (10 min) gives headroom for a full session on a slow M1.
+# Hard timeout per LLM request. 600s gives headroom for slow local inference.
 LLM_REQUEST_TIMEOUT_S = 600
 
 # num_ctx for qwen2.5:7b-32k. Passed via Ollama's extra_body.
 OLLAMA_NUM_CTX = 32768
-
-# Greedy batch budget: how many chars of speech text to pack into one LLM call.
-# qwen2.5:7b-32k: 32,768 tokens × 80% usable = ~26,200 tokens.
-# Reserve ~1,000 tokens for system prompt + session header, ~3,000 for JSON output.
-# Net speech budget: ~22,000 tokens × 3.5 chars/token (Romanian) ≈ 77,000 chars.
-# Lower budget improves per-speech fidelity for local 7B models and reduces
-# truncation/omission risk in long sessions.
-BATCH_CHAR_BUDGET = 40_000
 
 _LLM_USAGE = {
     "calls": 0,
@@ -186,13 +171,114 @@ def _usage_summary_payload() -> dict:
     }
 
 # ---------------------------------------------------------------------------
-# System prompt — batch mode
+# System prompt — intervention mode
 # ---------------------------------------------------------------------------
 
-BATCH_SYSTEM_PROMPT = """You are a parliamentary debate analyst specialising in the Romanian Parliament (Camera Deputaților and Senat).
+INTERVENTION_SYSTEM_PROMPT = """You are a parliamentary debate analyst specialising in the Romanian Parliament (Camera Deputaților and Senat).
 
-You will receive a numbered list of speeches from a single parliamentary session.
-Classify EVERY speech and return results as a JSON array.
+Your task is to evaluate whether a parliamentary intervention contributes constructively to public policy discussion.
+
+You will receive ONE target speech from a single parliamentary session, plus up to 9 previous speeches for context. 
+Evaluate and classify ONLY the target speech listed under "Speech to classify" / "Speeches to classify". Do NOT classify context speeches marked with [ctx].
+Return results as JSON.
+
+Context speeches are provided only to help understand references, replies, or implied topics.
+Do NOT evaluate or classify context speeches.
+Use context only to interpret the meaning of the target speech.
+
+Being on-topic is NOT sufficient for `constructive`.
+
+## Early filter (apply first)
+If the target speech is clearly procedural (e.g. speaking order, vote instructions/announcements, greetings, chair logistics without policy substance), classify it immediately as `neutral` and skip full substantive evaluation.
+When this early filter applies:
+- set `constructiveness_label = neutral`
+- set `procedural_content = yes`
+- keep other criteria as `no` or `partial` unless explicit substantive content is clearly present
+
+First evaluate the speech using the criteria below.
+
+## Criteria
+
+1. Policy proposal
+Does the speaker propose a concrete policy action, amendment, or solution?
+Also count as relevant here: compromise, refinement, or better implementation proposals.
+
+2. Policy analysis
+Does the speaker provide reasoning or analysis related to policy outcomes?
+Also count as relevant here: evidence/facts, legal/technical/policy consequences, and substantive questions that improve debate.
+
+3. Public interest orientation
+Does the intervention focus on benefits or consequences for citizens or society (public good), not only party advantage?
+
+4. Partisan rhetoric
+Does the speech mainly attack political opponents or promote partisan messaging without substantive argument?
+Also count as relevant here: personal attacks, guilt by association, slogans without substance, repeated partisan talking points without argument, obstruction without substantive justification, mockery replacing argument.
+
+5. Legislative engagement
+Does the speaker refer directly to legislative material, for example:
+- a specific article of the law
+- a committee report
+- a legislative amendment
+- a specific bill identifier (for example PL-x ...)
+
+6. Procedural content
+Is the speech mainly procedural/logistical, for example:
+- voting instructions or vote announcements
+- speaking order / time management
+- greetings or short formal interjections
+- chair interventions without substantive policy content
+
+7. Argumentation quality
+Does the speaker provide reasoning, evidence, examples, or logical explanation supporting their position?
+
+Use this scale for criteria 1-6 (`yes` / `partial` / `no`):
+- `yes`: the criterion is clearly present and supported by concrete parts of the speech.
+- `partial`: the criterion is present but limited, ambiguous, or only briefly supported.
+- `no`: the criterion is absent or contradicted by the speech content.
+
+Use this scale for criterion 7 (`strong` / `weak` / `none`):
+- `strong`: clear, coherent support with evidence/examples/logical explanation.
+- `weak`: limited or mostly assertive support, with partial reasoning.
+- `none`: no meaningful supporting reasoning/evidence.
+
+
+
+## Decision guidance
+
+Use the criteria fields first, then assign `constructiveness_label`:
+
+- `constructive` if:
+  - `policy_proposal = yes` OR
+  - `policy_analysis = yes` OR
+  - `legislative_engagement = yes`
+  AND
+  - `partisan_rhetoric != yes`
+
+- `neutral` if:
+  - `procedural_content = yes`
+  AND
+  - all other criteria are `no` or `partial`
+
+- `non_constructive` if:
+  - `partisan_rhetoric = yes`
+  AND
+  - `policy_proposal = no`
+  AND
+  - `policy_analysis = no`
+
+Conflict resolution (when multiple rules seem to apply):
+- If `partisan_rhetoric = yes` and BOTH `policy_proposal` and `policy_analysis` are `no`, classify `non_constructive` (even if other criteria are `partial`).
+- If `procedural_content = yes` and ALL substantive criteria (`policy_proposal`, `policy_analysis`, `legislative_engagement`, `public_interest_orientation`) are `no` or `partial`, classify `neutral`.
+- If any substantive criterion is `yes` (`policy_proposal` OR `policy_analysis` OR `legislative_engagement`) and `partisan_rhetoric != yes`, classify `constructive`.
+- If both substantive content and partisan rhetoric are strong (`partisan_rhetoric = yes` plus any substantive criterion = `yes`), classify by the dominant share of content:
+  - mostly substantive argumentation/proposals -> `constructive` with lower confidence
+  - mostly attack/slogan/obstruction -> `non_constructive` with lower confidence
+
+Confidence guidance:
+- Clear, single-rule case: 0.80-0.95
+- Mixed but still clearly one-sided: 0.65-0.79
+- Balanced/ambiguous mixed case: 0.50-0.64
+- Highly uncertain / insufficient evidence / strong unresolved conflict between cues: 0.30-0.49
 
 ## Classification labels
 - `constructive`: speaker genuinely advances the public good through substantive policy contribution aimed at better outcomes for citizens.
@@ -217,7 +303,7 @@ Classify EVERY speech and return results as a JSON array.
   - mockery replacing argument
 
 ## Key rule
-Being on-topic is NOT sufficient for `constructive`. A speech can be fully on-topic yet `non_constructive` if it primarily serves narrow interests or blocks progress.
+A speech can be fully on-topic yet `non_constructive` if it primarily serves narrow interests or blocks progress.
 Ideology, party, and policy direction must not affect label decisions; only the content of the speech should be considered.
 
 ## Edge cases
@@ -230,26 +316,35 @@ Ideology, party, and policy direction must not affect label decisions; only the 
 - Emotional tone is not enough to classify as non-constructive; a harsh but evidence-based intervention can still be constructive
 
 ## Topic extraction
+Topic selection must NOT influence `constructiveness_label`.
+First determine `constructiveness_label` from criteria and decision guidance, then assign topics.
 For each speech: select up to 3 topics ONLY from the provided session topics list.
 If none apply, return [].
 Do NOT invent new topics outside the session topics list.
 You may associate a topic from context when the speech is a response to previous interventions on that topic (even if the label is implied rather than repeated verbatim).
 
 ## Output format
-Respond with ONLY a valid JSON array — one object per speech, in the SAME ORDER as the input, no prose, no markdown fences:
+Respond with ONLY valid JSON — one object per target speech, in the SAME ORDER as the input, no prose, no markdown fences:
 [
   {
     "speech_index": <integer from input>,
     "constructiveness_label": "constructive" | "neutral" | "non_constructive",
+    "policy_proposal": "yes" | "partial" | "no",
+    "policy_analysis": "yes" | "partial" | "no",
+    "public_interest_orientation": "yes" | "partial" | "no",
+    "partisan_rhetoric": "yes" | "partial" | "no",
+    "legislative_engagement": "yes" | "partial" | "no",
+    "procedural_content": "yes" | "partial" | "no",
+    "argumentation_quality": "strong" | "weak" | "none",
     "confidence": 0.0-1.0,
     "topics": ["topic1", "topic2"],
     "reasoning": "o propoziție în română care explică clasificarea, referindu-se la conținut concret din discurs",
-    "evidence_quote": "un citat scurt exact (6-20 cuvinte) din acel discurs"
+    "evidence_quote": "un citat scurt exact (6-20 cuvinte), care apare verbatim în acel discurs"
   },
   ...
 ]
 
-Return EXACTLY one object for EACH input speech_index. Do not skip any speech_index.""" 
+Return EXACTLY one object for EACH input speech_index in "Speeches to classify". Do not skip any speech_index.""" 
 
 
 # ---------------------------------------------------------------------------
@@ -274,13 +369,13 @@ def _format_session_topics(topics: list) -> str:
     return "\n".join(lines)
 
 
-def _build_batch_message(
+def _build_intervention_message(
     session: dict,
     session_topics: list,
     speeches: list[dict],
     context_speeches: list[dict] | None = None,
 ) -> str:
-    """Build the user message for one batch of speeches.
+    """Build the user message for one LLM call.
 
     Each speech dict must have: speech_index, raw_speaker, text.
     """
@@ -308,41 +403,28 @@ def _build_batch_message(
                 f"{sp['text'].strip()}"
             )
 
-    # Numbered speeches
-    parts.append(f"## Speeches to classify ({len(speeches)} in this batch)")
+    # Target speech/speeches to classify
+    if len(speeches) == 1:
+        parts.append("## Speech to classify (1 target speech)")
+    else:
+        parts.append(f"## Speeches to classify ({len(speeches)} target speeches)")
     for sp in speeches:
         parts.append(
             f"[{sp['speech_index']}] Speaker: {sp['raw_speaker']}\n"
             f"{sp['text'].strip()}"
         )
 
-    parts.append(
-        "Classify every speech above. Return a JSON array with one object per speech "
-        "in the same order, using the speech_index values shown."
-    )
+    if len(speeches) == 1:
+        parts.append(
+            "Classify ONLY the target speech above (not [ctx] context speeches). "
+            "Return exactly one object for that speech_index."
+        )
+    else:
+        parts.append(
+            "Classify ONLY the target speeches above (not [ctx] context speeches). "
+            "Return a JSON array with one object per speech in the same order, using the speech_index values shown."
+        )
     return "\n\n".join(parts)
-
-
-def _greedy_batches(speeches: list[dict], char_budget: int) -> list[list[dict]]:
-    """Split speeches into greedy consecutive batches that each fit within char_budget.
-
-    Never splits a speech across batches. A single speech larger than the budget
-    gets its own batch (the model will have to do its best with a tight context).
-    """
-    batches: list[list[dict]] = []
-    current: list[dict] = []
-    current_chars = 0
-    for sp in speeches:
-        sp_chars = len(sp["text"])
-        if current and current_chars + sp_chars > char_budget:
-            batches.append(current)
-            current = []
-            current_chars = 0
-        current.append(sp)
-        current_chars += sp_chars
-    if current:
-        batches.append(current)
-    return batches
 
 
 def _strip_json_fences(content: str) -> str:
@@ -353,32 +435,32 @@ def _strip_json_fences(content: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# LLM call — batch
+# LLM call
 # ---------------------------------------------------------------------------
 
 class _BuildPromptsOnly(Exception):
-    """Raised by _call_llm_batch when build_prompts_only=True to skip the LLM call."""
+    """Raised by _call_llm when build_prompts_only=True to skip the LLM call."""
 
 
-def _call_llm_batch(
+def _call_llm(
     client,
     provider: str,
     session: dict,
     session_topics: list,
     speeches: list[dict],
-    batch_label: str = "batch",
+    call_label: str = "call",
     context_speeches: list[dict] | None = None,
     build_prompts_only: bool = False,
 ) -> list[dict]:
     """
-    Call the LLM with a batch of speeches. Returns a list of raw classification
-    dicts (one per speech). Raises ValueError on parse failure.
+    Call the LLM for one prompt payload (typically one target speech).
+    Returns a list of raw classification dicts. Raises ValueError on parse failure.
 
     When ``build_prompts_only=True`` the prompt is saved with a stable
     ``"draft"`` timestamp and ``_BuildPromptsOnly`` is raised instead of
     calling the LLM.
     """
-    user_msg = _build_batch_message(
+    user_msg = _build_intervention_message(
         session,
         session_topics,
         speeches,
@@ -388,7 +470,7 @@ def _call_llm_batch(
     # json_object mode requires the response to be a single JSON object, not an array.
     # We wrap the array in an object and unwrap it after parsing.
     wrapped_system = (
-        BATCH_SYSTEM_PROMPT
+        INTERVENTION_SYSTEM_PROMPT
         + '\n\nIMPORTANT: wrap your array in a JSON object: {"results": [...]}'
     )
 
@@ -400,7 +482,7 @@ def _call_llm_batch(
             session_id=str(session.get("session_id", "")),
             session_date=str(session.get("session_date", "")),
             model=client._model,
-            label=batch_label,
+            label=call_label,
             system_prompt=wrapped_system,
             user_message=user_msg,
             extra_meta={
@@ -413,7 +495,7 @@ def _call_llm_batch(
         pass  # Never let logging block the actual LLM call.
 
     if build_prompts_only:
-        raise _BuildPromptsOnly(batch_label)
+        raise _BuildPromptsOnly(call_label)
 
     extra_kwargs: dict = {}
     if provider in ("openai", "ollama"):
@@ -433,7 +515,7 @@ def _call_llm_batch(
     )
     raw_content = response.choices[0].message.content or ""
     content = _strip_json_fences(raw_content)
-    _record_llm_usage(response, wrapped_system, user_msg, raw_content, call_label=batch_label)
+    _record_llm_usage(response, wrapped_system, user_msg, raw_content, call_label=call_label)
     parsed = json.loads(content)
 
     # Unwrap from {"results": [...]} if present, otherwise try to use top-level list.
@@ -460,82 +542,6 @@ def _index_results_by_speech_index(raw_results: list[dict]) -> dict[int, dict]:
         except (TypeError, ValueError):
             continue
     return out
-
-
-def _chunk_list(items: list[dict], chunk_size: int) -> list[list[dict]]:
-    if chunk_size <= 0:
-        return [items]
-    return [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
-
-
-def _recover_missing_batch_results(
-    client,
-    provider: str,
-    session: dict,
-    session_topics: list,
-    batch_label: str,
-    missing_speeches: list[dict],
-) -> dict[int, dict]:
-    """Retry only missing speeches in small batches and merge recovered outputs."""
-    recovered: dict[int, dict] = {}
-    pending = list(missing_speeches)
-
-    for round_idx in range(1, MISSING_RECOVERY_MAX_ROUNDS + 1):
-        if not pending:
-            break
-
-        chunk_size = max(1, MISSING_RECOVERY_CHUNK_SIZE // (2 ** (round_idx - 1)))
-        chunks = _chunk_list(pending, chunk_size)
-        print(
-            f"    Recovery round {round_idx}/{MISSING_RECOVERY_MAX_ROUNDS}: "
-            f"{len(pending)} missing speech(es) in {len(chunks)} chunk(s) of <= {chunk_size}"
-        )
-
-        for c_idx, chunk in enumerate(chunks, 1):
-            label = f"{batch_label}_recover_r{round_idx}_{c_idx}of{len(chunks)}"
-            last_exc: Exception | None = None
-            raw_results: list[dict] = []
-
-            for attempt in range(1, MAX_RETRIES + 1):
-                try:
-                    raw_results = _call_llm_batch(
-                        client=client,
-                        provider=provider,
-                        session=session,
-                        session_topics=session_topics,
-                        speeches=chunk,
-                        batch_label=label,
-                        build_prompts_only=False,
-                    )
-                    break
-                except Exception as exc:
-                    last_exc = exc
-                    if attempt < MAX_RETRIES:
-                        time.sleep(RETRY_DELAY_S)
-
-            if not raw_results:
-                err = str(last_exc) if last_exc else "empty response"
-                print(
-                    f"      Recovery chunk {c_idx}/{len(chunks)} failed: {err}"
-                )
-                continue
-
-            chunk_by_index = _index_results_by_speech_index(raw_results)
-            if chunk_by_index:
-                recovered.update(chunk_by_index)
-                print(
-                    f"      Recovery chunk {c_idx}/{len(chunks)}: "
-                    f"{len(chunk_by_index)}/{len(chunk)} recovered"
-                )
-            else:
-                print(
-                    f"      Recovery chunk {c_idx}/{len(chunks)}: "
-                    "returned no usable speech_index items"
-                )
-
-        pending = [sp for sp in pending if sp["speech_index"] not in recovered]
-
-    return recovered
 
 
 # ---------------------------------------------------------------------------
@@ -616,6 +622,82 @@ def _reasoning_matches_speech(reasoning: str, speech_text: str) -> bool:
     overlap = len(r & s)
     # Require at least some lexical grounding in the actual speech.
     return overlap >= 2
+
+
+def _is_continuation_start(text: str) -> bool:
+    stripped = (text or "").lstrip()
+    if not stripped:
+        return False
+    if stripped.startswith("...") or stripped.startswith("…"):
+        return True
+    first = stripped[0]
+    return first.isalpha() and first.islower()
+
+
+def _has_interruption_marker(text: str) -> bool:
+    key = _text_key(text or "")
+    return (
+        "i se intrerupe microfonul" in key
+        or "intrerupe microfonul" in key
+        or "microfonul" in key
+    )
+
+
+def _is_procedural_interruption_speech(text: str) -> bool:
+    key = _text_key(text or "")
+    if not key:
+        return False
+    # Chair/facilitator interjections are usually very short procedural lines.
+    if len(key) > 260:
+        return False
+    markers = (
+        "multumesc",
+        "multumim",
+        "va rog",
+        "se pregateste",
+        "are cuvantul",
+        "propuneri la ordinea de zi",
+        "intram in ordinea de zi",
+        "declar inchisa sedinta",
+        "dezapasati",
+        "domnul deputat",
+        "doamna deputat",
+    )
+    return any(marker in key for marker in markers)
+
+
+def _merge_continuation_text(all_speeches: list[dict], current_pos: int) -> tuple[str, list[int]]:
+    """Merge split speeches when the same speaker continues after procedural interruption(s)."""
+    current = all_speeches[current_pos]
+    current_text = str(current.get("text", "")).strip()
+    if not current_text:
+        return "", [int(current.get("speech_index", -1))]
+
+    merged_parts = [current_text]
+    merged_indices = [int(current.get("speech_index", -1))]
+    cursor = current_pos
+    # Support chains like A, chair, A, chair, A ...
+    while cursor >= 2:
+        interruption = all_speeches[cursor - 1]
+        previous = all_speeches[cursor - 2]
+        if str(previous.get("raw_speaker", "")).strip() != str(current.get("raw_speaker", "")).strip():
+            break
+        if not _is_procedural_interruption_speech(str(interruption.get("text", ""))):
+            break
+
+        # Conservative guard: only merge when continuation is strongly signaled.
+        if not (
+            _is_continuation_start(merged_parts[0])
+            or _has_interruption_marker(str(previous.get("text", "")))
+            or _has_interruption_marker(str(interruption.get("text", "")))
+        ):
+            break
+
+        merged_parts.insert(0, str(previous.get("text", "")).strip())
+        merged_indices.insert(0, int(previous.get("speech_index", -1)))
+        cursor -= 2
+
+    return "\n\n".join(p for p in merged_parts if p), merged_indices
 
 
 def _fallback_quote_from_speech(speech_text: str) -> str:
@@ -741,10 +823,55 @@ def _canonicalize_topic(topic: str, session_aliases: list[tuple[str, str]]) -> s
 
 
 def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
-    """Validate and clean one speech result from the LLM batch output."""
+    """Validate and clean one speech result from LLM output."""
     label = str(item.get("constructiveness_label", "")).strip()
     if label not in VALID_LABELS:
         raise ValueError(f"Invalid label: {label!r}")
+
+    def normalize_choice(raw, allowed: set[str], default: str) -> str:
+        value = str(raw or "").strip().lower()
+        return value if value in allowed else default
+
+    policy_proposal = normalize_choice(
+        item.get("policy_proposal"),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    policy_analysis = normalize_choice(
+        item.get("policy_analysis"),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    public_interest_orientation = normalize_choice(
+        item.get("public_interest_orientation", item.get("public_interest")),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    partisan_rhetoric = normalize_choice(
+        item.get("partisan_rhetoric", item.get("rhetorical_attack")),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    legislative_engagement = normalize_choice(
+        item.get("legislative_engagement"),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    procedural_content = normalize_choice(
+        item.get("procedural_content"),
+        {"yes", "partial", "no"},
+        "partial",
+    )
+    arg_raw = str(item.get("argumentation_quality") or "").strip().lower()
+    if not arg_raw:
+        # Backward-compatible fallback when model omits the new field.
+        if policy_analysis == "yes":
+            arg_raw = "strong"
+        elif policy_analysis == "partial":
+            arg_raw = "weak"
+        else:
+            arg_raw = "none"
+    argumentation_quality = arg_raw if arg_raw in {"strong", "weak", "none"} else "weak"
 
     topics_raw = item.get("topics", [])
     if not isinstance(topics_raw, list):
@@ -775,6 +902,21 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
 
     reasoning = str(item.get("reasoning", "")).strip()
     evidence_quote = str(item.get("evidence_quote", "")).strip().strip("\"“”")
+
+    # Deterministic procedural short-circuit to reduce false non-neutral labels.
+    procedural_short_circuit = (
+        procedural_content == "yes"
+        and policy_proposal != "yes"
+        and policy_analysis != "yes"
+        and legislative_engagement != "yes"
+        and public_interest_orientation != "yes"
+        and partisan_rhetoric != "yes"
+    )
+    if procedural_short_circuit:
+        if label != "neutral":
+            label = "neutral"
+            reasoning = ""
+        confidence = max(confidence, 0.75)
 
     # Encourage grounded reasoning by requiring quote overlap with speech text.
     if evidence_quote:
@@ -817,9 +959,16 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
 
     return {
         "constructiveness_label": label,
+        "policy_proposal": policy_proposal,
+        "policy_analysis": policy_analysis,
+        "public_interest_orientation": public_interest_orientation,
+        "partisan_rhetoric": partisan_rhetoric,
+        "legislative_engagement": legislative_engagement,
+        "procedural_content": procedural_content,
+        "argumentation_quality": argumentation_quality,
         "topics": topics,
         "confidence": confidence,
-        "evidence_chunk_ids": [],  # no RAG in batch mode — full context replaces it
+        "evidence_chunk_ids": [],  # no RAG here — speech + local session context are provided
         "reasoning": reasoning,
         "_needs_recheck": not has_grounding or not reasoning_grounded,
     }
@@ -832,20 +981,20 @@ def _recheck_single_speech(
     session_topics: list,
     sp: dict,
     config: dict,
-    parent_batch_label: str,
+    parent_call_label: str,
     context_speeches: list[dict] | None = None,
 ) -> dict | None:
     """Reclassify one speech when initial output looks misaligned/ungrounded."""
     last_exc: Exception | None = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            raw_results = _call_llm_batch(
+            raw_results = _call_llm(
                 client=client,
                 provider=provider,
                 session=session,
                 session_topics=session_topics,
                 speeches=[sp],
-                batch_label=f"{parent_batch_label}_recheck_{sp['speech_index']}",
+                call_label=f"{parent_call_label}_recheck_{sp['speech_index']}",
                 context_speeches=context_speeches,
                 build_prompts_only=False,
             )
@@ -864,7 +1013,7 @@ def _recheck_single_speech(
     return None
 
 
-def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[int, dict]:
+def _realign_results_to_speeches(target_speeches: list[dict], items: list[dict]) -> dict[int, dict]:
     """Align possibly shifted model items back to target speeches.
 
     Priority:
@@ -877,7 +1026,7 @@ def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[i
     used_item_ids: set[int] = set()
 
     # Pass 1: exact index with compatible quote.
-    for sp in batch:
+    for sp in target_speeches:
         idx = sp["speech_index"]
         item = by_index.get(idx)
         if item is None:
@@ -888,7 +1037,7 @@ def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[i
             used_item_ids.add(id(item))
 
     # Pass 2: quote-based rescue for unassigned speeches.
-    for sp in batch:
+    for sp in target_speeches:
         idx = sp["speech_index"]
         if idx in assigned:
             continue
@@ -902,7 +1051,7 @@ def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[i
                 break
 
     # Pass 3: exact index fallback even if quote mismatches.
-    for sp in batch:
+    for sp in target_speeches:
         idx = sp["speech_index"]
         if idx in assigned:
             continue
@@ -915,10 +1064,10 @@ def _realign_results_to_speeches(batch: list[dict], items: list[dict]) -> dict[i
 
 
 # ---------------------------------------------------------------------------
-# Session-level batch classification
+# Session-level intervention classification
 # ---------------------------------------------------------------------------
 
-def classify_session_batch(
+def classify_session_interventions(
     server: MCPServer,
     session_id: str,
     intervention_ids: list[str],
@@ -929,7 +1078,7 @@ def classify_session_batch(
     build_prompts_only: bool = False,
 ) -> dict:
     """
-    Classify all interventions in a session using full-session batch LLM calls.
+    Classify all interventions in a session using one LLM call per target speech.
 
     When ``build_prompts_only=True`` prompts are saved but no LLM calls are
     made and nothing is stored to the DB.
@@ -975,6 +1124,7 @@ def classify_session_batch(
         return {"classified": 0, "errors": 0, "error_log": []}
 
     target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
+    pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
     total_chars = sum(len(sp["text"]) for sp in target_speeches)
     print(
         f"  Session {session_id}: single-speech mode for {len(target_speeches)} intervention(s), "
@@ -987,6 +1137,15 @@ def classify_session_batch(
 
     for t_idx, sp in enumerate(target_speeches, 1):
         iid = sp["intervention_id"]
+        speech_index = int(sp["speech_index"])
+        current_pos = pos_by_index.get(speech_index, -1)
+        sp_for_llm = dict(sp)
+        continuation_indices: list[int] = [speech_index]
+        if current_pos >= 0:
+            merged_text, merged_indices = _merge_continuation_text(all_speeches, current_pos)
+            if merged_text:
+                sp_for_llm["text"] = merged_text
+                continuation_indices = merged_indices
         prev_context = [
             s for s in all_speeches if s["speech_index"] < sp["speech_index"]
         ][-PREVIOUS_CONTEXT_WINDOW:]
@@ -994,19 +1153,24 @@ def classify_session_batch(
             f"  Speech {t_idx}/{len(target_speeches)}: idx={sp['speech_index']} "
             f"context={len(prev_context)}"
         )
+        if len(continuation_indices) > 1:
+            print(
+                "    Continuation merge: "
+                f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
+            )
 
         raw_results: list[dict] = []
         last_exc: Exception | None = None
         call_label = f"single_{t_idx}of{len(target_speeches)}_ix{sp['speech_index']}"
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                raw_results = _call_llm_batch(
+                raw_results = _call_llm(
                     client=client,
                     provider=provider,
                     session=session,
                     session_topics=session_topics,
-                    speeches=[sp],
-                    batch_label=call_label,
+                    speeches=[sp_for_llm],
+                    call_label=call_label,
                     context_speeches=prev_context,
                     build_prompts_only=build_prompts_only,
                 )
@@ -1051,9 +1215,9 @@ def classify_session_batch(
                 provider=provider,
                 session=session,
                 session_topics=session_topics,
-                sp=sp,
+                sp=sp_for_llm,
                 config=config,
-                parent_batch_label=f"{call_label}_missing",
+                parent_call_label=f"{call_label}_missing",
                 context_speeches=prev_context,
             )
             if recovered_payload is not None:
@@ -1074,7 +1238,7 @@ def classify_session_batch(
         else:
             try:
                 raw_for_validation = dict(raw)
-                raw_for_validation["_speech_text"] = sp["text"]
+                raw_for_validation["_speech_text"] = sp_for_llm["text"]
                 payload = _validate_one(raw_for_validation, config, session_topics)
             except ValueError as exc:
                 print(f"    Validation error for {iid}: {exc}")
@@ -1092,9 +1256,9 @@ def classify_session_batch(
                 provider=provider,
                 session=session,
                 session_topics=session_topics,
-                sp=sp,
+                sp=sp_for_llm,
                 config=config,
-                parent_batch_label=call_label,
+                parent_call_label=call_label,
                 context_speeches=prev_context,
             )
             if rechecked is not None:
@@ -1103,6 +1267,13 @@ def classify_session_batch(
         print(
             f"    [{sp['speech_index']}] {sp['raw_speaker'][:40]!r}  "
             f"label={payload['constructiveness_label']}  "
+            f"proposal={payload.get('policy_proposal', '?')}  "
+            f"analysis={payload.get('policy_analysis', '?')}  "
+            f"public={payload.get('public_interest_orientation', '?')}  "
+            f"partisan={payload.get('partisan_rhetoric', '?')}  "
+            f"legislative={payload.get('legislative_engagement', '?')}  "
+            f"procedural={payload.get('procedural_content', '?')}  "
+            f"arg={payload.get('argumentation_quality', '?')}  "
             f"confidence={payload['confidence']:.2f}  "
             f"topics={payload['topics']}"
         )
@@ -1174,7 +1345,7 @@ def run_agent(
     build_prompts_only: bool = False,
 ) -> dict:
     """
-    Classify all given interventions grouped by session (batch mode).
+    Classify all given interventions grouped by session (single-speech mode).
     Returns a summary dict.
 
     When ``build_prompts_only=True`` prompts are built and saved but no LLM
@@ -1214,7 +1385,7 @@ def run_agent(
 
         for s_idx, (session_id, s_iids) in enumerate(sessions.items(), 1):
             print(f"\n[Session {s_idx}/{len(sessions)}] session_id={session_id}  ({len(s_iids)} interventions)")
-            result = classify_session_batch(
+            result = classify_session_interventions(
                 server=server,
                 session_id=session_id,
                 intervention_ids=s_iids,
@@ -1474,7 +1645,7 @@ def _load_intervention_ids(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="LLM agent: classify intervention constructiveness (batch / full-session mode)."
+        description="LLM agent: classify intervention constructiveness (single-speech mode)."
     )
     parser.add_argument("--run-id", default=os.environ.get("VOTEZ_RUN_ID"))
     parser.add_argument(
@@ -1573,7 +1744,7 @@ def main() -> int:
 
     mode_note = "  [BUILD-PROMPTS — writing to state/generated_prompts/]" if args.build_prompts else ""
     print(
-        f"LLM agent (batch mode): {len(intervention_ids)} intervention(s) "
+        f"LLM agent (single-speech mode): {len(intervention_ids)} intervention(s) "
         f"(run_id={args.run_id}){mode_note}"
     )
 
