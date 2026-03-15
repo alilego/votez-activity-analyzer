@@ -18,9 +18,10 @@
 ## Phase 1 — Foundations (measure before optimizing)
 
 ### 1.1 Build gold-standard evaluation set
-- [ ] Manually label ~200 speeches (balanced across constructive / neutral / non_constructive)
-- [ ] Include ~50 speeches with clear law/amendment references and expected `law_id`
-- [ ] Store as `tests/gold_standard.json` with schema: `{speech_index, session_id, text, expected_label, expected_topics, expected_law_ids, notes}`
+- [x] Select 255 speeches balanced across 18 sessions, with length variety (74 short, 101 medium, 80 long)
+- [x] Include 55 speeches with detected law/amendment references
+- [x] Store as `tests/gold_standard.json`
+- [ ] **PENDING: Manual labeling by human reviewer** — fill `expected_label`, `expected_topics`, `expected_law_ids` for all 255 speeches
 - [ ] **Why:** Without measurement, every other change is guesswork
 
 ### 1.2 Build evaluation harness script
