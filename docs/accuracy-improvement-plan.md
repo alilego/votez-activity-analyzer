@@ -10,7 +10,7 @@
 
 - **Model:** `qwen2.5:7b` (32k context) via Ollama
 - **Pipeline:** 3-layer (Layer A rubric extraction → deterministic rules → Layer B decision → QA triggers → Layer C review)
-- **Estimated current accuracy:** ~80-85% classification, ~60-70% law attribution (no formal evaluation yet)
+- **Measured baseline accuracy:** 61.0% classification (77 speeches), 0% law attribution (on 5 processed sessions)
 - **Main weaknesses:** 7B model struggles with nuanced Romanian parliamentary language, law IDs are often missed or hallucinated, no evaluation framework to measure progress
 
 ---
@@ -28,12 +28,23 @@
 - **Difficulty:** 166 easy, 59 medium, 30 hard
 - **Coverage:** 42 speeches with `expected_law_ids`, 232 with `expected_topics`
 
-### 1.2 Build evaluation harness script
-- [ ] Create `scripts/evaluate_accuracy.py` that runs the pipeline against the gold set
-- [ ] Report per-label precision, recall, F1
-- [ ] Report law/amendment attribution accuracy (exact match and partial match)
-- [ ] Report confusion matrix and confidence calibration
-- [ ] **Why:** Enables A/B testing of every subsequent change
+### 1.2 Build evaluation harness script ✅
+- [x] Create `scripts/evaluate_accuracy.py` that runs the pipeline against the gold set
+- [x] Report per-label precision, recall, F1
+- [x] Report law/amendment attribution accuracy (exact match and partial match)
+- [x] Report confusion matrix and confidence calibration
+- [x] Baseline measured (77/255 speeches evaluable from 5 processed sessions)
+
+**Baseline results (qwen2.5:7b, three_layer pipeline):**
+- Classification accuracy: **61.0%** (47/77) — gap to 98% target: **37pp**
+- Law attribution: **0.0%** (0/33 exact, 0/33 partial) — gap to 95% target: **95pp**
+- Per-label F1: constructive 49.0%, neutral 75.4%, non_constructive 50.0%
+- Confidence calibration is inverted (high-confidence predictions are less accurate)
+- Key failure patterns:
+  - Committee reports misclassified as neutral (model treats formal tone as procedural)
+  - Constructive political declarations with strong tone misclassified as non_constructive
+  - Session moderation misclassified as constructive/non_constructive
+  - No law IDs extracted or matched at all
 
 ---
 
@@ -135,7 +146,7 @@
 
 | After Phase | Classification Accuracy | Law Attribution Accuracy | Model Cost |
 |-------------|------------------------|--------------------------|------------|
-| Current     | ~80-85%                | ~60-70%                  | Free (local 7B) |
+| Current     | **61.0%** (measured)   | **0.0%** (measured)      | Free (local 7B) |
 | Phase 2     | ~87-90%                | ~75-80%                  | Free (local 7B) |
 | Phase 3     | ~93-95%                | ~85-90%                  | Free (local 14B+) |
 | Phase 4     | ~97-98%                | ~93-95%                  | ~$0.02-0.07/session |
@@ -151,6 +162,7 @@
 | 2026-03-15 | Built gold-standard set (255 speeches) | Sampled across all 18 sessions with length/topic variety |
 | 2026-03-15 | AI first-pass labeling (229 speeches) | 8 parallel classification agents with full stenogram context; human-labeled 26 used as reference; saves manual effort while human review ensures quality |
 | 2026-03-15 | Human review completed | All 255 labels reviewed and corrected; minor shifts: +2 constructive, +1 neutral, -3 non_constructive vs AI first-pass |
+| 2026-03-15 | Evaluation harness built | `scripts/evaluate_accuracy.py` — baseline: 61.0% classification, 0% law attribution |
 
 ---
 
