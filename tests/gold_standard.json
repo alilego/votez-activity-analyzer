@@ -20,7 +20,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "non_constructive",
-      "expected_topics": ["Justitie si stat de drept"],
+      "expected_topics": [
+        "Justitie si stat de drept"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventia nu respecta regulamentul de sedinta si intrebarea presedintelui; de asemenea nu aduce o contributie concreta, nici nu ridica o problema urgenta - e doar o constatare politica cu potential sa inflameze spiritele; pentru o identificare corecta, trebuie analizate si urmatoarele 7 interactiuni ale vorbitorului cu presedintele de sedinta",
       "difficulty": "hard"
@@ -40,8 +42,13 @@
         "nr. 107/1996"
       ],
       "expected_label": "constructive",
-      "expected_topics": ["Mediu si schimbari climatice"],
-      "expected_law_ids": ["Legea apelor nr. 107/1996", "PL-x 211/2011"],
+      "expected_topics": [
+        "Mediu si schimbari climatice"
+      ],
+      "expected_law_ids": [
+        "Legea apelor nr. 107/1996",
+        "PL-x 211/2011"
+      ],
       "labeling_notes": "Interventia este o raportare a situatiei despre o lege propusa spre adoptare in sedinta: avizul unor comisii si situatia votului la Senat",
       "difficulty": "easy"
     },
@@ -57,8 +64,13 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Administratie publica"],
-      "expected_law_ids": ["Legea nr. 273/2006 privind finanţele publice locale", "PL-x 265/2018"],
+      "expected_topics": [
+        "Administratie publica"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 273/2006 privind finanţele publice locale",
+        "PL-x 265/2018"
+      ],
       "labeling_notes": "Interventia aduce argumente in contextul dezbaterii despre finantele publice locale, inceputa anterior, si include o raportare a unei situatii specifice dintr-o comuna; aduce argumente pentru o reforma administrativ-teritoriala pentru a preveni acest situatii similare de neplata. Informatiile despre subiectul discutat sunt preluate din contextul dezbaterii anterioare.",
       "difficulty": "medium"
     },
@@ -73,8 +85,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventia readuce subiectul demisiei presedintelui Iohannis, care nu este relevant pentru subiectul dezbaterii curente - despre propunerile legislative pentru completarea art. 5 din Legea nr. 273/2006 privind finanţele publice locale; Pl-x 265/2018 discutate anterior. Continua interventia anterioara non-constructiva pe acelasi subiect a lui George-Nicolae Simion",
       "difficulty": "hard"
@@ -90,8 +104,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["procedura parlamentara"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventia este o atac retoric asupra conducerii Parlamentului, care nu este relevant pentru subiectul dezbaterii curente, iar contextul ulterior demonstrateaza necunoasterea procedurii de lucru a Parlamentului de catre acest vorbitor",
       "difficulty": "medium"
@@ -108,7 +124,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventia face parte dintr-un dialog pentru explicarea procedurii parlamentare de lucru si nu are un continut substantial",
       "difficulty": "easy"
@@ -125,7 +143,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Explica procedura parlamentara de stabilire a ordinii de zi pentru saptamana urmatoare",
       "difficulty": "easy"
@@ -142,7 +162,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Este un raspuns usor ironic al facilitatorului la o amenintare non-constructiva cu o plangere penala din partea opozitiei, inchizand subiectul si mergand mai departe cu dezbaterea",
       "difficulty": "easy"
@@ -162,8 +184,12 @@
         "nr. 220/2008"
       ],
       "expected_label": "constructive",
-      "expected_topics": ["Energie si resurse naturale"],
-      "expected_law_ids": ["Legea nr. 220/2008"],
+      "expected_topics": [
+        "Energie si resurse naturale"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 220/2008"
+      ],
       "labeling_notes": "Raporteaza rezultatul dezbaterii unei comisii pe propunerea legislativa si explica ca camera deputatilor este camera decizionala",
       "difficulty": "easy"
     },
@@ -179,7 +205,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Moderarea sedintei"],
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Modereaza sedinta, dand cuvantul urmatorului vorbitor",
       "difficulty": "easy"
@@ -199,7 +227,9 @@
         "nr. 195/2002"
       ],
       "expected_label": "neutral",
-      "expected_topics": ["Moderarea sedintei"],
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Sumarizeaza situatia proiectului de lege si anunta ca proiectul de lege ramane la votul final",
       "difficulty": "easy"
@@ -216,7 +246,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Sanatate publica"],
+      "expected_topics": [
+        "Sanatate publica"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventia este o propunere de a participa la un grup de lucru pentru modificarea unei legi in contextul subiectului legii in dezbatere si ofera argumente cum ar fi incurajarea preventiei bolilor",
       "difficulty": "easy"
@@ -232,8 +264,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Continua interventiile anterioare care nu respecta subiectul sedintei si insista pe subiectul datei demisiei presedintelui Iohannis - fara a clarifica relevanta acestuia pentru cetateni. In sine, interventia este un atac - luarea in deradere a memoriei presedintelui de sedinta, caruia i se sugereaza sa verifice filmarile daca nu mai tine minte ce a zis anterior.",
       "difficulty": "medium"
@@ -250,7 +284,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Moderarea sedintei"],
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Anunta urmatorul vorbitor si da cuvantul acestuia",
       "difficulty": "easy"
@@ -267,7 +303,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Cultura patrimoniu si culte"],
+      "expected_topics": [
+        "Cultura patrimoniu si culte"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Este o interpelare a ministrului culturii, pe tema protejari arhivelor audiovizuale ale Romaniei. Explica riscul unor actiuni si solicita clarificari si masuri concrete.",
       "difficulty": "easy"
@@ -284,7 +322,10 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Politica externa si afaceri europene", "Politici regionale si dezvoltare locala"],
+      "expected_topics": [
+        "Politica externa si afaceri europene",
+        "Politici regionale si dezvoltare locala"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Sustine cu date concrete beneficiile apartenentei Romaniei la UE si propune solutii la nevoi concrete: o comunicare mai buna a evolutiei situatiei economice catre cetateni.",
       "difficulty": "medium"
@@ -300,8 +341,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Agricultura si dezvoltare rurala"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Agricultura si dezvoltare rurala"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Dar prezinta teme false si exagerate fara sa aduca dovezi si teorii ale conspiratiei, cum ar fi pandemiile inchipuite, sau riscul de a pieri de pe harta lumii. De asemenea nu aduce date si solutii concrete.",
       "difficulty": "hard"
@@ -317,8 +360,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Reforma electorala si procese democratice"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Dar desi se incheie cu un indemn pozitiv (in dialogul urmator, intrucat depaseste timpul alocat), si aduce argumente despre calitatea slaba a parlamentului, o mare parte din discurs este un atac la adresa colegilor din parlament, cu evaluari superficiale.",
       "difficulty": "hard"
@@ -352,10 +397,12 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Politici NATO si cooperare strategica"],
+      "expected_topics": [
+        "Politici NATO si cooperare strategica"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Intrucat depaseste timpul acordat, incheierea apare in urmatorul dialog, dupa ce moderatorul a marcat terminarea timpului. Desi foloseste un ton agresiv, include justificari si se inchieie cu o propunere concreta de politica externa: sustinerea Ucrainei.",
-      "difficulty": ""
+      "difficulty": "medium"
     },
     {
       "id": 21,
@@ -368,8 +415,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": true,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Buget de stat si executie bugetara"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Aduce argumente in sprijinul afirmatiei, dar majoritatea datelor par scoase din context si nu propune solutii realiste si constructive ci doar acuzatii la adresa guvernului.",
       "difficulty": "hard"
@@ -386,7 +435,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "constructive",
-      "expected_topics": ["Reforma electorala si procese democratice"],
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Aduce in atentie o problema punctuala, aducand un exemplu concret: interzicerea de a lua cuvantul la sedintele consiliului local din Brasov",
       "difficulty": "hard"
@@ -402,8 +453,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non-constructive",
-      "expected_topics": ["Buget de stat si executie bugetara"],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Dialogurile anterioare si ulterioare arata ca este o interventie care schimba subiectul dezbaterii curente, fara a respecta ordinea de zi si procedura parlamentara. Procedura e clarificata de Vasile-Daniel Suciu intr-o interventie ulterioara.",
       "difficulty": "hard"
@@ -420,7 +473,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventie pentru scoaterea de pe ordinea de zi a unui proiect de lege. Vezi contextul - interventiile anterioare si ulterioare.",
       "difficulty": "medium"
@@ -442,8 +497,13 @@
         "nr. 43/2013"
       ],
       "expected_label": "constructive",
-      "expected_topics": ["Agricultura si dezvoltare rurala"],
-      "expected_law_ids": ["legea nr. 289/2013", "Ordonanta de urgenta nr. 22/2017"],
+      "expected_topics": [
+        "Agricultura si dezvoltare rurala"
+      ],
+      "expected_law_ids": [
+        "legea nr. 289/2013",
+        "Ordonanta de urgenta nr. 22/2017"
+      ],
       "labeling_notes": "Raporteaza rezultatul dezbaterii unei comisii pe propunerea legislativa",
       "difficulty": "easy"
     },
@@ -459,7 +519,9 @@
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
       "expected_label": "neutral",
-      "expected_topics": ["Procedura parlamentara"],
+      "expected_topics": [
+        "Procedura parlamentara"
+      ],
       "expected_law_ids": [],
       "labeling_notes": "Interventie pentru moderarea sedintei, explicand procesul de modificare a ordinii de zi",
       "difficulty": "easy"
@@ -475,11 +537,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "Munca salarii si dialog social"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Propune o politica concreta de reducere a taxelor pe salarii, in special pentru salariile mici, cu exemple specifice (prag de 2-3 salarii minime). Critica retorica PSD privind taxarea salariului minim si ofera solutia USR ca alternativa. Desi tonul este critic, argumentele sunt substantiale si ancorate in dezbaterea curenta despre sectorul agricol.",
+      "difficulty": "medium"
     },
     {
       "id": 28,
@@ -494,11 +559,15 @@
       "detected_law_patterns": [
         "nr. 571/2003"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Invatamant superior si cercetare"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 571/2003"
+      ],
+      "labeling_notes": "Raport comun al comisiilor asupra unei propuneri legislative privind stimularea invatamantului profesional si cercetarii stiintifice. Prezinta obiectul de reglementare, situatia procedurii parlamentare si recomandarea de respingere.",
+      "difficulty": "easy"
     },
     {
       "id": 29,
@@ -511,11 +580,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Invatamant superior si cercetare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Clarifica situatia legislativa existenta, aratand ca facilitatile propuse in initiativa din 2014 au fost deja incluse in legile invatamantului din 2023 si in Codul fiscal. Refera articole specifice (art. 35, art. 221). Contributie substantiala care aduce informatii legislative concrete in dezbatere.",
+      "difficulty": "easy"
     },
     {
       "id": 30,
@@ -528,11 +599,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Incepe constructiv explicand scopul legilor privind apararea (doborarea dronelor), dar partea dominanta a discursului (~200 cuvinte) este un atac partizan la adresa opozitiei (POT, AUR, SOS), numiti 'armata lui Pacalin Georgescu'. Similar cu exemplul 18 (Lorincz) - desi se incheie cu un mesaj pro-NATO, majoritatea discursului este atac la adresa colegilor.",
+      "difficulty": "hard"
     },
     {
       "id": 31,
@@ -545,11 +618,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Politici privind migratia si azilul"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Retorica inflamatoare despre 'invadarea Romaniei cu populatie straina', fara date concrete sau propuneri de politici. Atac partizan la adresa coalitiei de guvernare. Contextul arata ca proiectul de lege fusese deja respins prin vot, iar interventia este pur retorica.",
+      "difficulty": "easy"
     },
     {
       "id": 32,
@@ -562,11 +637,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Locuire si dezvoltare urbana",
+        "Managementul situatiilor de urgenta"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi porneste de la un vot pe legea cadastrului, aduce in discutie problema riscului seismic cu argumente concrete: majoritatea cladirilor neexpertizate, 500 milioane euro in PNRR pentru consolidari, legi pentru reducerea birocratiei, obligativitatea expertizei pentru peste 6000 de scoli. Contine si elemente partizane dar partea dominanta este substantiala.",
+      "difficulty": "medium"
     },
     {
       "id": 33,
@@ -579,11 +657,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica fundamentata pe date concrete din Indexul Democratiilor (retrogradare de la 6.45 la 5.99, coborare cu 12 locuri, de la 'democratie viciata' la 'regim hibrid'). Compara situatia Romaniei cu alte state. Propune solutia concreta a organizarii de alegeri libere. Desi perspectiva este a opozitiei (AUR), argumentele sunt documentate si verificabile.",
+      "difficulty": "hard"
     },
     {
       "id": 34,
@@ -598,11 +678,16 @@
       "detected_law_patterns": [
         "nr. 14/2003"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Politici pentru minoritati nationale",
+        "Securitate nationala si aparare"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 14/2003"
+      ],
+      "labeling_notes": "Discurs nationalist extrem impotriva UDMR, cu acuzatii grave nesustinute de dovezi (servicii secrete ungare in 1990, subventii ilegale, organizatie extremista). Utilizeaza limbaj inflamator ('tradatori de neam si tara') si teorii conspirativiste. Desi refera o lege reala (14/2003), argumentele juridice sunt distorsionate si scopul este atacul etnic, nu dezbaterea constructiva.",
+      "difficulty": "medium"
     },
     {
       "id": 35,
@@ -615,11 +700,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Politica externa si afaceri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie anti-UE si anti-NATO cu retorica conspirationista: UE descrisa ca 'uniune sclavagista', Romania ca 'dictatura', Europa ca 'o batrana pe moarte'. Nu aduce date concrete, nu propune solutii, ci doar atacuri retorice impotriva institutiilor europene si a colegilor din parlament.",
+      "difficulty": "easy"
     },
     {
       "id": 36,
@@ -632,11 +719,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Cultura patrimoniu si culte",
+        "Turism si economie locala"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica celebrativa despre participarea ansamblului folcloric croat 'Karaevska Zora' la Targul de Turism al Romaniei. Evidentiaza diversitatea culturala a judetului Caras-Severin. Desi este o interventie pozitiva, nu propune politici concrete, nu identifica probleme si nu avanseaza o dezbatere - este o prezentare formala a unui eveniment cultural.",
+      "difficulty": "medium"
     },
     {
       "id": 37,
@@ -649,11 +739,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Egalitate de sanse si nediscriminare",
+        "Familie copii si politici demografice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica de Ziua Femeii care depaseste retorica formala prin date concrete (13.600 cazuri de violenta domestica, 9.000 cereri de ajutor) si identificarea problemelor specifice: lipsa creselor, diferenta salariala, violenta domestica. Propune directii de actiune: siguranta, plata corecta, sprijin pentru mame. Tonul este emotional dar argumentele sunt ancorate in realitate.",
+      "difficulty": "medium"
     },
     {
       "id": 38,
@@ -666,11 +759,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment de un singur cuvant ('...banii.') dintr-o conversatie fragmentata cu presedintele de sedinta. Nu are continut semantic suficient pentru clasificare substantiala.",
+      "difficulty": "easy"
     },
     {
       "id": 39,
@@ -683,11 +776,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Urare de 8 Martie din partea grupului SOS Romania. Interventie formala, fara continut de politici publice.",
+      "difficulty": "easy"
     },
     {
       "id": 40,
@@ -700,11 +793,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Identifica o problema concreta (proiecte de lege din 2010 inca pe ordinea de zi, program de lucru insuficient - 2 zile pe saptamana, 1 ora pe zi) si propune o solutie specifica: convocarea de sedinte de 8 ore pe zi timp de cateva saptamani pentru recuperarea intarzierilor legislative.",
+      "difficulty": "easy"
     },
     {
       "id": 41,
@@ -719,11 +814,13 @@
       "detected_law_patterns": [
         "Pl-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: recunoaste o greseala procedurala, anunta urmatorul punct pe ordinea de zi (Codul Silvic, Pl-x 569/2021), intreaba daca cineva doreste sa ia cuvantul in cadrul dezbaterilor, si trece la urmatorul vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 42,
@@ -739,11 +836,16 @@
         "nr. 211/2011",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Mediu si schimbari climatice"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 211/2011",
+        "PL-x 240/2021"
+      ],
+      "labeling_notes": "Raport comun al Comisiei pentru mediu si Comisiei pentru industrii asupra modificarii Legii 211/2011 privind regimul deseurilor. Prezinta obiectul de reglementare (interzicerea transportului neautorizat de deseuri, cresterea sanctiunilor), avizele comisiilor si recomandarea de respingere in unanimitate.",
+      "difficulty": "easy"
     },
     {
       "id": 43,
@@ -759,11 +861,13 @@
         "nr. 95/2006",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: verifica daca mai sunt vorbitori, anunta ca proiectul ramane la vot final si introduce urmatorul punct pe ordinea de zi (Legea nr. 95/2006 privind reforma sanatatii).",
+      "difficulty": "easy"
     },
     {
       "id": 44,
@@ -776,11 +880,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment foarte scurt (7 cuvinte) dintr-un schimb de replici personale intre Dimitriu si Coarna. Contextul arata un schimb de atacuri personale (ruj, produse rusesti), dar fragmentul in sine este prea scurt pentru a fi clasificat altfel decat neutral conform regulii interventiilor foarte scurte.",
+      "difficulty": "easy"
     },
     {
       "id": 45,
@@ -793,11 +897,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: multumeste vorbitorului anterior si acorda dreptul la replica domnului Coarna.",
+      "difficulty": "easy"
     },
     {
       "id": 46,
@@ -810,11 +916,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Agricultura si dezvoltare rurala"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explicarea votului cu argumente juridice concrete: proiectul de lege aducea o facilitate pentru autoritatile publice locale prin eliminarea obligatiei de compensare a terenurilor scoase din circuitul agricol. Motiveaza de ce grupul a votat contra respingerii, explicand ratiunea proiectului.",
+      "difficulty": "easy"
     },
     {
       "id": 47,
@@ -827,11 +935,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-05_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Familie copii si politici demografice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi mentioneaza o problema reala (rata negativa a natalitatii), discursul este dominat de retorica partizana si o afirmatie nefondata ('am finantat mai mult familiile din Ucraina'). Nu propune solutii concrete, ci doar pozitionare politica generala. Similar cu exemplul 21 (Giurgiu) - date scoase din context si acuzatii fara propuneri realiste.",
+      "difficulty": "hard"
     },
     {
       "id": 48,
@@ -844,11 +954,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Drepturi fundamentale si libertati civile",
+        "Digitalizare si guvernare electronica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi foloseste un stil extrem de metaforic (democratia ca sanatate), propune solutii concrete: platforme de reflectie civica, centre de imaginatie civica, mecanisme de consultare digitala, programe de educatie pentru retele sociale, si legislatie noua pentru spatiul digital impotriva amenintarilor hibride. Propunerile sunt specifice si orientate spre actiune legislativa.",
+      "difficulty": "medium"
     },
     {
       "id": 49,
@@ -861,11 +974,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Drepturi fundamentale si libertati civile"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie lunga (471 cuvinte) dominata de retorica emotionala despre libertatea de exprimare, cu citate extinse din Nicolae Iorga. Nu aduce date concrete, nu propune solutii legislative specifice, nu identifica probleme punctuale. Referintele la anularea alegerilor sunt vagi. Este un discurs de pozitionare politica fara substanta de politici publice.",
+      "difficulty": "medium"
     },
     {
       "id": 50,
@@ -878,11 +993,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Atac partizan la adresa Guvernului Ciolacu fara date specifice sau propuneri concrete. Foloseste limbaj inflamator ('stoarsa de resurse', 'jupuitor de taxe', 'pusculita sparta') si acuzatii generalizate despre sinecuri, pensii speciale si agentii inutile. Nu ofera cifre exacte, nu propune solutii specifice, ci doar retorica de opozitie.",
+      "difficulty": "easy"
     },
     {
       "id": 51,
@@ -895,11 +1012,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate cibernetica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica despre dezinformarea online cu referinte concrete: coordonarea de conturi in campania din noiembrie, dezinformarea privind legislatia dronelor de catre sefa POT, Decizia ICCJ nr. 4546/2014 (internetul ca spatiu public). Propune o actiune legislativa specifica: transpunerea in legislatia nationala a Codului european de bune practici privind dezinformarea din 2022.",
+      "difficulty": "medium"
     },
     {
       "id": 52,
@@ -914,11 +1033,15 @@
       "detected_law_patterns": [
         "nr. 64/2022"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 64/2022"
+      ],
+      "labeling_notes": "Secretar de stat al Ministerului Transporturilor prezinta obiectul de reglementare al proiectului de lege, explicand contextul economic si necesitatea modificarii cadrului legal pentru a evita blocaje in finantarea investitiilor.",
+      "difficulty": "easy"
     },
     {
       "id": 53,
@@ -931,11 +1054,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia se angajeaza substantiv cu proiectul de lege, explicand pozitia grupului SOS (in principiu contra derogarilor, dar accepta exceptia datorita importantei actului normativ) si propunand o initiativa legislativa viitoare pentru integrarea acestor masuri in legea finantelor publice locale. Combina analiza critica cu propuneri concrete.",
+      "difficulty": "easy"
     },
     {
       "id": 54,
@@ -951,11 +1076,13 @@
         "nr. 33/2024",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta anunta ca proiectul de lege ramane la votul final si trece la urmatorul punct pe ordinea de zi.",
+      "difficulty": "easy"
     },
     {
       "id": 55,
@@ -968,11 +1095,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta de moderare a sedintei, dand cuvantul urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 56,
@@ -985,11 +1114,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia este complet deconectata de subiectul legislativ in dezbatere (un proiect de lege privind securitatea nationala, din context). Vorbitorul ataca opozitia cu argumente ad hominem (lipsa de ipocrizie, capra vecinului), ironizeaza candidatura doamnei Lasconi si se lauda ca a castigat alegerile, fara nicio referire la continutul legii. Predominant atac partizan.",
+      "difficulty": "medium"
     },
     {
       "id": 57,
@@ -1005,11 +1136,13 @@
         "Legea nr",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta constata consensul si anunta urmatorul punct pe ordinea de zi.",
+      "difficulty": "easy"
     },
     {
       "id": 58,
@@ -1022,11 +1155,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare a sedintei, invitand vorbitorul sa ia cuvantul si oferind indicatii procedurale.",
+      "difficulty": "easy"
     },
     {
       "id": 59,
@@ -1039,11 +1174,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi este o explicare a votului pe OUG 66/2023, continutul este predominant partizan: se auto-felicita pentru scaderea inflatiei si ataca precedentul guvern ('8 luni au stat si au facut praf o tara intreaga') fara a explica concret meritele proiectului de lege votat.",
+      "difficulty": "medium"
     },
     {
       "id": 60,
@@ -1056,11 +1193,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Replica scurta si combativa la adresa lui Caciu, incepand cu acuzatia de minciuna. Desi mentioneaza o cifra (inflatie 4%), tonul este predominant de contra-atac partizan fara angajament substantiv cu proiectul de lege.",
+      "difficulty": "medium"
     },
     {
       "id": 61,
@@ -1073,11 +1212,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-12_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explica votul favorabil cu argumente de politica publica (necesitatea sustinerii UAT-urilor in implementarea proiectelor cu finantare europeana) si reitereaza propunerea de extindere a mecanismului la exercitiul financiar curent.",
+      "difficulty": "easy"
     },
     {
       "id": 62,
@@ -1090,11 +1231,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Cultura patrimoniu si culte"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica intitulata 'De ce este surghiunita religia?'. Contine teorii ale conspiratiei (Scoala de la Frankfurt a planificat inlocuirea religiei cu consumerismul, telefonul inteligent ca 'lovitura de gratie'), afirmatii exagerate fara dovezi, si nicio propunere legislativa concreta. Similar cu exemplul etichetat nr. 17 care continea teorii ale conspiratiei.",
+      "difficulty": "hard"
     },
     {
       "id": 63,
@@ -1110,11 +1253,13 @@
         "amendament",
         "amendamentul"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Integritate anticoruptie si transparenta"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Vorbitorul incearca sa prezinte un amendament specific, depus impreuna cu colegii Oana Toiu si Alin Stoica, respins in Comisia juridica. Interventia este intrerupta de moderator care ii explica ca va avea posibilitatea sa-l sustina ulterior. Desi textul este trunchiat, intentia si continutul partial sunt clar legislative.",
+      "difficulty": "medium"
     },
     {
       "id": 64,
@@ -1127,11 +1272,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "In loc sa se angajeze cu proiectul de lege privind integritatea publica, vorbitorul PSD ataca USR pentru scrierea PNRR-ului, cerandu-le sa recunoasca ca l-au scris gresit. Este un atac partizan complet deconectat de subiectul dezbaterii.",
+      "difficulty": "easy"
     },
     {
       "id": 65,
@@ -1146,11 +1293,13 @@
       "detected_law_patterns": [
         "Amendamentul"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: confirma timpul regulamentar, supune la vot, anunta rezultatul votului si intreaba daca se sustine amendamentul respins.",
+      "difficulty": "easy"
     },
     {
       "id": 66,
@@ -1169,11 +1318,13 @@
         "amendament",
         "amendamente"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie extinsa de moderare: proceseaza votul pe amendament, anunta rezultatul, gestioneaza tranzitia la urmatorul punct pe ordinea de zi (PL-x 444/2024 privind energia), solicita raportul comisiilor.",
+      "difficulty": "easy"
     },
     {
       "id": 67,
@@ -1186,11 +1337,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta de moderare, dand cuvantul urmatorului vorbitor din partea Grupului PSD.",
+      "difficulty": "easy"
     },
     {
       "id": 68,
@@ -1203,11 +1356,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Energie si resurse naturale"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi contine elemente partizane, portiunea dominanta explica concret problema pe care o rezolva legea: un primar obtine finantare pentru distributie de gaze, concesionarul nu se autorizeaza timp de un an, risca pierderea finantarii. Citeaza programe specifice (POIM, Anghel Saligny) si explica impactul real al legii pentru comunele rurale.",
+      "difficulty": "medium"
     },
     {
       "id": 69,
@@ -1223,11 +1378,15 @@
         "Legea nr",
         "amendament"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Energie si resurse naturale"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 123/2012"
+      ],
+      "labeling_notes": "Prezinta textul concret al unui amendament (Art. III) care exclude contractele de concesiune unde autoritatea concedenta este Ministerul Energiei, justificand cu impactul asupra a 1.500 de UAT-uri si necesitatea protejarii proiectelor Anghel Saligny.",
+      "difficulty": "easy"
     },
     {
       "id": 70,
@@ -1240,11 +1399,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: solicita consultatii cu liderii de grup si invita la dezbateri generale pe urmatorul proiect de lege.",
+      "difficulty": "easy"
     },
     {
       "id": 71,
@@ -1260,11 +1421,17 @@
         "nr. 76/2002",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Munca salarii si dialog social",
+        "Drepturi fundamentale si libertati civile"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 76/2002",
+        "PL-x 153/2023"
+      ],
+      "labeling_notes": "Interventie hibrid: incepe cu moderarea sedintei (vot, cvorum), apoi presedinta de sedinta prezinta propria initiativa legislativa (PL-x 153/2023) cu date concrete: prioritate la angajare pentru victimele violentei domestice cu ordin de protectie, 2.250 lei/luna timp de 12 luni pentru angajatori, statistici (132.000 cazuri in 2024, 5.200 ordine de protectie). Include si victimele traficului de persoane.",
+      "difficulty": "medium"
     },
     {
       "id": 72,
@@ -1277,11 +1444,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Drepturi fundamentale si libertati civile"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Sustine proiectul de lege cu argumente substantive (dependenta financiara de agresor ca motiv de reintoarcere), confirma nevoia de sprijin si propune o masura concreta suplimentara: extinderea la nivel national a bratarilor electronice de monitorizare, in prezent functionand doar ca sistem-pilot in anumite judete.",
+      "difficulty": "easy"
     },
     {
       "id": 73,
@@ -1294,11 +1463,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma administratiei publice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi in contextul unei dezbateri legislative despre administrarea porturilor, interventia este dominata de atacuri personale la adresa lui Drula: ii reproaza schimbarea comportamentului in fata camerelor, ii mentioneaza instalarea de microfoane in birou, si il acuza ca citeaza din referatul procurorilor. Substanta legislativa (selectia competitiva a directorului) este minimala si serveste doar ca pretext pentru atacuri.",
+      "difficulty": "hard"
     },
     {
       "id": 74,
@@ -1311,11 +1482,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare a sedintei, cerand vorbitorului sa concluzioneze dupa depasirea timpului alocat.",
+      "difficulty": "easy"
     },
     {
       "id": 75,
@@ -1328,11 +1501,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: acorda ultimul drept la replica, cere vorbitorilor sa nu mai pronunte numele (pentru a evita generarea de noi drepturi la replica) si invoca autoritatea presedintelui de sedinta conform Regulamentului.",
+      "difficulty": "easy"
     },
     {
       "id": 76,
@@ -1345,11 +1520,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Politica externa si afaceri europene",
+        "Investitii publice si fonduri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi pretinde ca explica votul favorabil al grupului AUR, imediat deviaza spre atacuri off-topic: critica guvernul pentru vizele americane si pierderea a 2 miliarde euro din PNRR din cauza pensiilor speciale. Moderatorul il intrerupe pentru ca nu ramane la explicarea votului. Complet deconectat de legea energiei votata.",
+      "difficulty": "easy"
     },
     {
       "id": 77,
@@ -1362,11 +1540,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-03-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta din sala care deraiaza dezbaterea in timpul explicarii votului. Contextul arata ca presedintele de sedinta ii intrerupea microfonul in mod repetat, iar vorbitorul nu respecta subiectul dezbaterii (proiecte legislative pe ordinea de zi), introducand comentarii sarcastice despre vize si PNRR.",
+      "difficulty": "easy"
     },
     {
       "id": 78,
@@ -1379,11 +1559,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica retorica despre valori democratice si calea europeana a Romaniei. Desi avertizeaza impotriva extremismului si cheama la unitate, nu aduce date concrete, nu propune masuri specifice si se incheie cu un indemn electoral ('avem si candidati care reprezinta aceste valori') - pozitionare de campanie, nu contributie substantiala la dezbatere.",
+      "difficulty": "hard"
     },
     {
       "id": 79,
@@ -1396,11 +1578,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice",
+        "Securitate cibernetica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica despre dezinformarea din social media in contextul campaniei electorale. Identifica problema (manipulare prin filmulete scurte, conturi false) dar nu propune nicio masura legislativa sau de politica publica concreta. Apelul la colegi ('spuneti stop dezinformarii') este vag si retoric, fara solutii actionabile.",
+      "difficulty": "medium"
     },
     {
       "id": 80,
@@ -1413,11 +1598,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Infrastructura rutiera"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica axata pe atacarea ministrului transporturilor Grindeanu pe tema drumului de mare viteza Filiasi-Lugoj. Aduce date specifice (304 accidente, 21 decese pe DN 6 in 2024, pierdere de 500 mil. euro PNRR) dar scopul principal este atacul personal, nu propunerea de solutii. Titlul insusi este o acuzatie la adresa unei persoane.",
+      "difficulty": "medium"
     },
     {
       "id": 81,
@@ -1430,11 +1617,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Sanatate mintala si adictii",
+        "Egalitate de sanse si nediscriminare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discurs in contextul Zilei Internationale de Constientizare a Autismului, in cadrul unui bloc dedicat acestui subiect. Propune masuri concrete: legiferare pentru integrarea persoanelor cu autism in invatamant si piata muncii, eliminarea discriminarilor, alocarea de fonduri pentru cercetare. Avertizeaza impotriva teoriilor conspiratiei si propune o abordare bazata pe experti.",
+      "difficulty": "easy"
     },
     {
       "id": 82,
@@ -1447,11 +1637,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta adversariala din sala, in timpul raspunsului ministrului Predoiu la motiunea simpla. Face parte dintr-un sir de intreruperi repetate ale aceluiasi vorbitor (Anamaria Gavrilă) care perturba dezbaterea. Nu aduce nicio contributie substantiala.",
+      "difficulty": "easy"
     },
     {
       "id": 83,
@@ -1464,11 +1654,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Ministrul de interne raspunde substantiv la acuzatiile din motiune, citand propriile declaratii pentru a demonstra ca au fost rastalmasuite de opozitie. Argumenteaza ca declaratia despre dialog cu cetatenii arata deschidere democratica, nu poliție politica. Angajeaza dezbaterea pe fond, cu contra-argumente specifice la probele invocate in motiune.",
+      "difficulty": "medium"
     },
     {
       "id": 84,
@@ -1481,11 +1673,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Replica foarte scurta (8 cuvinte) in cadrul unui schimb de replici cu o deputata care huiduia din sala. Tonul este usor sarcastic dar fara substanta politica sau adversaritate clara. Prea scurt pentru a fi clasificat drept constructiv sau non-constructiv.",
+      "difficulty": "easy"
     },
     {
       "id": 85,
@@ -1498,11 +1690,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta adversariala din sala ('tu vorbesti pe langa subiect!'), continuand un sir de huiduieli la adresa ministrului Predoiu. Presedintele de sedinta ameninta cu retragerea cuvantului. Nu aduce nicio contributie la dezbatere, doar perturba discursul ministrului.",
+      "difficulty": "easy"
     },
     {
       "id": 86,
@@ -1515,11 +1707,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment foarte scurt (23 cuvinte) din raspunsul ministrului la motiune, intrerupt de huiduieli. Incepe sa faca un punct despre cresterea performantei Politiei Romane dar nu completeaza ideea. Textul in sine este prea fragmentar pentru a fi evaluat substantiv.",
+      "difficulty": "medium"
     },
     {
       "id": 87,
@@ -1532,11 +1726,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment procedural scurt (14 cuvinte) in care deputatul cere cuvantul pe procedura, legat de implicarea Politiei Romane. Interventia este intrerupta inainte de a putea dezvolta un argument. Prea scurt si incomplet pentru clasificare substantiala.",
+      "difficulty": "easy"
     },
     {
       "id": 88,
@@ -1549,11 +1745,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta gestioneaza dezbaterea, explicand deputatului Popa ca a cerut cuvantul pe procedura dar nu a indicat nicio procedura, si ca poate folosi timpul alocat grupului sau parlamentar pentru a-si exprima punctul de vedere.",
+      "difficulty": "easy"
     },
     {
       "id": 89,
@@ -1566,11 +1764,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discurs in cadrul dezbaterii pe motiunea simpla. Contine atat elemente substantive (explicatia ca ministrul nu are atributii operative, statistici de destructurare a crimei organizate - 116 grupuri) cat si atacuri batjocoritoare extinse (motiunea e o 'compunere de clasa a IV-a', initiatorii sa fie concediati, 'normal ca nu semnezi cand suni Politia sa te apere de presa'). Portiunea dominanta este batjocura si apararea partizana, nu analiza de interes public.",
+      "difficulty": "hard"
     },
     {
       "id": 90,
@@ -1583,11 +1783,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Drepturi fundamentale si libertati civile"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie emotionala in cadrul dezbaterii pe motiune. Invoca experienta personala din Revolutia din '89 si sustine ca libertatea de expresie este amenintata (conturi inchise, cenzura), dar nu aduce dovezi concrete, nu se angajeaza cu substanta motiunii si nu propune solutii. Apelul la vot este emotional, nu argumentat.",
+      "difficulty": "medium"
     },
     {
       "id": 91,
@@ -1600,11 +1802,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta gestioneaza procedura de vot: supune votului o propunere de realocare a timpilor de dezbateri, anunta rezultatul votului (145 pentru, 100 contra) si da cuvantul urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 92,
@@ -1617,11 +1821,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discurs in cadrul dezbaterii pe motiune, compus exclusiv din atacuri la adresa ministrului Predoiu ('militian', 'sistem mafiot politic') si acuzatii de persecutie politica fara dovezi concrete. Nu se angajeaza cu substanta motiunii, nu propune solutii, ci doar cere demisia ministrului. Limbaj incendiar si conspirationist ('fabricati dovezi').",
+      "difficulty": "easy"
     },
     {
       "id": 93,
@@ -1637,11 +1843,13 @@
         "Pl-x",
         "nr. 57/2019"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta deschide sesiunea de vot final: solicita liderilor sa isi invite colegii, propune vot de verificare a cvorumului, anunta punctele pe ordinea de zi si initiaza votul.",
+      "difficulty": "easy"
     },
     {
       "id": 94,
@@ -1658,11 +1866,13 @@
         "PL-x",
         "nr. 526/2003"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta citeste punctele de pe ordinea de zi pentru votul final (hotarari ale Camerei, legi ordinare de respingere) si anunta rezultatele voturilor. Activitate pur procedurala de moderare a sedintei.",
+      "difficulty": "easy"
     },
     {
       "id": 95,
@@ -1677,11 +1887,16 @@
       "detected_law_patterns": [
         "Legea nr"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului",
+        "Justitie si stat de drept"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 218"
+      ],
+      "labeling_notes": "Interventie in cadrul sesiunii de vot, in care invoca Legea nr. 218 (legea de organizare a Politiei Romane) pentru a semnala un abuz procedural specific: relegitimarea unei persoane deja legitimate si perchezitionate, ceea ce ar contravine prevederilor legale. Desi tonul este adversarial si discursul fragmentar (intreruperi), fondul este o critica juridica substantiva bazata pe cunoasterea procedurii politienesti.",
+      "difficulty": "hard"
     },
     {
       "id": 96,
@@ -1694,11 +1909,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explicarea votului grupului SOS pe motiunea simpla. Clarifica pozitia partizana a grupului si ataca un fost coleg ('la grup vorbea doar cu secretara'). Nu se angajeaza cu substanta motiunii si nu aduce argumente de fond, ci doar pozitionare de partid si atacuri personale.",
+      "difficulty": "medium"
     },
     {
       "id": 97,
@@ -1711,11 +1928,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta deschide partea de declaratii politice, reaminteste regulile (3 minute verbal, o declaratie pe sedinta) si prezinta algoritmul de alocarea a timpului pe grupuri parlamentare aprobat de Comitetul liderilor. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 98,
@@ -1728,11 +1947,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica cu analiza detaliata a situatiei PNRR: date specifice despre absorbtie (28.5 mld. alocate, 6.4 mld. cheltuiti), blocarea transei nr. 3 de 2.7 mld., ritmul imprumuturilor (115 mil. euro/zi), cresterea cheltuielilor cu dobanzile cu 50%. Include si observatia ca majoritatea contractelor merg la firme straine (exemplul companiei poloneze vs. Astra Vagoane Arad). Desi tonul este critic, analiza este structurata si bazata pe date verificabile, iar concluzia cere un plan de redresare.",
+      "difficulty": "hard"
     },
     {
       "id": 99,
@@ -1745,11 +1966,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "Politica externa si afaceri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica cu analiza structurata a impactului tarifelor americane asupra Romaniei prin intermediul UE. Abordeaza mai multe perspective: exporturi indirecte (industria auto, componente), sectoare specifice (otel - Alro Slatina, produse agroalimentare), investitii, curs valutar. Desi analiza este in mare parte speculativa si nu propune masuri concrete, este informativa si contribuie la intelegerea unui subiect de politica economica relevant.",
+      "difficulty": "medium"
     },
     {
       "id": 100,
@@ -1762,11 +1986,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Justitie si stat de drept"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica substantiala despre problemele sistemului penitenciar. Identifica probleme concrete: abandonarea sistemelor de audiere online din pandemie (risipa bugetara), transportul inutil al detinutilor, aplicarea inechitabila a eliberarii conditionate, deficitul de personal. Propune solutii specifice: reintroducerea audierilor online, aplicarea unitara a legii, programe de munca pentru detinuti, sprijin pentru personalul penitenciar.",
+      "difficulty": "easy"
     },
     {
       "id": 101,
@@ -1779,11 +2005,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta inchide sesiunea de declaratii politice: intreaba daca mai doreste cineva sa ia cuvantul, citeste lista declaratiilor depuse in scris de fiecare grup parlamentar, propune o pauza de 5 minute si anunta continuarea cu dezbateri legislative de la ora 10.00.",
+      "difficulty": "easy"
     },
     {
       "id": 102,
@@ -1796,11 +2024,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene",
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia sustine proiectul de lege privind dezvoltarea locala, dar ridica o critica fundamentata pe avizul Consiliului Legislativ referitoare la nerespectarea regulilor de transparenta in procesul de legiferare. Propune imbunatatirea procesului legislativ pe viitor. Este o opozitie constructiva pe procedura, nu pe fond.",
+      "difficulty": "medium"
     },
     {
       "id": 103,
@@ -1813,11 +2044,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Investitii publice si fonduri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta foloseste microfonul de moderare pentru un atac partizan impotriva USR ('a plecat de la guvernare pentru ca nu a dorit sa implementeze Anghel Saligny'). Contextul ulterior confirma abuzul - doamna Pruna il critica explicit pentru ca face declaratii politice din pozitia de moderator. Incalca rolul de moderare impartiala.",
+      "difficulty": "hard"
     },
     {
       "id": 104,
@@ -1833,11 +2066,18 @@
         "nr. 25/2014",
         "nr. 194/2002"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Politici privind migratia si azilul",
+        "Munca salarii si dialog social"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 194/2002",
+        "OG nr. 25/2014",
+        "Directiva 2014/36/UE"
+      ],
+      "labeling_notes": "Secretarul de stat prezinta obiectul proiectului de lege privind lucratorii sezonieri din tari terte, explica directiva europeana transpusa si masurile de protectie a drepturilor de munca. Solicita adoptarea in forma propusa de comisii. Interventie institutionala standard.",
+      "difficulty": "easy"
     },
     {
       "id": 105,
@@ -1850,11 +2090,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Politici privind migratia si azilul"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment foarte scurt (8 cuvinte) care continua o interventie anterioara dupa ce moderatorul a incercat sa-i incheie discursul. Concluzia ('o face in detrimentul cetatenilor romani') este o afirmatie politica, dar datorita extremei brevitati si naturii de fragment/overflow, se clasifica ca neutral conform regulii D din rubrica.",
+      "difficulty": "medium"
     },
     {
       "id": 106,
@@ -1867,11 +2109,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Politici privind migratia si azilul"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment de 15 cuvinte care reprezinta concluzia unui discurs mai lung. Contine doar multumirea si anuntul formal al pozitiei grupului PNL de sustinere a proiectului. Nu aduce argumente sau substanta - este o declaratie formala de pozitie.",
+      "difficulty": "easy"
     },
     {
       "id": 107,
@@ -1886,11 +2130,15 @@
       "detected_law_patterns": [
         "nr. 111/2024"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Digitalizare si guvernare electronica"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 111/2024"
+      ],
+      "labeling_notes": "Explica contextul si ratiunea OUG nr. 111/2024 privind prelungirea termenului pentru trecerea la Registrul electronic al actelor de stare civila. Ofera detalii concrete despre adaptarea autoritatilor locale (echipamente, instruire, proceduri) si functionarea in paralel a registrelor. Argumenteaza echilibrul intre digitalizare si realitatea din teren.",
+      "difficulty": "easy"
     },
     {
       "id": 108,
@@ -1905,11 +2153,13 @@
       "detected_law_patterns": [
         "amendamente"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Diaspora si relatia cu romanii din afara tarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Sustine proiectul de lege, dar ridica o problema concreta: insuficienta consulatelor si a personalului consular fata de cresterea comunitatilor romanesti din UE. Mentioneaza amendamente specifice la Legea bugetului depuse de AUR si respinse de coalitie. Propune solutii concrete: consulate noi si suplimentarea personalului. Tonul partizan de la final nu domina.",
+      "difficulty": "medium"
     },
     {
       "id": 109,
@@ -1927,11 +2177,13 @@
         "nr. 42/2024",
         "nr. 339/2005"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare a sedintei: anunta absenta amendamentelor, confirma ca proiectul ramane la votul final, trece la urmatorul punct pe ordinea de zi si solicita raportul comisiei.",
+      "difficulty": "easy"
     },
     {
       "id": 110,
@@ -1944,11 +2196,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Sanatate publica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Analizeaza substantiv proiectul de lege privind substante psihotrope. Ofera o evaluare nuantata: identifica aspectele pozitive (control mai strict al medicamentelor folosite ca droguri) si riscurile (birocratia excesiva poate afecta utilizatorii legitimi). Propune relaxarea accesului la medicamente cu substante psihoactive in scop strict medical. Dezbatere echilibrata pe fond.",
+      "difficulty": "easy"
     },
     {
       "id": 111,
@@ -1961,11 +2215,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Mediu si schimbari climatice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment dintr-un discurs care promoveaza teoria conspiratiei chemtrails. Din contextul anterior (speech 179) reiese clar: vorbitorul sustine ca avioanele pulverizeaza oxizi de metale grele asupra populatiei. Interventia este complet lipsita de fundament stiintific si deraiaza dezbaterea pe proiectul de lege privind poluarea aerului.",
+      "difficulty": "easy"
     },
     {
       "id": 112,
@@ -1978,11 +2234,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Justitie si stat de drept"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Opozitie constructiva la pragul valoric propus pentru cererile cu valoare redusa. Aduce argumente concrete: compara pragul de 50.000 lei propus cu pragul de 25.000 lei (~5.000 EUR) din practica UE, sustine colega Varga pe degrevarea instantelor, si clarifica ca nu se opune proiectului in sine ci doar pragului excesiv. Argumentatie pe fond cu date comparative.",
+      "difficulty": "easy"
     },
     {
       "id": 113,
@@ -1995,11 +2253,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: presedintele de sedinta da cuvantul urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 114,
@@ -2012,11 +2272,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-08_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia este complet in afara subiectului dezbaterii (regimul deseurilor, OUG 92/2021). Vorbitoarea reactioneaza la atacuri privind calitatea partidului SOS, facand o aparare partizana cu replici ironice despre alte partide. Zero substanta politica sau legatura cu proiectul de lege discutat.",
+      "difficulty": "medium"
     },
     {
       "id": 115,
@@ -2029,11 +2289,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica in cadrul interventiilor politice. Continutul este retorica de mobilizare partizana in jurul lui Calin Georgescu: 'sistemul persecuta', 'alegatorii au fost etichetati extremisti', 'nu ne vom opri', 'Cu Dumnezeu inainte'. Nu propune nicio solutie concreta, nu aduce date sau argumente, si nu abordeaza o tema de politica publica. Este un discurs de tip manifest nationalist fara substanta legislativa.",
+      "difficulty": "medium"
     },
     {
       "id": 116,
@@ -2046,11 +2308,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: multumeste vorbitorului anterior si anunta urmatorul vorbitor inscris.",
+      "difficulty": "easy"
     },
     {
       "id": 117,
@@ -2063,11 +2327,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma administratiei publice",
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica in cadrul interventiilor politice. Desi enumera propuneri specifice (300 parlamentari, -30% consilieri, alegeri in doua tururi, eliminarea pensiilor speciale, reforma companiilor de stat), discursul este in esenta un material de campanie PNL: 'Acestea sunt propunerile PNL', 'Asta isi doreste presedintele Bolojan', 'PNL este pregatit sa livreze'. Tonul dominant este de atac partizan ('jocuri de culise, calcule meschine, negocieri lipsite de decenta') si de amenintare ('se vor autoexclude din viitorul politic'). Propunerile sunt generice si nu contin mecanisme legislative concrete.",
+      "difficulty": "hard"
     },
     {
       "id": 118,
@@ -2080,11 +2347,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie procedurala extrem de scurta (2 cuvinte) - moderatorul indica ca nu a auzit ce s-a spus din sala. Fara continut substantial.",
+      "difficulty": "easy"
     },
     {
       "id": 119,
@@ -2097,11 +2366,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Reforma administratiei publice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Incepe prin sustinerea aderarii la OCDE, dar deviaza rapid spre un atac generalizat asupra competentei functionarilor numiti in institutiile statului. Exemplul concret (necunoasterea diferentelor intre pilonii de pensii) este tangential fata de proiectul de lege discutat. Concluzia ('institutii incompetente care nu fac niciun fel de performanta si doar incaseaza sute de mii de lei') este un atac partizan fara propuneri de imbunatatire.",
+      "difficulty": "medium"
     },
     {
       "id": 120,
@@ -2114,11 +2385,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: expresie scurta de apreciere si acordarea cuvantului urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 121,
@@ -2131,11 +2404,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Tineret si sport",
+        "Egalitate de sanse si nediscriminare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Sustine proiectul de lege privind sportul pentru persoanele cu dizabilitati si aduce o propunere legislativa concreta: directionarea a 0,25% din cifra de afaceri a marilor companii catre sport, cu referinta comparativa la Ungaria (2,75%). Argumenteaza ca o astfel de masura ar asigura baze sportive si pentru copiii cu dizabilitati.",
+      "difficulty": "easy"
     },
     {
       "id": 122,
@@ -2148,11 +2424,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: acordarea cuvantului urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 123,
@@ -2165,11 +2443,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: acordarea cuvantului urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 124,
@@ -2184,11 +2464,16 @@
       "detected_law_patterns": [
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cultura patrimoniu si culte",
+        "Drepturi fundamentale si libertati civile"
+      ],
+      "expected_law_ids": [
+        "PL-x 166/2025"
+      ],
+      "labeling_notes": "Opozitie constructiva fundamentata pe doua directii: (1) critica procedurii accelerate - arata ca PL-x 166 a fost introdus neprogramat in Comisia juridica, cererea de amanare a fost respinsa, iar sedinta la Comisia pentru drepturile omului a fost organizata pe repede-inainte; (2) critica pe fond - formularea 'altor functii clericale ori monahale' poate fi interpretata extensiv si poate periclita libertatea religioasa garantata de Constitutie si CEDO. Propune solutie concreta: retrimiterea la comisii cu participarea societatii civile si a cultelor.",
+      "difficulty": "medium"
     },
     {
       "id": 125,
@@ -2204,11 +2489,13 @@
         "nr. 105/2024",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: constata lipsa obiectiilor, confirma ca proiectul ramane la vot final, anunta urmatorul punct pe ordinea de zi si solicita raportul comun si propunerile de timpi de dezbatere.",
+      "difficulty": "easy"
     },
     {
       "id": 126,
@@ -2221,11 +2508,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: solicita votul pentru timpii de dezbatere, anunta rezultatul votului, intreaba daca sunt interventii si acorda cuvantul, reamintind ca in procedura de urgenta se accepta un singur vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 127,
@@ -2238,11 +2527,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Pensii si protectie sociala"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Vorbitorul aduce experienta profesionala relevanta din activitatea la casele de pensii, explicand complexitatea dosarelor de pensie (5 milioane de dosare unice, formule de calcul schimbate la fiecare 5 ani, minim 5 ani pentru formarea unui lucrator). Contribuie cu argumente de fond la dezbaterea pe proiectul de lege privind protectia sociala. Incheierea cu anuntul votului PSD este partizana, dar portiunea dominanta aduce informatii utile dezbaterii.",
+      "difficulty": "medium"
     },
     {
       "id": 128,
@@ -2257,11 +2548,15 @@
       "detected_law_patterns": [
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "PL-x 123/2025"
+      ],
+      "labeling_notes": "Moderarea sedintei: anunta proiectul de lege la vot, solicita votul, comunica rezultatul (unanimitate, 292 voturi, adoptat).",
+      "difficulty": "easy"
     },
     {
       "id": 129,
@@ -2274,11 +2569,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-18_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Drepturi fundamentale si libertati civile",
+        "Cultura patrimoniu si culte"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi ridica o preocupare privind viteza adoptarii proiectului si citeaza o critica (prevederile legale denaturate intentionat), scopul dominant este pozitionarea partizana: subliniaza ca doar SOS a votat contra, ataca AUR pentru inconsecventa (voteaza pentru desi critica). Critica legii ramane superficiala, fara analiza juridica detaliata a prevederilor contestate.",
+      "difficulty": "medium"
     },
     {
       "id": 130,
@@ -2291,11 +2589,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: multumeste vorbitorului anterior si da cuvantul urmatorului deputat.",
+      "difficulty": "easy"
     },
     {
       "id": 131,
@@ -2308,11 +2608,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Infrastructura rutiera"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica cu continut substantial: identifica proiecte de infrastructura specifice (A7, A8, drumuri expres Focsani-Braila, Braila-Galati, spre Tulcea), argumenteaza impactul economic al conectivitatii rutiere pentru Moldova si judetul Botosani, si propune actiuni concrete (finalizarea licitatiilor, accelerarea santierelor, conexiunea Iasi-Ungheni-Chisinau).",
+      "difficulty": "easy"
     },
     {
       "id": 132,
@@ -2325,11 +2627,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "IMM-uri si antreprenoriat"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi include date comparative cu Bulgaria (impozit profit 10%, turisti 13M vs 2.5M, deficit 3% vs 9%) si enumera generic solutii (relaxare fiscala, credite subventionate), scopul dominant este atacul la adresa guvernului si autopromovarea AUR ('AUR este partidul intreprinzatorilor romani', lansarea platformei). Propunerile sunt vagi, iar datele par selective. Similar cazului ID 21 din exemplele etichetate.",
+      "difficulty": "hard"
     },
     {
       "id": 133,
@@ -2342,11 +2647,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: deschide a doua parte a sedintei, anunta prezenta (156/330), reaminteste programul de lucru (dezbateri pana la 11:00, vot final la 11:30), solicita observatii de la liderii de grup privind ordinea de zi.",
+      "difficulty": "easy"
     },
     {
       "id": 134,
@@ -2359,11 +2666,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interjunctie procedurala foarte scurta (3 cuvinte): presedintele de sedinta cere clarificarea numarului proiectului de lege.",
+      "difficulty": "easy"
     },
     {
       "id": 135,
@@ -2376,11 +2685,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interjunctie procedurala foarte scurta (4 cuvinte): liderul de grup raspunde ca nu s-a discutat in prealabil mutarea proiectului pe ordinea de zi.",
+      "difficulty": "easy"
     },
     {
       "id": 136,
@@ -2396,11 +2707,18 @@
         "nr. 111/2024",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "PL-x 193/2025",
+        "HCD nr. 111/2024",
+        "PHCD 48/2025",
+        "PHCD 43/2025"
+      ],
+      "labeling_notes": "Moderarea sedintei: consulta toate grupurile parlamentare pentru mutarea PL-x 193/2025, constata acordul, anunta trecerea la dezbateri, parcurge PHCD 48/2025 si introduce PHCD 43/2025 privind comisia de ancheta pentru Salina Praid.",
+      "difficulty": "easy"
     },
     {
       "id": 137,
@@ -2413,11 +2731,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Mediu si schimbari climatice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Aduce expertiza tehnica relevanta in dezbaterea privind comisia de ancheta pentru accidentul ecologic de la Salina Praid: intreaba despre lipsa instalatiilor de monitorizare tridimensionala (instalatii Lee), lipsa masurarii debitului de apa, a vibratiilor si tensiunilor din sol. Identifica cauze concrete ale dezastrului (lipsa infrastructurii de monitorizare, ignorarea semnalelor cercetatorilor, excluderea sistemului national de cercetare).",
+      "difficulty": "medium"
     },
     {
       "id": 138,
@@ -2430,11 +2750,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interjunctie procedurala foarte scurta (6 cuvinte): presedintele de sedinta clarifica dreptul de luare a cuvantului - al doilea vorbitor de grup, nu drept la replica.",
+      "difficulty": "easy"
     },
     {
       "id": 139,
@@ -2447,11 +2769,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Drept la replica transformat in atac partizan: acuza USR de ipocrizie (coalitie cu PSD dupa ce criticau AUR), revendica victoria in alegeri care 'au fost anulate', ameninta ('nu ne schimbati voi niciun presedinte'). Mentiunile despre taxe si vicepremieri sunt tangentiale si fara substanta. Nu contribuie la dezbaterea pe proiectul legislativ in discutie.",
+      "difficulty": "easy"
     },
     {
       "id": 140,
@@ -2464,11 +2786,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: accepta o interventie si da cuvantul urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 141,
@@ -2487,11 +2811,18 @@
         "nr. 165/2013",
         "nr. 94/2000"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 83/1999",
+        "OUG nr. 94/2000",
+        "Legea nr. 165/2013",
+        "Pl-x 203/2025"
+      ],
+      "labeling_notes": "Moderarea sedintei: constata lipsa amendamentelor la proiectul anterior, anunta ca ramane la votul final, introduce urmatorul punct pe ordinea de zi (Pl-x 203/2025 privind retrocedari) si invita initiatorul sa ia cuvantul.",
+      "difficulty": "easy"
     },
     {
       "id": 142,
@@ -2504,11 +2835,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cadastru proprietate si retrocedari"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Prezentare substantiala a initiatorului: explica obiectivele proiectului (corelarea actelor normative privind retrocedarile, practica unitara, rezolvarea situatiilor specifice precum accesul la arhivele statului). Ofera context istoric (confiscarile din perioada comunista) si argumenteaza necesitatea proiectului.",
+      "difficulty": "easy"
     },
     {
       "id": 143,
@@ -2523,11 +2856,16 @@
       "detected_law_patterns": [
         "Legea nr"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cadastru proprietate si retrocedari"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 10",
+        "Legea nr. 165"
+      ],
+      "labeling_notes": "Opozitie substantiala la proiectul de retrocedare: aduce exemplul comparativ al Poloniei (presedintele a refuzat o lege similara), citeaza experienta profesionala de la Curtea de Conturi (s-au retrocedat mai multe paduri decat detinea Romania, retrocedari cu acte contrafacute). Desi tonul este politic si agresiv, argumentele sunt concrete si bazate pe experienta profesionala directa.",
+      "difficulty": "hard"
     },
     {
       "id": 144,
@@ -2540,11 +2878,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: clarifica dreptul de interventie (a doua interventie de grup, nu drept la replica) si gestioneaza ordinea vorbitorilor intre neafiliati.",
+      "difficulty": "easy"
     },
     {
       "id": 145,
@@ -2557,11 +2897,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cadastru proprietate si retrocedari"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "A doua interventie pe proiectul de retrocedare cu analiza constitutionala: invoca art. 1 alin. (5) din Constitutie privind calitatea, claritatea si previzibilitatea legii; identifica 'portite pentru abuz' in formularea legii; ofera exemplu concret din Bihor (spital, ambulatoriu, colegii retrocedate unui cult cu un singur membru, oameni aducand vata si aspirina la spital). Opozitie fundamentata juridic si factual.",
+      "difficulty": "medium"
     },
     {
       "id": 146,
@@ -2574,11 +2916,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cadastru proprietate si retrocedari"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Apara proiectul de retrocedare cu argumente istorice si principiale: contraargumenteaza afirmatiile xenofobe (cedari catre unguri, austrieci) ca 'extrem de fals', argumenteaza ca proprietatea privata este fundamentala pentru democratie, invoca Revolutia Industriala si experienta interbelica. Desi nu abordeaza criticile constitutionale specifice ridicate de opozitie si contine atacuri la adresa adversarilor, portiunea dominanta apara o pozitie de politica publica cu argumente.",
+      "difficulty": "hard"
     },
     {
       "id": 147,
@@ -2591,11 +2935,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-25_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interjunctie foarte scurta (4 cuvinte) fara continut substantial: raspunde la solicitarea presedintelui de sedinta privind un drapel de pe podea.",
+      "difficulty": "easy"
     },
     {
       "id": 148,
@@ -2608,11 +2952,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment de discurs intrerupt (8 cuvinte, microfonul a fost oprit de presedintele de sedinta). Prea scurt si fragmentar pentru a fi clasificat altfel decat neutral. Contextul arata ca face parte dintr-o tentativa de interventie non-procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 149,
@@ -2625,11 +2969,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interjunctie foarte scurta (3 cuvinte) fara continut substantial, parte din dialogul cu presedintele de sedinta care ii cere sa precizeze procedura.",
+      "difficulty": "easy"
     },
     {
       "id": 150,
@@ -2642,11 +2986,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii",
+        "Munca salarii si dialog social"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Argument constitutional specific impotriva legii de abilitare a Guvernului: identifica un potential viciu de constitutionalitate - domeniile munca si solidaritate sociala sunt de lege organica conform art. 73 alin. (3) lit. p), deci nu pot fi delegate prin ordonante simple. Argumenteaza ca raporturile de munca nu pot fi impartite artificial intre domeniu organic si ordinar. Analiza juridica clara si relevanta.",
+      "difficulty": "easy"
     },
     {
       "id": 151,
@@ -2659,11 +3006,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Corecteaza o confuzie juridica a vorbitorului anterior (AUR confunda ordonante de urgenta cu ordonante simple) si explica mecanismul constitutional de delegare legislativa: Parlamentul deleaga dreptul de a legifera, nu i se 'fura'. Tonul este condescendent ('Anul I, Facultatea de Drept'), dar explicatia constitutionala este corecta si contribuie la clarificarea dezbaterii.",
+      "difficulty": "medium"
     },
     {
       "id": 152,
@@ -2676,11 +3025,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Raspunde unui discurs anterior AUR despre legea de abilitare, explicand mecanismul constitutional de delegare legislativa (art. 2 si art. 115 din Constitutie). Desi tonul este condescendent ('lasati populismul aici... cresteti cunostintele juridice'), ofera o analiza constitutionala substantiala: cetatenii cedeaza suveranitatea reprezentantilor, iar parlamentarii pot delega Guvernului dreptul de a legifera pe durata vacantei. Tonul aspru dar cu argumente juridice concrete = constructiv.",
+      "difficulty": "medium"
     },
     {
       "id": 153,
@@ -2693,11 +3044,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Tineret si sport",
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "In calitate de presedinte al Comisiei pentru tineret si sport, refuza sa prezinte raportul si in schimb ataca coalitia cu referinte literare (Arghezi, Bacovia). Ridica o preocupare procedurala legitima (sedinta tinuta fara presedintele comisiei), dar portiunea dominanta este retorica de atac, nu contributie substantiala. Contextul arata ca raportul suplimentar a fost transmis legal presedintelui de sedinta.",
+      "difficulty": "medium"
     },
     {
       "id": 154,
@@ -2713,11 +3067,15 @@
         "Legea nr",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Tineret si sport"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 69/2000"
+      ],
+      "labeling_notes": "Continua atacurile: acuza legea de 'trafic de influenta' fara dovezi concrete, sustine ca nu e in beneficiul romanilor, anunta o conferinta de presa. Mentioneaza Legea nr. 69, dar nu aduce argumente juridice sau de fond impotriva amendamentelor. In interventia urmatoare (71) face propuneri concrete, dar aceasta interventie in sine este dominata de acuzatii si auto-promovare.",
+      "difficulty": "medium"
     },
     {
       "id": 155,
@@ -2733,11 +3091,13 @@
         "amendament",
         "Amendamentul"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedinta de sedinta anunta rezultatul votului asupra unui amendament respins (126 impotriva, 74 pentru, 32 abtineri) si solicita urmatorul amendament. Procedura pura de moderare.",
+      "difficulty": "easy"
     },
     {
       "id": 156,
@@ -2753,11 +3113,13 @@
         "amendament",
         "Amendamentul"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedinta de sedinta anunta rezultatul votului asupra unui alt amendament respins si solicita urmatorul amendament. Procedura pura de moderare a sedintei.",
+      "difficulty": "easy"
     },
     {
       "id": 157,
@@ -2770,11 +3132,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie foarte scurta (6 cuvinte) a presedintei de sedinta care solicita precizarea timpului de dezbatere. Moderare procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 158,
@@ -2787,11 +3151,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Politici privind migratia si azilul",
+        "Politica externa si afaceri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Raport al Comisiei pentru afaceri europene asupra Comunicarii UE (2025) 101 privind returnarea resortisantilor tarilor terte. Include analiza substantiala: sustinerea principiului subsidiaritatii si proportionalitatii, recunoasterea reciproca a deciziilor de returnare, garantii procedurale pentru persoanele vizate, cooperarea cu tarile terte. Adoptata cu unanimitate de voturi pe 11 iunie 2025.",
+      "difficulty": "easy"
     },
     {
       "id": 159,
@@ -2804,11 +3171,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-06-30_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedinta de sedinta inchide dezbaterile, adopta articolele fara obiectii, declara sedinta inchisa si anunta revenirea la ora 16.30 pentru votul final. Procedura pura de moderare.",
+      "difficulty": "easy"
     },
     {
       "id": 160,
@@ -2821,11 +3190,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Deschiderea formala a sedintei comune a Camerei Deputatilor si Senatului in sesiune extraordinara. Include imnul national, inregistrarea prezentei (305 din 464), supunerea la vot a ordinii de zi si programului de lucru. Procedura formala de deschidere.",
+      "difficulty": "easy"
     },
     {
       "id": 161,
@@ -2838,11 +3209,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discursul premierului Bolojan de angajare a raspunderii Guvernului pe pachetul fiscal-bugetar. Extrem de detaliat: prezinta date concrete (deficit 9,3% din PIB, 132 lei cheltuiti la 100 lei incasati), masuri specifice (TVA 21%/11%, accize +10%, CASS pensii peste 3000 lei, impozit dividende 16%, inghetare salarii/pensii 2026), reforma educatiei (burse meritocratice, norma didactica +2 ore), si anunta al doilea pachet de reforme. Propuneri concrete pentru interesul public cu date si justificari.",
+      "difficulty": "easy"
     },
     {
       "id": 162,
@@ -2858,11 +3232,13 @@
         "amendamentele",
         "amendamente"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Simion ridica preocupari procedurale specifice si fundamentate: forma finala a raportului primita cu doar 20-25 minute inainte de sedinta, amendamentele sindicatelor (FSLI, Cartel ALFA, BNS) nu au fost incluse in forma finala. Face o propunere concreta (reducerea sumei forfetare parlamentare la jumatate) si anunta depunerea motiunii de cenzura (drept constitutional). Desi din opozitie, interventia contine argumente factuale si propuneri concrete.",
+      "difficulty": "medium"
     },
     {
       "id": 163,
@@ -2875,11 +3251,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie foarte scurta (9 cuvinte) fara continut substantial, parte dintr-un schimb procedural in care presedintele de sedinta il intreaba care este procedura. Nu aduce nicio contributie de fond.",
+      "difficulty": "easy"
     },
     {
       "id": 164,
@@ -2892,11 +3268,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Abuzeaza de formatul 'pe procedura' pentru a striga sloganuri politice: 'Mariti redeventele!', 'Impozitati multinationalele!', 'Nu mai finantati razboiul din Ucraina!'. Desi unele propuneri au fond (redevente, impozitare multinationle), formatul este perturbator - nu respecta regulile sedintei de angajare a raspunderii (fara dezbateri) si i se intrerupe microfonul. Presedintele de sedinta il someaza sa respecte procedura.",
+      "difficulty": "medium"
     },
     {
       "id": 165,
@@ -2909,11 +3287,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta restabileste ordinea dupa interventia perturbatoare a lui Coarna, il someaza sa respecte procedura si da cuvantul urmatorului vorbitor inscris pe procedura. Moderare a sedintei.",
+      "difficulty": "easy"
     },
     {
       "id": 166,
@@ -2926,11 +3306,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-07-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Ridica o problema constitutionala specifica si fundamentata: sesiunea extraordinara convocata doar pentru 4 si 7 iulie, dupa care Parlamentul nu mai este in sesiune si nu poate depune motiune de cenzura conform art. 114 din Constitutie. Solicita reglarea acestui aspect. Opozitie legitima bazata pe analiza constitutionala cu propunere concreta de solutionare.",
+      "difficulty": "medium"
     },
     {
       "id": 167,
@@ -2945,11 +3327,15 @@
       "detected_law_patterns": [
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "PL-x 230/2025"
+      ],
+      "labeling_notes": "Inchiderea formala a sedintei comune. Informeaza despre termenul de 3 zile pentru motiunea de cenzura (art. 114 alin. 2), mentioneaza PL-x 230/2025 (masuri fiscal-bugetare), si termenul de 2 zile pentru sesizarea Curtii Constitutionale. Comunicare procedurala formala.",
+      "difficulty": "easy"
     },
     {
       "id": 168,
@@ -2962,11 +3348,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-01_5.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Deschiderea formala a sedintei comune: imnul national, inregistrarea prezentei (388 din 464), aprobarea ordinii de zi (328 voturi pentru) si a programului de lucru (367 voturi pentru). Procedura formala de deschidere.",
+      "difficulty": "easy"
     },
     {
       "id": 169,
@@ -2979,11 +3367,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-01_5.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Inceputul discursului premierului Bolojan pentru al doilea pachet de masuri. Contextualizeaza situatia: primul pachet a fost adoptat cu o luna si jumatate inainte, masuri nepopulare dar necesare, recunoaste dificultatile. Textul este trunchiat din cauza rumoarei din sala, dar este clar un discurs de politica publica cu date si argumente.",
+      "difficulty": "easy"
     },
     {
       "id": 170,
@@ -2996,11 +3386,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-01_5.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de 3 cuvinte a presedintelui Senatului care solicita liniste in sala in timpul discursului premierului. Moderare pura a sedintei.",
+      "difficulty": "easy"
     },
     {
       "id": 171,
@@ -3013,11 +3405,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-01_5.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Pensii si protectie sociala",
+        "Justitie si stat de drept"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Continuarea discursului premierului Bolojan cu detalii concrete despre reforma pensiilor magistratilor: perioada tranzitorie de 10 ani, pensionare la 65 de ani (de la 48-49), vechime 35 de ani (de la 25), plafonare la 70% din venitul net (de la 100%). Date specifice: pensia medie in magistratura peste 24.000 lei, unele ajung la 35.000-40.000 lei. Include si analiza mai larga a disfunctionalitatilor statului (privilegii, sinecuri, risipa). Propuneri detaliate in interesul echitatii publice.",
+      "difficulty": "easy"
     },
     {
       "id": 172,
@@ -3032,11 +3427,16 @@
       "detected_law_patterns": [
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "L209/2025",
+        "PL-x 242/2025"
+      ],
+      "labeling_notes": "Inchiderea formala a primei sedinte comune. Reaminteste termenul de 3 zile pentru motiunea de cenzura (art. 114), mentioneaza legea pensiilor de serviciu (L209/2025; PL-x 242/2025) si termenul de 2 zile pentru sesizarea Curtii Constitutionale. Comunicare procedurala formala.",
+      "difficulty": "easy"
     },
     {
       "id": 173,
@@ -3049,11 +3449,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Precizare substantiala privind continutul proiectului de hotarare pentru constituirea comisiei speciale de ancheta privind violenta domestica: confirma ca include toate elementele convenite intre liderii de grup, inclusiv structura conducerii (presedinte, 4 vicepresedinti, secretar). Faciliteaza procesul de adoptare a comisiei.",
+      "difficulty": "easy"
     },
     {
       "id": 174,
@@ -3066,11 +3468,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Solicita confirmarea ca sedinta poate fi tinuta si fara cvorum si cere sa se verifice numarul de parlamentari prezenti fizic pentru dezbaterea motiunii de cenzura. Intrebare procedurala legitima, desi raspunsul fusese deja oferit de Gant (cvorumul e necesar doar la vot, conform deciziei CCR).",
+      "difficulty": "easy"
     },
     {
       "id": 175,
@@ -3083,11 +3487,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Apelul nominal al senatorilor pentru votul asupra motiunii de cenzura: citirea numelor, inregistrarea prezentei si a optiunilor de vot (prezent/absent, voteaza/nu voteaza). Procedura formala de vot.",
+      "difficulty": "easy"
     },
     {
       "id": 176,
@@ -3100,11 +3506,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Continuarea apelului nominal pentru deputati: citirea numelor, inregistrarea prezentei si optiunilor de vot. Verifica daca vreo persoana a fost omisa. Procedura formala de vot.",
+      "difficulty": "easy"
     },
     {
       "id": 177,
@@ -3121,11 +3529,18 @@
         "PL-x",
         "nr.109/2011"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "Legea nr.47/1992",
+        "OUG nr.109/2011",
+        "L211/2025",
+        "PL-x 244/2025"
+      ],
+      "labeling_notes": "Interventie procedurala de conducere a sedintei comune. Presedintele Senatului anunta rezultatul votului asupra motiunii de cenzura, explica consecintele constitutionale (legea in domeniul sanatatii se considera adoptata), si introduce urmatorul punct pe ordinea de zi - dezbaterea motiunii de cenzura pe proiectul de guvernanta corporativa. Aloca timpii de dezbatere pentru grupurile parlamentare.",
+      "difficulty": "easy"
     },
     {
       "id": 178,
@@ -3140,11 +3555,15 @@
       "detected_law_patterns": [
         "nr.109/2011"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Industrie si competitivitate"
+      ],
+      "expected_law_ids": [
+        "OUG nr.109/2011"
+      ],
+      "labeling_notes": "Desi incepe cu o corectie literara ironica la adresa premierului (Farfuridi vs Catavencescu), discursul trece rapid la fond: critica cu exemple concrete compozitia consiliilor de administratie ale companiilor de stat (Compania Nationala de Aeroporturi - enumera calificarile fiecarui administrator). Propune alternative specifice: legarea functiei de studii de specialitate, numirea din mediul universitar si bancar, limitarea la 3 administratori. Ton dur dar cu dovezi si propuneri concrete.",
+      "difficulty": "hard"
     },
     {
       "id": 179,
@@ -3157,11 +3576,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Citirea listei nominale a deputatilor pentru exprimarea votului cu bile. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 180,
@@ -3174,11 +3595,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Clarificare procedurala scurta in timpul apelului nominal - confirma prezenta unui deputat si revenirea la un vot anterior.",
+      "difficulty": "easy"
     },
     {
       "id": 181,
@@ -3191,11 +3614,15 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Energie si resurse naturale"
+      ],
+      "expected_law_ids": [
+        "OUG nr.114/2018"
+      ],
+      "labeling_notes": "Incepe cu date concrete despre capacitatea energetica a Romaniei (MW din 1989, 2019) si critica deplafonarea energiei prin OUG 114. Insa jumatatea a doua degenereaza in acuzatii conspirationiste ('stapanii vostri v-au trimis aici sa distrugeti Romania', 'Sunteti sclavii si executantii perfecti') si amenintari ('va promitem ca veti plati'). Portiunea dominanta este atacul partizan si teoria conspiratiei, nu analiza politicii energetice.",
+      "difficulty": "hard"
     },
     {
       "id": 182,
@@ -3208,11 +3635,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Citirea listei nominale a senatorilor si clarificari de prezenta in timpul votului cu bile. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 183,
@@ -3225,11 +3654,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Citirea listei nominale a deputatilor pentru al doilea vot cu bile. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 184,
@@ -3244,11 +3675,16 @@
       "detected_law_patterns": [
         "nr.111/2022"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "IMM-uri si antreprenoriat"
+      ],
+      "expected_law_ids": [
+        "Legea nr.111/2022"
+      ],
+      "labeling_notes": "Prezentarea motiunii de cenzura pe pachetul fiscal (2721 cuvinte). Desi tonul este politic, continutul este predominant analiza de politica publica (~70%): discriminarea fiscala intre capitalul romanesc si cel strain (deductibilitate IMCA, omiterea cheltuielilor cu dobanzile), obligativitatea POS/cont bancar cu comparatii internationale (Polonia, Italia), majorarea CASS, taxare vehicule vechi, taxe consulare diaspora. Include comparatii cu Austria, Finlanda, Franta, Germania si referinte la principii din Codul fiscal si Pactul de Stabilitate. Opozitie legitima cu substanta factuala.",
+      "difficulty": "hard"
     },
     {
       "id": 185,
@@ -3261,11 +3697,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discurs in cadrul dezbaterii motiunii de cenzura pe pachetul fiscal. Identifica cateva probleme concrete (discriminarea fiscala intre capitalul romanesc si strain, modificarea raspunderii SRL, majorarea capitalului social minim), dar portiunea dominanta este retorica de atac fara propuneri alternative ('atac direct la suveranitatea noastra economica', 'mecanism perfid', 'Acest Guvern trebuie sa plece!'). Spre deosebire de motiunea prezentata anterior (ID 184), nu propune solutii si nu ofera comparatii sau fundamentare.",
+      "difficulty": "hard"
     },
     {
       "id": 186,
@@ -3278,11 +3716,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Citirea listei nominale si clarificari de prezenta in timpul votului cu bile. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 187,
@@ -3295,11 +3735,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-07_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Citirea listei senatorilor cu clarificari de prezenta si confirmare a voturilor. Activitate pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 188,
@@ -3312,11 +3754,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Politica externa si afaceri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica structurata despre dezinformarea ruseasca si compromiterea idealului unionist romanesc. Identifica mecanismele de propaganda (atacuri pe Facebook asupra Maiei Sandu, atacarea fortelor pro-europene din Moldova la momente sensibile), ofera context si propune detasarea de propaganda ruseasca si sustinerea perspectivei europene a Republicii Moldova. Analiza coerenta cu directie clara de politica externa.",
+      "difficulty": "medium"
     },
     {
       "id": 189,
@@ -3329,11 +3773,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica contra extremismului AUR. Include referinte la incidente concrete de violenta (atac asupra unui livrator nepalez, alt emigrant spitalizat) si propune vag responsabilizare. Insa portiunea dominanta (~70%) este atac partizan direct la adresa AUR ('fabrica de ura', 'instrument al Kremlinului'), fara propuneri legislative concrete. Propunerea finala ('sa raspunda politic, moral si legal') este prea vaga pentru a fi considerata constructiva.",
+      "difficulty": "hard"
     },
     {
       "id": 190,
@@ -3346,11 +3792,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica intitulata 'Lapte si miere din cuvinte goale'. Retorica pura fara nicio propunere, data sau solutie concreta. Atacuri generalizate asupra tuturor partidelor de guvernare din ultimii 36 de ani ('ati jefuit si ati ingropat fabrici'), predictii catastrofiste ('in 30 de zile economia se va prabusi') fara baza factuala sau alternativa propusa.",
+      "difficulty": "easy"
     },
     {
       "id": 191,
@@ -3363,11 +3811,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare",
+        "Politica externa si afaceri europene"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica analitica despre campaniile de propaganda ruseasca. Identifica mecanismele specifice (mesaje pe retele sociale, pseudo-analize finantate indirect), ofera context istoric (pierderea Basarabiei, Bucovinei de Nord), mentioneaza investitii rusesti de sute de milioane de euro in Moldova, critica un parlamentar care cere neimplicarea in alegerile din Moldova fara a condamna ingerinta Rusiei. Propune solidaritate cu partenerii NATO/UE si sprijin pentru Moldova.",
+      "difficulty": "medium"
     },
     {
       "id": 192,
@@ -3383,11 +3834,16 @@
         "Legea nr",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 53/2003",
+        "PL-x 558/2024"
+      ],
+      "labeling_notes": "Moderarea sedintei: anunta prezenta (203 din 330 deputati), programul de lucru, formatul sedintei (mixt fizic si online), verifica obiectii la ordinea de zi, introduce primul punct legislativ (completarea art. 1181 din Codul muncii) si solicita raportul comisiei.",
+      "difficulty": "easy"
     },
     {
       "id": 193,
@@ -3404,11 +3860,16 @@
         "amendamente",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Munca salarii si dialog social"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 53/2003",
+        "PL-x 558/2024"
+      ],
+      "labeling_notes": "Raport formulaic de comisie ('In temeiul art. 95 din Regulamentul Camerei Deputatilor...') pentru completarea Codului muncii privind acordarea a 8 zile de telemunca pentru salariatii cu copii cu handicap. Prezinta avizele favorabile (Consiliul Legislativ, CES, comisii relevante), punctul de vedere al Guvernului si propune adoptarea cu amendamente. Unanimitate de voturi.",
+      "difficulty": "easy"
     },
     {
       "id": 194,
@@ -3421,11 +3882,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie foarte scurta (5 cuvinte) a presedintei de sedinta care cere unui vorbitor sa se refere la proiectul in discutie, nu la subiecte tangentiale. Interventie procedurala fara substanta.",
+      "difficulty": "easy"
     },
     {
       "id": 195,
@@ -3438,11 +3901,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment de 4 cuvinte dintr-un dialog intrerupt ('De ce... Pai este...'). Interventie foarte scurta, fara substanta, parte dintr-un schimb de replici intre vorbitoare si presedinta de sedinta.",
+      "difficulty": "easy"
     },
     {
       "id": 196,
@@ -3457,11 +3920,16 @@
       "detected_law_patterns": [
         "amendamente"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "COM (2025) 97",
+        "PHCD 41/2025"
+      ],
+      "labeling_notes": "Moderarea sedintei: trece prin cele 3 amendamente admise la proiectul anterior, confirma adoptarea fiecaruia, lasa proiectul pentru vot final si introduce urmatorul punct pe ordinea de zi (opinia despre foaia de parcurs UE privind drepturile femeilor).",
+      "difficulty": "easy"
     },
     {
       "id": 197,
@@ -3474,11 +3942,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Atac personal direct la adresa deputatului Neamtu ('cea mai josnica specie de parlamentar', 'nu aveti ce sa cautati in acest Parlament', 'groaznic modul in care va raportati la femei'). Fara nicio substanta de politica publica. Interventia are loc in contextul dezbaterii unui proiect despre cultura si educatie dar nu adreseaza subiectul.",
+      "difficulty": "easy"
     },
     {
       "id": 198,
@@ -3491,11 +3959,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Continuare a atacului personal in cadrul dreptului la replica, cu insinuari despre orientarea sexuala a colegului ('Obsesia cu schimbatul de sex poate tradeaza anumite optiuni sexuale'). Complet lipsit de substanta de politica publica, off-topic fata de proiectul de cultura si educatie in dezbatere.",
+      "difficulty": "easy"
     },
     {
       "id": 199,
@@ -3508,11 +3976,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: exprima regret fata de escaladarea discutiilor, gestioneaza ordinea vorbitorilor conform Regulamentului (prioritate grupuri parlamentare, apoi neafiliati), da cuvantul urmatorului vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 200,
@@ -3525,11 +3995,16 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "COM (2025) 97",
+        "PHCD 41/2025"
+      ],
+      "labeling_notes": "Moderarea sedintei: gestioneaza explicarea votului online, anunta trecerea la urmatorul punct pe ordinea de zi (opinia privind drepturile femeilor), lanseaza votul si anunta rezultatul (214 pentru, 2 contra, 2 abtineri - adoptat).",
+      "difficulty": "easy"
     },
     {
       "id": 201,
@@ -3542,11 +4017,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-09-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Fragment scurt (18 cuvinte) in care deputatul incepe un comentariu ironic la adresa colegului Mihaescu, continuat in interventia urmatoare cu atacuri personale. Desi scurt, intentia de atac personal este clara din context si nu are legatura cu proiectul in dezbatere.",
+      "difficulty": "medium"
     },
     {
       "id": 202,
@@ -3559,11 +4034,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare a sedintei: multumeste vorbitorului anterior si da cuvantul urmatorului deputat inscris pe lista.",
+      "difficulty": "easy"
     },
     {
       "id": 203,
@@ -3576,11 +4053,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Raport comun al comisiilor pentru aparare privind Strategia Nationala de Aparare 2025-2030. Prezinta structura documentului, rezultatul votului in comisii (majoritate cu o singura abtinere), si propune plenului aprobarea strategiei. Raport formulaic dar cu continut substantial privind politica de aparare.",
+      "difficulty": "easy"
     },
     {
       "id": 204,
@@ -3593,11 +4072,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta de moderare: multumeste vorbitorului anterior si da cuvantul doamnei deputat Anamaria Gavrilă. 9 cuvinte, pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 205,
@@ -3610,11 +4091,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare",
+        "Politici NATO si cooperare strategica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica in contextul zilei de 1 Decembrie, pe tema unitatii nationale in fata razboiului hibrid. Aduce argumente concrete: efectele razboiului din Ucraina, riscul precedentului cedarii de teritorii sub presiune militara, situatia Republicii Moldova, vulnerabilitatea la dezbinare interna. Se incheie cu un apel transpartisan pentru maturitate politica si solidaritate. Desi retoric, sustine o pozitie de politica externa clara si se adreseaza tuturor colegilor.",
+      "difficulty": "medium"
     },
     {
       "id": 206,
@@ -3627,11 +4111,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie in dezbaterea pe Strategia Nationala de Aparare, in numele Grupului PSD. Analizeaza conceptul central al strategiei ('independenta solidara'), discuta rolul NATO/UE/SUA, amenintarile din partea Rusiei, economia ca fundament al securitatii. Angajamente ferme din partea grupului parlamentar. Interventie substantiala care se angajeaza direct cu documentul discutat.",
+      "difficulty": "easy"
     },
     {
       "id": 207,
@@ -3644,11 +4130,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Energie si resurse naturale"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica pe tema posibilei retrageri Lukoil din Romania. Propune o solutie concreta si detaliata: preluarea activelor de catre stat, finantata prin emisiuni de obligatiuni destinate populatiei si diasporei. Argumenteaza cu beneficii: independenta energetica, evitarea dependentei de finantatori externi, pastrarea infrastructurii in patrimoniul national. Propunere de politica publica clara cu mecanism de implementare.",
+      "difficulty": "easy"
     },
     {
       "id": 208,
@@ -3663,11 +4151,15 @@
       "detected_law_patterns": [
         "Pl-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Invatamant superior si cercetare"
+      ],
+      "expected_law_ids": [
+        "Pl-x 250/2024"
+      ],
+      "labeling_notes": "Declaratie politica extrem de detaliata despre programul universitar. Identifica problema (orare fragmentate de 10-12 ore pentru 4-5 ore de activitate), explica cauzele (profesori cu joburi multiple), arata impactul (studentii nu pot munci, nu pot deveni independenti). Propune un proiect de lege concret (Pl-x 250/2024): maximum 8 ore/zi, prezenta neobligatorie peste limita. Invita colegii sa repuna proiectul in dezbatere. Model de interventie constructiva: problema, dovezi, solutie legislativa.",
+      "difficulty": "easy"
     },
     {
       "id": 209,
@@ -3680,11 +4172,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: verifica prezenta deputatilor care au lipsit anterior, ii striga pe nume si constata absenta, apoi da cuvantul urmatorului deputat prezent. Pur procedurala.",
+      "difficulty": "easy"
     },
     {
       "id": 210,
@@ -3697,11 +4191,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explicarea votului pentru Strategia Nationala de Aparare. Chelaru a votat pentru, dar aduce o critica constructiva: strategia vorbeste doar despre inarmare si masuri defensive, dar nu include o viziune pentru construirea pacii. Propune o reorientare fundamentala: Romania ar trebui sa fie un actor major pentru 'reinstituirea culturii si civilizatiei pacii'. Se incheie cu un apel la reconciliere. Critica cu alternativa clara.",
+      "difficulty": "medium"
     },
     {
       "id": 211,
@@ -3714,11 +4210,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie minimala de moderare: 'Va multumesc, domnule senator.' 4 cuvinte, marcand incheierea interventiei anterioare.",
+      "difficulty": "easy"
     },
     {
       "id": 212,
@@ -3731,11 +4229,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie foarte scurta din sala: 'Explicarea votului!' - 4 cuvinte, solicitare procedurala de a lua cuvantul pentru explicarea votului. Fara continut substantial.",
+      "difficulty": "easy"
     },
     {
       "id": 213,
@@ -3748,11 +4248,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Securitate nationala si aparare"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explicarea votului impotriva Strategiei Nationale de Aparare. Desi ridica o preocupare potentiala legitimata (interesele cetatenilor romani in strategia de aparare), o face prin atacuri retorice la adresa presedintelui si prin insinuari conspirationiste: sugereaza ca presedintele a fost 'pus la comanda unei puteri straine din Europa Occidentala'. Nu propune nicio alternativa concreta, nu analizeaza documentul, ci reduce discutia la un atac personal si la o teorie a conspiratiei.",
+      "difficulty": "medium"
     },
     {
       "id": 214,
@@ -3768,11 +4270,15 @@
         "nr. 479/2025",
         "Amendamentele"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Pensii si protectie sociala"
+      ],
+      "expected_law_ids": [
+        "Decizia CCR nr. 479/2025"
+      ],
+      "labeling_notes": "Raport comun al comisiilor juridice privind reexaminarea legii pensiilor de serviciu, ca urmare a Deciziei CCR nr. 479/2025 care a declarat legea neconstitutionala in ansamblu. Prezinta procedura legala (art. 59 din Regulament, art. 147 din Constitutie), rezultatul votului comisiilor (majoritate pentru respingere), si propune respingerea legii. Raport tehnic formulaic, cu referinte legislative precise.",
+      "difficulty": "easy"
     },
     {
       "id": 215,
@@ -3785,11 +4291,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: supune la vot propunerea comisiilor, anunta rezultatele votului (318 pentru, 19 impotriva, 11 abtineri), da cuvantul pe procedura. Gestionare procedurala a sedintei.",
+      "difficulty": "easy"
     },
     {
       "id": 216,
@@ -3802,11 +4310,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie pe procedura, invocand art. 211 din Regulamentul Camerei Deputatilor. Semnaleaza ca de peste 25 de zile prim-ministrul refuza sa participe la 'Ora premierului', desi Biroul permanent a votat aceasta solicitare. Propune o actiune concreta: ca plenul sa voteze chemarea premierului. Este o utilizare legitima a mecanismului parlamentar de control si responsabilizare a executivului, cu baza regulamentara precisa.",
+      "difficulty": "medium"
     },
     {
       "id": 217,
@@ -3821,11 +4331,15 @@
       "detected_law_patterns": [
         "Legea nr"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 41/1994"
+      ],
+      "labeling_notes": "Interventie de moderare: introduce punctul 4 al ordinii de zi (numirea presedintelui CA al TVR), citeaza dispozitiile art. 19 alin. (7) din Legea nr. 41/1994 privind procedura de numire, si da cuvantul reprezentantului comisiilor pentru prezentarea propunerii. Moderare cu componenta procedural-informativa.",
+      "difficulty": "easy"
     },
     {
       "id": 218,
@@ -3842,11 +4356,16 @@
         "PL-x",
         "nr. 43/2024"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 43/2024",
+        "PL-x 339/2024"
+      ],
+      "labeling_notes": "Interventie de moderare: constata lipsa interventiilor si a amendamentelor la proiectul anterior, il lasa pentru votul final, apoi introduce urmatorul punct de pe ordinea de zi (PL-x 339/2024 privind OUG nr. 43/2024) si da cuvantul reprezentantului Guvernului.",
+      "difficulty": "easy"
     },
     {
       "id": 219,
@@ -3861,11 +4380,15 @@
       "detected_law_patterns": [
         "Legea nr"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cultura patrimoniu si culte"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 41/1994"
+      ],
+      "labeling_notes": "Prezentarea avizului comun al comisiilor pentru cultura privind desemnarea candidatului pentru functia de presedinte al CA al TVR. Detaliaza procedura de audiere, rezultatul votului (20 pentru, 6 impotriva, 1 abtinere), citeaza Legea nr. 41/1994. Raport comun formulaic dar informativ.",
+      "difficulty": "easy"
     },
     {
       "id": 220,
@@ -3878,11 +4401,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "Digitalizare si guvernare electronica"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie in dezbaterea generala pe proiectul de lege privind e-Transport, e-Factura, e-TVA. Prezinta beneficiile concrete ale proiectului: recuperarea miliardelor pierdute prin frauda fiscala, raportare mai rapida, trasabilitate, monitorizarea transporturilor, reglementarea impozitarii tutunului si nicotinei. Argumenteaza in favoarea adoptarii cu argumente de interes public: venituri mai mari, evaziune mai mica, transparenta.",
+      "difficulty": "easy"
     },
     {
       "id": 221,
@@ -3900,11 +4426,16 @@
         "nr. 63/2008",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 63/2008",
+        "PL-x 276/2025"
+      ],
+      "labeling_notes": "Interventie de moderare: gestioneaza adoptarea amendamentelor (4 admise, 1 respins), lasa proiectul pentru votul final, introduce urmatorul punct de pe ordinea de zi (PL-x 276/2025 privind modificarea OUG nr. 63/2008), solicita pozitia initiatorului si a comisiilor.",
+      "difficulty": "easy"
     },
     {
       "id": 222,
@@ -3923,11 +4454,16 @@
         "amendamente",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 335/2007",
+        "PL-x 527/2022"
+      ],
+      "labeling_notes": "Interventie de moderare: constata lipsa dezbaterilor, gestioneaza adoptarea amendamentelor, introduce urmatorul punct de pe ordinea de zi (PL-x 527/2022 privind Legea camerelor de comert nr. 335/2007), solicita pozitia initiatorilor si a comisiei.",
+      "difficulty": "easy"
     },
     {
       "id": 223,
@@ -3942,11 +4478,15 @@
       "detected_law_patterns": [
         "nr. 335/2007"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "IMM-uri si antreprenoriat"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 335/2007"
+      ],
+      "labeling_notes": "Raport comun al Comisiei pentru industrii si Comisiei juridice asupra proiectului de lege pentru modificarea Legii camerelor de comert nr. 335/2007. Prezinta sesizarea, rezultatul votului (majoritate pentru adoptare), incadrarea ca lege organica si precizeaza ca Camera Deputatilor este camera decizionala. Raport formulaic standard.",
+      "difficulty": "easy"
     },
     {
       "id": 224,
@@ -3959,11 +4499,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare: finalizeaza dezbaterile pe un proiect de hotarare (articol cu articol), il lasa pentru votul final, introduce urmatorul punct de pe ordinea de zi (Planul de actiune privind continentul IA - COM(2025)165) si da cuvantul reprezentantului Comisiei pentru afaceri europene.",
+      "difficulty": "easy"
     },
     {
       "id": 225,
@@ -3976,11 +4518,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Inteligenta artificiala si tehnologii emergente"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie in dezbaterea pe Planul de actiune IA al Comisiei Europene. Ridica puncte substantiale: Romania lipseste din reteaua EuroHPC de fabrici de IA, riscurile IA pentru valorile democratice si drepturile fundamentale, lipsa unei metodologii clare de clasificare a sistemelor IA cu risc ridicat, negocierile netransparente. Include o remarca partizana ('conducere de tip neomarxist'), dar portiunea dominanta este analiza de politica publica cu preocupari concrete si argumentate.",
+      "difficulty": "hard"
     },
     {
       "id": 226,
@@ -3993,11 +4537,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie foarte scurta din sala in timpul sedintei de vot final: 'O clipa!', urmat de o discutie scurta cu un alt deputat si confirmarea 'E OK!' catre presedintele de sedinta. Fara continut substantial, interventie pur procedurala de coordonare in sala.",
+      "difficulty": "easy"
     },
     {
       "id": 227,
@@ -4010,11 +4554,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie de moderare a sedintei: da cuvantul unui deputat AUR pentru explicarea votului.",
+      "difficulty": "easy"
     },
     {
       "id": 228,
@@ -4027,11 +4573,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-11-26_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderatoarea gestioneaza coada de vorbitori la explicarea votului, acordand cuvantul unui deputat USR care a solicitat mai tarziu.",
+      "difficulty": "easy"
     },
     {
       "id": 229,
@@ -4048,11 +4596,18 @@
         "nr. 448/2006",
         "PL-x"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 448/2006",
+        "PL-x 161/2025",
+        "Legea nr. 335/2007",
+        "PL-x 527/2022"
+      ],
+      "labeling_notes": "Interventie de moderare: anunta doua proiecte de lege la vot, prezinta rezultatele votului si trece la urmatorul punct. Referintele legislative sunt incidentale moderarii.",
+      "difficulty": "easy"
     },
     {
       "id": 230,
@@ -4065,11 +4620,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "non_constructive",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Solicita un moment de reculegere pentru victimele atentatului din 1920 in afara procedurii stabilite. Presedintele de sedinta si liderul PNL subliniaza ca cererea este in afara procedurii (trebuia depusa la Biroul permanent). Interventia perturba desfasurarea sedintei comune dedicate motiunii de cenzura.",
+      "difficulty": "hard"
     },
     {
       "id": 231,
@@ -4082,11 +4637,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Presedintele de sedinta redirectioneaza discutia catre procedura corecta, explicand ca s-a cerut obiectii la ordinea de zi.",
+      "difficulty": "easy"
     },
     {
       "id": 232,
@@ -4099,11 +4656,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Scurta multumire formala dupa momentul de reculegere acordat. Fara continut substantial, doar un gest de incheiere a episodului.",
+      "difficulty": "easy"
     },
     {
       "id": 233,
@@ -4116,11 +4673,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Clarifica procedura corecta pentru momentele de reculegere: trebuie informarea Biroului permanent. Ofera o solutie concreta si invoca dispozitiile Codului de conduita si Regulamentului, contribuind la buna functionare a institutiei.",
+      "difficulty": "easy"
     },
     {
       "id": 234,
@@ -4133,11 +4692,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi invoca art. 42, continutul este predominant un atac la adresa PNL si a premierului care 'sta acasa de sase saptamani'. Nu propune solutii, ci doar critica partinica fara substanta constructiva.",
+      "difficulty": "medium"
     },
     {
       "id": 235,
@@ -4150,11 +4711,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie umoristica extrem de scurta (4 cuvinte) a presedintelui de sedinta, fara continut substantial.",
+      "difficulty": "easy"
     },
     {
       "id": 236,
@@ -4167,11 +4728,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-08_2.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Buget de stat si executie bugetara",
+        "Economie si fiscalitate"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Prezentarea motiunii de cenzura - desi contine date statistice despre datoria publica, deficit si inflatie, discursul este predominant retoric si partinic, cu etichete repetate ('progresist' ca peiorativ), exagerari si un final teatral (aruncarea mingii catre PSD). Stilul dominant este atacul politic, nu analiza constructiva de politici publice. Similar cu exemplul ID 21 din setul de referinta.",
+      "difficulty": "hard"
     },
     {
       "id": 237,
@@ -4184,11 +4748,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Integritate anticoruptie si transparenta"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica care aduce exemple specifice din Satu Mare (agresiune consilier judetean PNL, interpelari privind pozitii medicale), dar scopul principal este atacul partinic la adresa PNL. Nu propune solutii sau reforme, concluzia fiind ca 'PNL la Satu Mare este nefrecventabil'. Integritatea este folosita ca pretext pentru critica partinica.",
+      "difficulty": "hard"
     },
     {
       "id": 238,
@@ -4201,11 +4767,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: da cuvantul urmatorului vorbitor si anunta urmatorul pe lista.",
+      "difficulty": "easy"
     },
     {
       "id": 239,
@@ -4218,11 +4786,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: da cuvantul doamnei deputat Ana Bas si anunta urmatorul vorbitor.",
+      "difficulty": "easy"
     },
     {
       "id": 240,
@@ -4235,11 +4805,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Economie si fiscalitate",
+        "Reforma electorala si procese democratice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica SOS: elogiaza Diana Iovanovici-Sosoaca ca 'victima a sistemului', sustine ca alegerile anulate demonstreaza ca 'poporul scapa de sub control', critica guvernul pentru taxe si TVA fara date concrete sau propuneri. Foloseste retorica conspirationista ('caracatita care a pus stapanire pe tara') si nu propune nicio solutie.",
+      "difficulty": "medium"
     },
     {
       "id": 241,
@@ -4252,11 +4825,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: multumeste vorbitorului anterior si da cuvantul doamnei Raisa Enachi.",
+      "difficulty": "easy"
     },
     {
       "id": 242,
@@ -4269,11 +4844,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Justitie si stat de drept",
+        "Tineret si sport"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Desi ridica o problema reala (independenta justitiei - presedintele se pronunta inainte de CCR pe 'Legea Novak'), discursul este dominat de atacuri personale la adresa presedintelui Nicusor Dan: 'abia isi poate lega sireturile', 'pe el il musca mingea', 'Ce studii juridice are?'. Argumentul de fond este ingropat sub retorica agresiva.",
+      "difficulty": "medium"
     },
     {
       "id": 243,
@@ -4286,11 +4864,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": [
+        "Mediu si schimbari climatice"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Declaratie politica USR despre alianta PSD-AUR care a votat motiunea simpla impotriva ministrului Mediului. Desi mentioneaza reformele de mediu, discursul este predominant pozitionare partinica: 'AUR este portavocea PSD', 'USR trebuie sa ramana motor al schimbarii'. Nu detaliaza reformele blocate si nu propune solutii concrete.",
+      "difficulty": "medium"
     },
     {
       "id": 244,
@@ -4303,11 +4883,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Cultura patrimoniu si culte"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Invitatie adresata colegilor de a asculta colindatori din Arges in foaierul Parlamentului. Anunt cultural fara continut de politica publica, dar promoveaza patrimoniul cultural.",
+      "difficulty": "easy"
     },
     {
       "id": 245,
@@ -4320,11 +4902,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Deschiderea partii a doua a sedintei: anunta prezenta, reaminteste formatul, informeaza despre documentele distribuite si programul de lucru.",
+      "difficulty": "easy"
     },
     {
       "id": 246,
@@ -4337,11 +4921,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Politici pentru minoritati nationale"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie scurta dar substantiala in contextul comemorarii Revolutiei din 1989: adauga contextul istoric al rolului pastorului reformat Tokes Laszlo si subliniaza ca Revolutia a fost un moment de apropiere intre romani si maghiari. Contribuie la dialog intercomunitar si la memoria istorica.",
+      "difficulty": "medium"
     },
     {
       "id": 247,
@@ -4354,11 +4940,15 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 155/2010"
+      ],
+      "labeling_notes": "Sustine proiectul de lege privind camerele BodyCam pentru Politia Locala cu argumente concrete: previne conflicte, asigura o perspectiva neutra, protejeaza atat cetatenii cat si politistii. Interventie pe fond legislativ.",
+      "difficulty": "easy"
     },
     {
       "id": 248,
@@ -4375,11 +4965,15 @@
         "amendamentul",
         "Amendamentul"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Ordine publica si siguranta cetateanului"
+      ],
+      "expected_law_ids": [
+        "Legea nr. 155/2010"
+      ],
+      "labeling_notes": "Explica de ce amendamentul respins in comisie nu mai este necesar (exista deja prevederi legale in vigoare), sustine proiectul BodyCam si modelul Politiei Romane. Analiza legislativa substantiala.",
+      "difficulty": "easy"
     },
     {
       "id": 249,
@@ -4392,11 +4986,16 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Cultura patrimoniu si culte",
+        "Investitii publice si fonduri europene"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 60/2024"
+      ],
+      "labeling_notes": "Secretar de stat prezinta pozitia Guvernului privind prorogarea termenului pentru finalizarea investitiei la Teatrul National din Timisoara. Explica stadiul proiectului (70%), cauzele intarzierii si faptul ca nu implica costuri suplimentare. Interventie factuala si constructiva.",
+      "difficulty": "easy"
     },
     {
       "id": 250,
@@ -4411,11 +5010,13 @@
       "detected_law_patterns": [
         "amendamente"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Moderarea sedintei"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Moderarea sedintei: supune la vot prelungirea programului, anunta rezultatele, trece la dezbateri generale, adopta amendamente si saluta un grup de elevi prezenti la balcon.",
+      "difficulty": "easy"
     },
     {
       "id": 251,
@@ -4428,11 +5029,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": [
+        "Procedura parlamentara si calitatea legiferarii"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie procedurala extrem de scurta (2 cuvinte): propune durata de dezbatere pentru amendamente in procedura de urgenta.",
+      "difficulty": "easy"
     },
     {
       "id": 252,
@@ -4445,11 +5048,14 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Protectia consumatorului",
+        "Agricultura si dezvoltare rurala"
+      ],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Sustine prelungirea plafonarii adaosului comercial la alimente cu argumente concrete: protejeaza categoriile sociale cu venituri reduse in context de austeritate bugetara. Interventie substantiala pe fond legislativ, in cadrul dezbaterilor generale.",
+      "difficulty": "easy"
     },
     {
       "id": 253,
@@ -4462,11 +5068,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Discurs intrerupt de galegie si vociferari. Doar 21 de cuvinte, din care majoritatea sunt formule de adresare. Continutul substantiv (despre o lege care a starnit tensiuni) apare abia in interventiile ulterioare, nu in aceasta.",
+      "difficulty": "medium"
     },
     {
       "id": 254,
@@ -4479,11 +5085,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie extrem de scurta (11 cuvinte) dominata de notatii despre vociferari si galegie. Fara continut substantial propriu.",
+      "difficulty": "easy"
     },
     {
       "id": 255,
@@ -4499,11 +5105,16 @@
         "amendament",
         "articolul 2"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": [
+        "Justitie si stat de drept",
+        "Drepturi fundamentale si libertati civile"
+      ],
+      "expected_law_ids": [
+        "OUG nr. 31/2002"
+      ],
+      "labeling_notes": "Prezinta un amendament concret (Marginal 3) la articolul 2 privind definirea persoanelor vinovate de genocid/crime de razboi, propunand alinierea la standardele tribunalelor penale internationale. Include textul juridic specific si argumenteaza necesitatea modernizarii definitiei fata de Codul penal din 1945. Interventie legislativa substantiala.",
+      "difficulty": "medium"
     }
   ]
 }
