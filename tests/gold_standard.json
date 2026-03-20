@@ -19,11 +19,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non_constructive",
+      "expected_topics": ["Justitie si stat de drept"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia nu respecta regulamentul de sedinta si intrebarea presedintelui; de asemenea nu aduce o contributie concreta, nici nu ridica o problema urgenta - e doar o constatare politica cu potential sa inflameze spiritele; pentru o identificare corecta, trebuie analizate si urmatoarele 7 interactiuni ale vorbitorului cu presedintele de sedinta",
+      "difficulty": "hard"
     },
     {
       "id": 2,
@@ -39,11 +39,11 @@
         "PL-x",
         "nr. 107/1996"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": ["Mediu si schimbari climatice"],
+      "expected_law_ids": ["Legea apelor nr. 107/1996", "PL-x 211/2011"],
+      "labeling_notes": "Interventia este o raportare a situatiei despre o lege propusa spre adoptare in sedinta: avizul unor comisii si situatia votului la Senat",
+      "difficulty": "easy"
     },
     {
       "id": 3,
@@ -56,11 +56,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": ["Administratie publica"],
+      "expected_law_ids": ["Legea nr. 273/2006 privind finanţele publice locale", "PL-x 265/2018"],
+      "labeling_notes": "Interventia aduce argumente in contextul dezbaterii despre finantele publice locale, inceputa anterior, si include o raportare a unei situatii specifice dintr-o comuna; aduce argumente pentru o reforma administrativ-teritoriala pentru a preveni acest situatii similare de neplata. Informatiile despre subiectul discutat sunt preluate din contextul dezbaterii anterioare.",
+      "difficulty": "medium"
     },
     {
       "id": 4,
@@ -73,11 +73,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia readuce subiectul demisiei presedintelui Iohannis, care nu este relevant pentru subiectul dezbaterii curente - despre propunerile legislative pentru completarea art. 5 din Legea nr. 273/2006 privind finanţele publice locale; Pl-x 265/2018 discutate anterior. Continua interventia anterioara non-constructiva pe acelasi subiect a lui George-Nicolae Simion",
+      "difficulty": "hard"
     },
     {
       "id": 5,
@@ -90,11 +90,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia este o atac retoric asupra conducerii Parlamentului, care nu este relevant pentru subiectul dezbaterii curente, iar contextul ulterior demonstrateaza necunoasterea procedurii de lucru a Parlamentului de catre acest vorbitor",
+      "difficulty": "medium"
     },
     {
       "id": 6,
@@ -107,11 +107,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia face parte dintr-un dialog pentru explicarea procedurii parlamentare de lucru si nu are un continut substantial",
+      "difficulty": "easy"
     },
     {
       "id": 7,
@@ -124,11 +124,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Explica procedura parlamentara de stabilire a ordinii de zi pentru saptamana urmatoare",
+      "difficulty": "easy"
     },
     {
       "id": 8,
@@ -141,11 +141,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Este un raspuns usor ironic al facilitatorului la o amenintare non-constructiva cu o plangere penala din partea opozitiei, inchizand subiectul si mergand mai departe cu dezbaterea",
+      "difficulty": "easy"
     },
     {
       "id": 9,
@@ -161,11 +161,11 @@
         "Pl-x",
         "nr. 220/2008"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": ["Energie si resurse naturale"],
+      "expected_law_ids": ["Legea nr. 220/2008"],
+      "labeling_notes": "Raporteaza rezultatul dezbaterii unei comisii pe propunerea legislativa si explica ca camera deputatilor este camera decizionala",
+      "difficulty": "easy"
     },
     {
       "id": 10,
@@ -178,11 +178,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Moderarea sedintei"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Modereaza sedinta, dand cuvantul urmatorului vorbitor",
+      "difficulty": "easy"
     },
     {
       "id": 11,
@@ -198,11 +198,11 @@
         "Pl-x",
         "nr. 195/2002"
       ],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Moderarea sedintei"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Sumarizeaza situatia proiectului de lege si anunta ca proiectul de lege ramane la votul final",
+      "difficulty": "easy"
     },
     {
       "id": 12,
@@ -215,11 +215,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Sanatate publica"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventia este o propunere de a participa la un grup de lucru pentru modificarea unei legi in contextul subiectului legii in dezbatere si ofera argumente cum ar fi incurajarea preventiei bolilor",
+      "difficulty": "easy"
     },
     {
       "id": 13,
@@ -232,11 +232,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Continua interventiile anterioare care nu respecta subiectul sedintei si insista pe subiectul datei demisiei presedintelui Iohannis - fara a clarifica relevanta acestuia pentru cetateni. In sine, interventia este un atac - luarea in deradere a memoriei presedintelui de sedinta, caruia i se sugereaza sa verifice filmarile daca nu mai tine minte ce a zis anterior.",
+      "difficulty": "medium"
     },
     {
       "id": 14,
@@ -249,11 +249,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Moderarea sedintei"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Anunta urmatorul vorbitor si da cuvantul acestuia",
+      "difficulty": "easy"
     },
     {
       "id": 15,
@@ -266,11 +266,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-10_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Cultura patrimoniu si culte"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Este o interpelare a ministrului culturii, pe tema protejari arhivelor audiovizuale ale Romaniei. Explica riscul unor actiuni si solicita clarificari si masuri concrete.",
+      "difficulty": "easy"
     },
     {
       "id": 16,
@@ -283,11 +283,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Politica externa si afaceri europene", "Politici regionale si dezvoltare locala"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Sustine cu date concrete beneficiile apartenentei Romaniei la UE si propune solutii la nevoi concrete: o comunicare mai buna a evolutiei situatiei economice catre cetateni.",
+      "difficulty": "medium"
     },
     {
       "id": 17,
@@ -300,11 +300,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Agricultura si dezvoltare rurala"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Dar prezinta teme false si exagerate fara sa aduca dovezi si teorii ale conspiratiei, cum ar fi pandemiile inchipuite, sau riscul de a pieri de pe harta lumii. De asemenea nu aduce date si solutii concrete.",
+      "difficulty": "hard"
     },
     {
       "id": 18,
@@ -317,11 +317,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Reforma electorala si procese democratice"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Dar desi se incheie cu un indemn pozitiv (in dialogul urmator, intrucat depaseste timpul alocat), si aduce argumente despre calitatea slaba a parlamentului, o mare parte din discurs este un atac la adresa colegilor din parlament, cu evaluari superficiale.",
+      "difficulty": "hard"
     },
     {
       "id": 19,
@@ -334,11 +334,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
+      "expected_label": "neutral",
       "expected_topics": [],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie pentru moderarea sedintei, marcand incheierea unui discurs",
+      "difficulty": "easy"
     },
     {
       "id": 20,
@@ -351,10 +351,10 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Politici NATO si cooperare strategica"],
       "expected_law_ids": [],
-      "labeling_notes": "",
+      "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Intrucat depaseste timpul acordat, incheierea apare in urmatorul dialog, dupa ce moderatorul a marcat terminarea timpului. Desi foloseste un ton agresiv, include justificari si se inchieie cu o propunere concreta de politica externa: sustinerea Ucrainei.",
       "difficulty": ""
     },
     {
@@ -367,14 +367,12 @@
       "word_count": 345,
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": true,
-      "detected_law_patterns": [
-        "amendamente"
-      ],
-      "expected_label": "",
-      "expected_topics": [],
+      "detected_law_patterns": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Buget de stat si executie bugetara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Respecta tema sedintei, declarata la inceput moderator: interventii politice. Aduce argumente in sprijinul afirmatiei, dar majoritatea datelor par scoase din context si nu propune solutii realiste si constructive ci doar acuzatii la adresa guvernului.",
+      "difficulty": "hard"
     },
     {
       "id": 22,
@@ -387,11 +385,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "constructive",
+      "expected_topics": ["Reforma electorala si procese democratice"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Aduce in atentie o problema punctuala, aducand un exemplu concret: interzicerea de a lua cuvantul la sedintele consiliului local din Brasov",
+      "difficulty": "hard"
     },
     {
       "id": 23,
@@ -404,11 +402,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "non-constructive",
+      "expected_topics": ["Buget de stat si executie bugetara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Dialogurile anterioare si ulterioare arata ca este o interventie care schimba subiectul dezbaterii curente, fara a respecta ordinea de zi si procedura parlamentara. Procedura e clarificata de Vasile-Daniel Suciu intr-o interventie ulterioara.",
+      "difficulty": "hard"
     },
     {
       "id": 24,
@@ -421,11 +419,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie pentru scoaterea de pe ordinea de zi a unui proiect de lege. Vezi contextul - interventiile anterioare si ulterioare.",
+      "difficulty": "medium"
     },
     {
       "id": 25,
@@ -443,11 +441,11 @@
         "PL-x",
         "nr. 43/2013"
       ],
-      "expected_label": "",
-      "expected_topics": [],
-      "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "expected_label": "constructive",
+      "expected_topics": ["Agricultura si dezvoltare rurala"],
+      "expected_law_ids": ["legea nr. 289/2013", "Ordonanta de urgenta nr. 22/2017"],
+      "labeling_notes": "Raporteaza rezultatul dezbaterii unei comisii pe propunerea legislativa",
+      "difficulty": "easy"
     },
     {
       "id": 26,
@@ -460,11 +458,11 @@
       "stenogram_path": "input/stenograme/stenograma_2025-02-19_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "",
-      "expected_topics": [],
+      "expected_label": "neutral",
+      "expected_topics": ["Procedura parlamentara"],
       "expected_law_ids": [],
-      "labeling_notes": "",
-      "difficulty": ""
+      "labeling_notes": "Interventie pentru moderarea sedintei, explicand procesul de modificare a ordinii de zi",
+      "difficulty": "easy"
     },
     {
       "id": 27,
