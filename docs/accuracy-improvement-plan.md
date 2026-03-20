@@ -17,12 +17,16 @@
 
 ## Phase 1 — Foundations (measure before optimizing)
 
-### 1.1 Build gold-standard evaluation set
+### 1.1 Build gold-standard evaluation set ✅
 - [x] Select 255 speeches balanced across 18 sessions, with length variety (74 short, 101 medium, 80 long)
 - [x] Include 55 speeches with detected law/amendment references
 - [x] Store as `tests/gold_standard.json`
-- [ ] **PENDING: Manual labeling by human reviewer** — fill `expected_label`, `expected_topics`, `expected_law_ids` for all 255 speeches
-- [ ] **Why:** Without measurement, every other change is guesswork
+- [x] AI-generated first-pass labels for 229 speeches (8 parallel agents with full stenogram context)
+- [x] 26 speeches manually labeled by human reviewer as reference examples
+- [x] Human review of all 255 entries completed
+- **Final distribution:** 86 constructive (33.7%), 113 neutral (44.3%), 56 non_constructive (22.0%)
+- **Difficulty:** 166 easy, 59 medium, 30 hard
+- **Coverage:** 42 speeches with `expected_law_ids`, 232 with `expected_topics`
 
 ### 1.2 Build evaluation harness script
 - [ ] Create `scripts/evaluate_accuracy.py` that runs the pipeline against the gold set
@@ -144,6 +148,9 @@
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-03-15 | Created plan | Systematic approach to reach 98%/95% accuracy targets |
+| 2026-03-15 | Built gold-standard set (255 speeches) | Sampled across all 18 sessions with length/topic variety |
+| 2026-03-15 | AI first-pass labeling (229 speeches) | 8 parallel classification agents with full stenogram context; human-labeled 26 used as reference; saves manual effort while human review ensures quality |
+| 2026-03-15 | Human review completed | All 255 labels reviewed and corrected; minor shifts: +2 constructive, +1 neutral, -3 non_constructive vs AI first-pass |
 
 ---
 

@@ -604,7 +604,7 @@
         "Securitate nationala si aparare"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Incepe constructiv explicand scopul legilor privind apararea (doborarea dronelor), dar partea dominanta a discursului (~200 cuvinte) este un atac partizan la adresa opozitiei (POT, AUR, SOS), numiti 'armata lui Pacalin Georgescu'. Similar cu exemplul 18 (Lorincz) - desi se incheie cu un mesaj pro-NATO, majoritatea discursului este atac la adresa colegilor.",
+      "labeling_notes": "Incepe constructiv explicand scopul legilor privind apararea (doborarea dronelor), dar partea dominanta a discursului (~200 cuvinte) este un atac partizan la adresa opozitiei (POT, AUR, SOS), numiti 'armata lui Pacalin Georgescu'. Desi se incheie cu un mesaj pro-NATO, majoritatea discursului este atac la adresa colegilor.",
       "difficulty": "hard"
     },
     {
@@ -686,7 +686,7 @@
       "expected_law_ids": [
         "Legea nr. 14/2003"
       ],
-      "labeling_notes": "Discurs nationalist extrem impotriva UDMR, cu acuzatii grave nesustinute de dovezi (servicii secrete ungare in 1990, subventii ilegale, organizatie extremista). Utilizeaza limbaj inflamator ('tradatori de neam si tara') si teorii conspirativiste. Desi refera o lege reala (14/2003), argumentele juridice sunt distorsionate si scopul este atacul etnic, nu dezbaterea constructiva.",
+      "labeling_notes": "Discurs nationalist extrem impotriva UDMR, cu acuzatii grave nesustinute de dovezi (servicii secrete ungare in 1990, subventii ilegale, organizatie extremista). Utilizeaza limbaj inflamator ('tradatori de neam si tara') si teorii conspirationiste. Desi refera o lege reala (14/2003), argumentele juridice sunt distorsionate si scopul este atacul etnic, nu dezbaterea constructiva.",
       "difficulty": "medium"
     },
     {
@@ -940,7 +940,7 @@
         "Familie copii si politici demografice"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Desi mentioneaza o problema reala (rata negativa a natalitatii), discursul este dominat de retorica partizana si o afirmatie nefondata ('am finantat mai mult familiile din Ucraina'). Nu propune solutii concrete, ci doar pozitionare politica generala. Similar cu exemplul 21 (Giurgiu) - date scoase din context si acuzatii fara propuneri realiste.",
+      "labeling_notes": "Desi mentioneaza o problema reala (rata negativa a natalitatii), discursul este dominat de retorica partizana si o afirmatie nefondata ('am finantat mai mult familiile din Ucraina'). Nu propune solutii concrete, ci doar pozitionare politica generala. Include date scoase din context si acuzatii fara propuneri realiste.",
       "difficulty": "hard"
     },
     {
@@ -1236,7 +1236,7 @@
         "Cultura patrimoniu si culte"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Declaratie politica intitulata 'De ce este surghiunita religia?'. Contine teorii ale conspiratiei (Scoala de la Frankfurt a planificat inlocuirea religiei cu consumerismul, telefonul inteligent ca 'lovitura de gratie'), afirmatii exagerate fara dovezi, si nicio propunere legislativa concreta. Similar cu exemplul etichetat nr. 17 care continea teorii ale conspiratiei.",
+      "labeling_notes": "Declaratie politica intitulata 'De ce este surghiunita religia?'. Contine teorii ale conspiratiei (Scoala de la Frankfurt a planificat inlocuirea religiei cu consumerismul, telefonul inteligent ca 'lovitura de gratie'), afirmatii exagerate fara dovezi, si nicio propunere legislativa concreta.",
       "difficulty": "hard"
     },
     {
@@ -1578,13 +1578,13 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non_constructive",
+      "expected_label": "neutral",
       "expected_topics": [
         "Reforma electorala si procese democratice",
         "Securitate cibernetica"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Declaratie politica despre dezinformarea din social media in contextul campaniei electorale. Identifica problema (manipulare prin filmulete scurte, conturi false) dar nu propune nicio masura legislativa sau de politica publica concreta. Apelul la colegi ('spuneti stop dezinformarii') este vag si retoric, fara solutii actionabile.",
+      "labeling_notes": "Declaratie politica despre dezinformarea din social media in contextul campaniei electorale. Identifica problema (manipulare prin filmulete scurte, conturi false) dar nu propune nicio masura legislativa sau de politica publica concreta. Apelul la colegi ('spuneti stop dezinformarii') este insa vag si retoric, fara solutii actionabile.",
       "difficulty": "medium"
     },
     {
@@ -1764,12 +1764,12 @@
       "stenogram_path": "input/stenograme/stenograma_2025-04-02_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non_constructive",
+      "expected_label": "constructive",
       "expected_topics": [
         "Ordine publica si siguranta cetateanului"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Discurs in cadrul dezbaterii pe motiunea simpla. Contine atat elemente substantive (explicatia ca ministrul nu are atributii operative, statistici de destructurare a crimei organizate - 116 grupuri) cat si atacuri batjocoritoare extinse (motiunea e o 'compunere de clasa a IV-a', initiatorii sa fie concediati, 'normal ca nu semnezi cand suni Politia sa te apere de presa'). Portiunea dominanta este batjocura si apararea partizana, nu analiza de interes public.",
+      "labeling_notes": "Discurs in cadrul dezbaterii pe motiunea simpla. Contine atat elemente relevante (explicatia ca ministrul nu are atributii operative, statistici de destructurare a crimei organizate) cat si atacuri batjocoritoare (motiunea e o 'compunere de clasa a IV-a', initiatorii sa fie concediati, 'normal ca nu semnezi cand suni Politia sa te apere de presa'). Portiunea dominanta este insa analiza de interes public si adreseaza subiectele din textul motiunii - citita anterior.",
       "difficulty": "hard"
     },
     {
@@ -1895,7 +1895,7 @@
       "expected_law_ids": [
         "Legea nr. 218"
       ],
-      "labeling_notes": "Interventie in cadrul sesiunii de vot, in care invoca Legea nr. 218 (legea de organizare a Politiei Romane) pentru a semnala un abuz procedural specific: relegitimarea unei persoane deja legitimate si perchezitionate, ceea ce ar contravine prevederilor legale. Desi tonul este adversarial si discursul fragmentar (intreruperi), fondul este o critica juridica substantiva bazata pe cunoasterea procedurii politienesti.",
+      "labeling_notes": "Interventie in cadrul sesiunii de vot, in care invoca Legea nr. 218 (legea de organizare a Politiei Romane) pentru a semnala un abuz procedural specific: relegitimarea unei persoane deja legitimate si perchezitionate, ceea ce ar contraveni prevederilor legale. Desi tonul este adversarial si discursul fragmentar (intreruperi), fondul este o critica juridica substantiva bazata pe cunoasterea procedurii politienesti.",
       "difficulty": "hard"
     },
     {
@@ -2333,7 +2333,7 @@
         "Buget de stat si executie bugetara"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Declaratie politica in cadrul interventiilor politice. Desi enumera propuneri specifice (300 parlamentari, -30% consilieri, alegeri in doua tururi, eliminarea pensiilor speciale, reforma companiilor de stat), discursul este in esenta un material de campanie PNL: 'Acestea sunt propunerile PNL', 'Asta isi doreste presedintele Bolojan', 'PNL este pregatit sa livreze'. Tonul dominant este de atac partizan ('jocuri de culise, calcule meschine, negocieri lipsite de decenta') si de amenintare ('se vor autoexclude din viitorul politic'). Propunerile sunt generice si nu contin mecanisme legislative concrete.",
+      "labeling_notes": "Declaratie politica in cadrul interventiilor politice. Desi enumera propuneri specifice (300 parlamentari, -30% consilieri, alegeri in doua tururi, eliminarea pensiilor speciale, reforma companiilor de stat), discursul este in esenta un material de campanie PNL: 'Acestea sunt propunerile PNL', 'Asta isi doreste presedintele Bolojan', 'PNL este pregatit sa livreze'. Tonul dominant este de atac partizan ('jocuri de culise, calcule meschine, negocieri lipsite de decenta') si de amenintare ('se vor autoexclude din viitorul politic'). Propunerile sunt generice si nu contin mecanisme legislative concrete. De asemenea, vin din partea unui partid care a fost anterior la guvernare si nu a livrat nimic din propunerile mentionate",
       "difficulty": "hard"
     },
     {
@@ -2633,7 +2633,7 @@
         "IMM-uri si antreprenoriat"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Desi include date comparative cu Bulgaria (impozit profit 10%, turisti 13M vs 2.5M, deficit 3% vs 9%) si enumera generic solutii (relaxare fiscala, credite subventionate), scopul dominant este atacul la adresa guvernului si autopromovarea AUR ('AUR este partidul intreprinzatorilor romani', lansarea platformei). Propunerile sunt vagi, iar datele par selective. Similar cazului ID 21 din exemplele etichetate.",
+      "labeling_notes": "Desi include date comparative cu Bulgaria (impozit profit 10%, turisti 13M vs 2.5M, deficit 3% vs 9%) si enumera generic solutii (relaxare fiscala, credite subventionate), scopul dominant este atacul la adresa guvernului si autopromovarea AUR ('AUR este partidul intreprinzatorilor romani', lansarea platformei). Propunerile sunt vagi, iar datele par selective.",
       "difficulty": "hard"
     },
     {
@@ -4734,7 +4734,7 @@
         "Economie si fiscalitate"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Prezentarea motiunii de cenzura - desi contine date statistice despre datoria publica, deficit si inflatie, discursul este predominant retoric si partinic, cu etichete repetate ('progresist' ca peiorativ), exagerari si un final teatral (aruncarea mingii catre PSD). Stilul dominant este atacul politic, nu analiza constructiva de politici publice. Similar cu exemplul ID 21 din setul de referinta.",
+      "labeling_notes": "Prezentarea motiunii de cenzura - desi contine date statistice despre datoria publica, deficit si inflatie, discursul este predominant retoric si partinic, cu etichete repetate ('progresist' ca peiorativ) si exagerari. Stilul dominant este atacul politic, nu analiza constructiva de politici publice. Similar cu exemplul ID 21 din setul de referinta.",
       "difficulty": "hard"
     },
     {
@@ -4748,12 +4748,12 @@
       "stenogram_path": "input/stenograme/stenograma_2025-12-17_1.json",
       "has_law_reference_hint": false,
       "detected_law_patterns": [],
-      "expected_label": "non_constructive",
+      "expected_label": "constructive",
       "expected_topics": [
         "Integritate anticoruptie si transparenta"
       ],
       "expected_law_ids": [],
-      "labeling_notes": "Declaratie politica care aduce exemple specifice din Satu Mare (agresiune consilier judetean PNL, interpelari privind pozitii medicale), dar scopul principal este atacul partinic la adresa PNL. Nu propune solutii sau reforme, concluzia fiind ca 'PNL la Satu Mare este nefrecventabil'. Integritatea este folosita ca pretext pentru critica partinica.",
+      "labeling_notes": "Declaratie politica care aduce exemple specifice din Satu Mare (agresiune consilier judetean PNL, interpelari privind pozitii medicale), si atrage atentia public asupra problemelor de integritate.",
       "difficulty": "hard"
     },
     {
