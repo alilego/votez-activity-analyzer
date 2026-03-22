@@ -68,12 +68,16 @@
 - **Implementation:** `scripts/agenda.py` scans both `initial_notes` and session speeches for legislative item introductions (Proiect de Lege/Hotărâre, Propunere legislativă, PL-x, PHCD, OUG refs)
 - **Expected impact:** +5-10% on law attribution accuracy
 
-### 2.3 Additional deterministic shortcut rules
-- [ ] Ultra-short speeches (≤10 words) that are greetings/thanks → `neutral` without LLM call
-- [ ] Vote announcement patterns ("supun la vot", "cine este pentru", "votul a fost") → `neutral`
-- [ ] Committee report readings (detect "raportul comisiei" + formal structure) → `constructive` candidate
-- [ ] Speaker role detection: session president / secretary procedural lines → weight toward `neutral`
-- [ ] **Expected impact:** +3-5% classification accuracy, reduced LLM calls by ~10-15%
+### 2.3 Additional deterministic shortcut rules ✅
+- [x] Ultra-short speeches (≤10 words) that are greetings/thanks → `neutral` without LLM call
+- [x] Vote announcement patterns ("supun la vot", "cine este pentru", "votul a fost") → `neutral`
+- [x] Committee report readings (detect "raportul comisiei" + formal structure) → `constructive` candidate
+- [x] Speaker role detection: session president / secretary procedural lines → weight toward `neutral`
+- [x] Ultra-short chair name-calls (≤5 words, "Domnul/Doamna X") → `neutral` without LLM call
+- [x] Ultra-short floor responses (≤3 words: "Da.", "Nu.", "Prezent.") → `neutral` without LLM call
+- **Implementation:** Pre-LLM shortcuts in `scripts/intervention_layers/rules.py` (`apply_pre_llm_shortcuts`) bypass the entire LLM pipeline for trivially-classifiable speeches. Post-Layer-A enhancements add committee report detection and session chair procedural bias. Wired into both three-layer and one-pass classifiers in `llm_agent.py`.
+- **Data analysis:** 1,076 ultra-short speeches (35% of all 3,091), 74 vote announcements, 70 committee reports, 1,143 procedural chair speeches (37%)
+- **Expected impact:** +3-5% classification accuracy, reduced LLM calls by ~10-15%
 
 ### 2.4 Tighten QA trigger thresholds
 - [ ] Audit current QA trigger rates — if >30% of speeches trigger Layer C, the triggers are too loose
@@ -167,6 +171,7 @@
 | 2026-03-15 | Evaluation harness built | `scripts/evaluate_accuracy.py` — baseline: 61.0% classification, 0% law attribution |
 | 2026-03-22 | Agenda extraction (2.2) | `scripts/agenda.py` — pre-extracts structured legislative agenda from session speeches; injected into all layer prompts and session topic extraction |
 | 2026-03-22 | Fixed incomplete 2.1 | Added `law_id_index` and `_format_preextracted_law_ids` to `prompts.py` — was missing from layer prompt builders |
+| 2026-03-22 | Deterministic shortcuts (2.3) | Pre-LLM shortcuts for greetings/thanks, vote announcements, name-calls, floor responses; post-Layer-A committee report detection and session chair bias; 26 tests added |
 
 ---
 

@@ -77,7 +77,12 @@ from intervention_layers.prompts import (
 from agenda import extract_agenda_from_session
 from law_ids import extract_law_id_index_from_speeches
 from intervention_layers.qa import evaluate_qa_triggers
-from intervention_layers.rules import apply_deterministic_rules
+from intervention_layers.rules import (
+    apply_deterministic_rules,
+    apply_pre_llm_shortcuts,
+    detect_session_chair_procedural,
+    extract_session_chairs,
+)
 from intervention_layers.schemas import (
     validate_layer_a_item,
     validate_layer_b_item,
@@ -1261,11 +1266,35 @@ def _classify_single_speech_three_layer(
     call_label: str,
     build_prompts_only: bool,
     agenda: list[dict] | None = None,
+    session_chairs: set[str] | None = None,
 ) -> dict | None:
     """
     3-layer classification for a single target speech.
     Returns normalized final payload or None in build-prompts mode.
     """
+    # Pre-LLM shortcuts: classify trivial speeches without any LLM call
+    if not build_prompts_only:
+        pre_llm = apply_pre_llm_shortcuts(
+            sp_for_llm["text"],
+            raw_speaker=sp_for_llm.get("raw_speaker", ""),
+            session_chairs=session_chairs,
+        )
+        if pre_llm is not None:
+            print(f"      [pre-llm] {pre_llm['reason']}")
+            layer_a = pre_llm["layer_a"]
+            layer_a["speech_index"] = sp_for_llm["speech_index"]
+            decision = pre_llm["decision"]
+            decision["speech_index"] = sp_for_llm["speech_index"]
+            merged = merge_for_compatibility(
+                layer_a=layer_a, decision=decision, qa_action="confirmed",
+            )
+            merged_for_validation = dict(merged)
+            merged_for_validation["_speech_text"] = sp_for_llm["text"]
+            final_payload = _validate_one(merged_for_validation, config, session_topics)
+            final_payload["_qa_action"] = "confirmed"
+            final_payload["_layer_a"] = layer_a
+            return final_payload
+
     max_topics = min(3, int(config.get("max_topics_per_intervention", 3)))
     law_id_index = extract_law_id_index_from_speeches(
         [{"speech_index": int(s.get("speech_index", -1)), "text": str(s.get("text", ""))} for s in (prev_context + [sp_for_llm])]
@@ -1296,7 +1325,13 @@ def _classify_single_speech_three_layer(
         return None
 
     # Deterministic shortcuts/candidates
-    deterministic = apply_deterministic_rules(layer_a)
+    is_chair = bool(
+        session_chairs
+        and any(name in sp_for_llm.get("raw_speaker", "") for name in session_chairs)
+    )
+    deterministic = apply_deterministic_rules(
+        layer_a, speech_text=sp_for_llm["text"], is_session_chair=is_chair,
+    )
     if deterministic.get("shortcut_label"):
         print(f"      [rules] shortcut: {deterministic.get('shortcut_reason')}")
         shortcut_decision = build_shortcut_decision(layer_a, deterministic)
@@ -1546,6 +1581,7 @@ def classify_session_interventions_one_pass(
     agenda = extract_agenda_from_session(initial_notes, all_speeches)
     if agenda:
         print(f"  Agenda: {len(agenda)} item(s) pre-extracted")
+    session_chairs_onepass = extract_session_chairs(initial_notes)
 
     target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
     pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
@@ -1582,6 +1618,34 @@ def classify_session_interventions_one_pass(
                 "    Continuation merge: "
                 f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
             )
+
+        # Pre-LLM shortcut for one-pass classifier
+        if not build_prompts_only:
+            pre_llm_op = apply_pre_llm_shortcuts(
+                sp_for_llm["text"],
+                raw_speaker=sp_for_llm.get("raw_speaker", ""),
+                session_chairs=session_chairs_onepass,
+            )
+            if pre_llm_op is not None:
+                print(f"      [pre-llm] {pre_llm_op['reason']}")
+                decision = pre_llm_op["decision"]
+                decision["speech_index"] = sp_for_llm["speech_index"]
+                validated = _validate_one(
+                    {**decision, "_speech_text": sp_for_llm["text"]},
+                    config, session_topics,
+                )
+                validated = {k: v for k, v in validated.items() if not k.startswith("_")}
+                store_result = server.call(
+                    "store_intervention_analysis",
+                    {"intervention_id": iid, **validated},
+                )
+                if store_result.get("ok"):
+                    classified += 1
+                else:
+                    errors += 1
+                    err_info = store_result.get("error", {})
+                    error_log.append({"intervention_id": iid, "error": err_info})
+                continue
 
         raw_results: list[dict] = []
         last_exc: Exception | None = None
@@ -1774,6 +1838,9 @@ def classify_session_interventions_three_layer(
     agenda = extract_agenda_from_session(initial_notes, all_speeches)
     if agenda:
         print(f"  Agenda: {len(agenda)} item(s) pre-extracted")
+    session_chairs = extract_session_chairs(initial_notes)
+    if session_chairs:
+        print(f"  Session chairs: {session_chairs}")
 
     target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
     pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
@@ -1823,6 +1890,7 @@ def classify_session_interventions_three_layer(
                 call_label=call_label,
                 build_prompts_only=build_prompts_only,
                 agenda=agenda,
+                session_chairs=session_chairs,
             )
         except _BuildPromptsOnly:
             print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")
