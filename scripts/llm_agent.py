@@ -74,6 +74,7 @@ from intervention_layers.prompts import (
     build_layer_b_user_message,
     build_layer_c_user_message,
 )
+from law_ids import extract_law_id_index_from_speeches
 from intervention_layers.qa import evaluate_qa_triggers
 from intervention_layers.rules import apply_deterministic_rules
 from intervention_layers.schemas import (
@@ -1237,6 +1238,9 @@ def _classify_single_speech_three_layer(
     Returns normalized final payload or None in build-prompts mode.
     """
     max_topics = min(3, int(config.get("max_topics_per_intervention", 3)))
+    law_id_index = extract_law_id_index_from_speeches(
+        [{"speech_index": int(s.get("speech_index", -1)), "text": str(s.get("text", ""))} for s in (prev_context + [sp_for_llm])]
+    )
 
     # Layer A
     user_a = build_layer_a_user_message(
@@ -1244,6 +1248,7 @@ def _classify_single_speech_three_layer(
         session_topics=session_topics,
         target_speech=sp_for_llm,
         context_speeches=prev_context,
+        law_id_index=law_id_index,
     )
     layer_a = _call_layer_with_validation(
         layer_name="layer_a",
@@ -1287,6 +1292,7 @@ def _classify_single_speech_three_layer(
         target_speech=sp_for_llm,
         layer_a_output=layer_a,
         context_speeches=prev_context,
+        law_id_index=law_id_index,
     )
     layer_b = _call_layer_with_validation(
         layer_name="layer_b",
@@ -1322,6 +1328,7 @@ def _classify_single_speech_three_layer(
             layer_b_output=layer_b,
             qa_reasons=qa_reasons,
             context_speeches=prev_context,
+            law_id_index=law_id_index,
         )
         layer_c = _call_layer_with_validation(
             layer_name="layer_c",

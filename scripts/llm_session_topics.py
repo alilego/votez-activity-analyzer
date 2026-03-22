@@ -46,6 +46,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from init_db import DEFAULT_DB_PATH, init_db
+from law_ids import allowed_law_ids, extract_law_id_index_from_speeches, keep_only_allowed_law_id
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -371,6 +372,7 @@ Rules:
 - label: MAXIMUM 10 words, in Romanian, specific to this session. If a law/bill is the topic, use its short title + identifier (e.g. "Reforma pensiilor speciale PL-x 45/2025"). Never cut a label mid-sentence.
 - description: one sentence in Romanian. Include what the topic is about and all concrete details present in input (amounts, locations, institutions, percentages). Do NOT invent.
 - law_id: bill/law/ordinance identifier when present, otherwise null.
+- CRITICAL law_id constraint: if you include a law_id, it MUST be copied verbatim from the "Pre-extracted law IDs" list provided in the session header. Otherwise set law_id to null.
 - COMBINING duplicates: merge overlapping mentions into one topic and keep all details.
 - Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
 - Keep total matched_topics + new_topics <= 20.
@@ -410,6 +412,19 @@ def _build_reduce_message(session_header: str, window_results: list[str]) -> str
         parts.append(f"--- Window {i} ---\n{prose.strip()}")
     parts.append("Merge the above into the structured JSON topic list.")
     return "\n\n".join(parts)
+
+
+def _build_law_ids_context(law_id_index: dict[str, list[int]]) -> str:
+    if not law_id_index:
+        return ""
+    lines = ["Pre-extracted law IDs from this session (use only these IDs):"]
+    for law_id, speech_indices in law_id_index.items():
+        indices_text = ", ".join(str(i) for i in sorted(set(speech_indices))[:12])
+        if indices_text:
+            lines.append(f"- {law_id} [speech_index: {indices_text}]")
+        else:
+            lines.append(f"- {law_id}")
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -915,6 +930,7 @@ Rules:
 - label: maximum 10 words in Romanian. If a law/bill is the topic include its identifier.
 - description: one sentence in Romanian with concrete details present in text.
 - law_id: bill/law/ordinance identifier if present, otherwise null.
+- CRITICAL law_id constraint: if you include a law_id, it MUST be copied verbatim from the "Pre-extracted law IDs" list provided in the session header. Otherwise set law_id to null.
 - Prefer `matched_topics`; use `new_topics` only when no catalog fit exists.
 - Keep matched_topics + new_topics <= 20.
 - CRITICAL: every field MUST be grounded in the text. Do NOT invent details.
@@ -1115,7 +1131,7 @@ def extract_session_topics(
     # Fetch all chunks ordered by position.
     all_rows = conn.execute(
         """
-        SELECT chunk_id, chunk_type, text
+        SELECT chunk_id, chunk_type, chunk_index, text
         FROM session_chunks
         WHERE session_id = ?
         ORDER BY chunk_index ASC
@@ -1137,6 +1153,14 @@ def extract_session_topics(
         r for r in all_rows if r["chunk_type"] != "session_notes"
     ]
 
+    session_speeches = [
+        {"speech_index": int(r["chunk_index"]), "text": r["text"]}
+        for r in all_rows
+        if r["chunk_type"] != "session_notes"
+    ]
+    law_id_index = extract_law_id_index_from_speeches(session_speeches)
+    allowed_ids = allowed_law_ids(law_id_index)
+
     # Build the header that goes at the top of every window message.
     session_header = (
         f"Ședința ID: {session_id}  Data: {session.get('session_date', '')}  "
@@ -1145,6 +1169,9 @@ def extract_session_topics(
     notes_text = (notes_rows[0]["text"].strip() if notes_rows else "")
     if notes_text:
         session_header += f"\nNote inițiale: {notes_text[:200]}"
+    law_context = _build_law_ids_context(law_id_index)
+    if law_context:
+        session_header += f"\n{law_context}"
 
     print(
         f"  session={session_id}  date={session.get('session_date', '')}  "
@@ -1217,6 +1244,10 @@ def extract_session_topics(
         return {"ok": True, "prompts_only": True}
 
     topics = llm_data.get("topics", [])
+    if allowed_ids:
+        for topic in topics:
+            if isinstance(topic, dict):
+                topic["law_id"] = keep_only_allowed_law_id(topic.get("law_id"), allowed_ids)
     matched_topics = llm_data.get("matched_topics", [])
     new_topics = llm_data.get("new_topics", [])
     session_summary = llm_data.get("session_summary", "")
