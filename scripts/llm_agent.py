@@ -75,7 +75,7 @@ from intervention_layers.prompts import (
     build_layer_c_user_message,
 )
 from intervention_layers.qa import evaluate_qa_triggers
-from intervention_layers.rules import apply_deterministic_rules
+from intervention_layers.rules import apply_deterministic_rules, apply_pre_llm_shortcuts
 from intervention_layers.schemas import (
     validate_layer_a_item,
     validate_layer_b_item,
@@ -1810,32 +1810,57 @@ def classify_session_interventions_three_layer(
                 f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
             )
 
-        try:
-            payload = _classify_single_speech_three_layer(
-                client=client,
-                provider=provider,
-                session=session,
-                session_topics=session_topics,
-                sp_for_llm=sp_for_llm,
-                prev_context=prev_context,
-                config=config,
-                call_label=call_label,
-                build_prompts_only=build_prompts_only,
-                law_index_text=law_index_text,
-            )
-        except _BuildPromptsOnly:
-            print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")
-            continue
-        except Exception as exc:
-            errors += 1
-            error_log.append(
-                {
-                    "intervention_id": iid,
-                    "error": {"code": "THREE_LAYER_ERROR", "message": str(exc)},
-                }
-            )
-            print(f"    [error] three-layer failed for {iid}: {exc}")
-            continue
+        # Pre-LLM deterministic shortcuts (skip LLM entirely for obvious cases).
+        pre_llm = apply_pre_llm_shortcuts(sp_for_llm["text"], sp_for_llm.get("raw_speaker", ""))
+        if pre_llm and pre_llm.get("shortcut_label") and not build_prompts_only:
+            print(f"    [pre-llm] {pre_llm['shortcut_reason']}")
+            payload = {
+                "constructiveness_label": pre_llm["shortcut_label"],
+                "policy_proposal": "no",
+                "policy_analysis": "no",
+                "public_interest_orientation": "no",
+                "partisan_rhetoric": "no",
+                "legislative_engagement": "no",
+                "procedural_content": "yes",
+                "argumentation_quality": "none",
+                "topics": [],
+                "confidence": pre_llm["shortcut_confidence"],
+                "evidence_chunk_ids": [],
+                "evidence_quote": "",
+                "reasoning": pre_llm["shortcut_reason"],
+                "_qa_action": "pre_llm_shortcut",
+            }
+            # Skip to storage (below the try/except block).
+        else:
+            payload = None
+
+        if payload is None:
+            try:
+                payload = _classify_single_speech_three_layer(
+                    client=client,
+                    provider=provider,
+                    session=session,
+                    session_topics=session_topics,
+                    sp_for_llm=sp_for_llm,
+                    prev_context=prev_context,
+                    config=config,
+                    call_label=call_label,
+                    build_prompts_only=build_prompts_only,
+                    law_index_text=law_index_text,
+                )
+            except _BuildPromptsOnly:
+                print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")
+                continue
+            except Exception as exc:
+                errors += 1
+                error_log.append(
+                    {
+                        "intervention_id": iid,
+                        "error": {"code": "THREE_LAYER_ERROR", "message": str(exc)},
+                    }
+                )
+                print(f"    [error] three-layer failed for {iid}: {exc}")
+                continue
 
         if build_prompts_only or payload is None:
             continue

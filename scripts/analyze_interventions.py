@@ -378,6 +378,44 @@ def _topic_sort_key(item: tuple[str, float]) -> tuple[int, float, str]:
     return (law_priority, score, topic)
 
 
+def _is_greeting_or_thanks(text: str) -> bool:
+    """Check if text is a short greeting or thanks phrase."""
+    norm = _analysis_text(text)
+    words = norm.split()
+    if len(words) > 10:
+        return False
+    greetings = (
+        "multumesc", "multumim", "va multumesc", "buna ziua",
+        "buna seara", "buna dimineata", "salut",
+    )
+    return any(g in norm for g in greetings)
+
+
+def _is_vote_announcement(text: str) -> bool:
+    """Check if text is a vote-related procedural announcement."""
+    norm = _analysis_text(text)
+    vote_markers = (
+        "supun la vot", "supun votului", "cine este pentru",
+        "cine este contra", "cine se abtine", "votul a fost",
+        "s-a adoptat", "nu s-a adoptat", "a fost respins",
+        "a fost adoptat", "rezultatul votului", "va rog sa votati",
+        "procedura de vot",
+    )
+    return any(m in norm for m in vote_markers)
+
+
+def _is_committee_report_reading(text: str) -> bool:
+    """Detect formal committee report readings."""
+    norm = _analysis_text(text)
+    report_markers = (
+        "raportul comisiei", "raport comun", "comisia pentru",
+        "raportul asupra proiectul", "aviz favorabil de la comisi",
+        "aviz nefavorabil", "camera decizionala",
+        "propunem adoptarea proiectului", "propunem respingerea proiectului",
+    )
+    return any(m in norm for m in report_markers) and len(norm.split()) >= 30
+
+
 def _deterministic_analysis(
     text: str,
     intervention_topics: list[str],
@@ -389,6 +427,14 @@ def _deterministic_analysis(
 
     if len(normalized) < 40:
         return "neutral", matched_topics, 0.45
+
+    # Ultra-short greetings/thanks → neutral without LLM.
+    if _is_greeting_or_thanks(text):
+        return "neutral", [], 0.95
+
+    # Vote announcements → neutral.
+    if _is_vote_announcement(text):
+        return "neutral", matched_topics, 0.92
 
     # Roll-call / attendance blocks are procedural.
     roll_call_hits = sum(1 for token in (" absent", " prezent", "nu votez") if token in normalized)
@@ -414,6 +460,10 @@ def _deterministic_analysis(
         if procedural_hits > 0:
             return "neutral", [], 0.72
         return "neutral", [], 0.58
+
+    # Committee report readings with formal structure → constructive.
+    if _is_committee_report_reading(text) and has_topic_overlap:
+        return "constructive", matched_topics, 0.80
 
     # Overlap exists: evaluate likely substantive vs procedural.
     if constructive_hits > 0:
