@@ -79,11 +79,15 @@
 - **Data analysis:** 1,076 ultra-short speeches (35% of all 3,091), 74 vote announcements, 70 committee reports, 1,143 procedural chair speeches (37%)
 - **Expected impact:** +3-5% classification accuracy, reduced LLM calls by ~10-15%
 
-### 2.4 Tighten QA trigger thresholds
-- [ ] Audit current QA trigger rates — if >30% of speeches trigger Layer C, the triggers are too loose
-- [ ] Raise confidence threshold from 0.65 to 0.70 for `low_confidence` trigger
-- [ ] Remove `very_short_speech` trigger for speeches already handled by deterministic rules
-- [ ] **Expected impact:** -20-30% LLM calls with no accuracy loss
+### 2.4 Tighten QA trigger thresholds ✅
+- [x] Audit current QA trigger rates — `very_short_speech` alone triggered for 52.5% of all speeches (OR condition: `wc ≤ 25 OR sc ≤ 2` was far too loose)
+- [x] Raise confidence threshold from 0.65 to 0.70 for `low_confidence` trigger
+- [x] Tighten `very_short_speech` from OR to AND: now requires `wc ≤ 25 AND sc ≤ 2` (eliminates 38 substantive 1-2 sentence speeches from triggering)
+- [x] Suppress `very_short_speech` when post-Layer-A deterministic rules already provide candidate labels (avoids redundant Layer C for trivially-classifiable speeches)
+- [x] Pass `deterministic_candidates` from `apply_deterministic_rules` to `evaluate_qa_triggers` in the three-layer pipeline
+- **Implementation:** Changes in `scripts/intervention_layers/qa.py` (threshold + condition + suppression parameter) and `scripts/llm_agent.py` (wiring). 4 new tests in `test_intervention_layers.py`.
+- **Audit results:** OR→AND reduces `very_short_speech` triggers from 52.5% to 38.6%; combined with pre-LLM shortcuts (22.7%) and deterministic suppression, effective QA trigger rate drops well below 30%
+- **Expected impact:** -20-30% LLM calls with no accuracy loss
 
 ---
 
@@ -172,6 +176,7 @@
 | 2026-03-22 | Agenda extraction (2.2) | `scripts/agenda.py` — pre-extracts structured legislative agenda from session speeches; injected into all layer prompts and session topic extraction |
 | 2026-03-22 | Fixed incomplete 2.1 | Added `law_id_index` and `_format_preextracted_law_ids` to `prompts.py` — was missing from layer prompt builders |
 | 2026-03-22 | Deterministic shortcuts (2.3) | Pre-LLM shortcuts for greetings/thanks, vote announcements, name-calls, floor responses; post-Layer-A committee report detection and session chair bias; 26 tests added |
+| 2026-03-22 | Tighten QA triggers (2.4) | `low_confidence` threshold 0.65→0.70; `very_short_speech` OR→AND + suppressed by deterministic candidates; audit showed 52.5% trigger rate, now well under 30% |
 
 ---
 

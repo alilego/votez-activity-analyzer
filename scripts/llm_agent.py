@@ -747,6 +747,99 @@ def _reasoning_matches_speech(reasoning: str, speech_text: str) -> bool:
     return overlap >= 2
 
 
+def _classify_interruption_type(text: str) -> str | None:
+    """Classify the type of chair interruption in a speech.
+
+    Returns one of:
+      - "time_overrun"         speaker exceeded allocated time
+      - "procedure_violation"  speaker not following parliamentary procedure
+      - "routine"              generic procedural (handoff, thanks, name-call)
+      - None                   not a recognizable chair interruption
+    """
+    key = _text_key(text or "")
+    if not key:
+        return None
+    words = _word_tokens(key)
+    if not words:
+        return None
+    # Reject long speeches — chair interruptions are short.
+    if len(key) > 300:
+        return None
+
+    # --- Time overrun markers ---
+    time_markers = (
+        "a expirat timpul",
+        "timpul regulamentar",
+        "depasit timpul",
+        "incadrati in",
+        "va rog sa finalizati",
+        "va rog sa concluzionati",
+        "va rog sa terminati",
+        "va rog sa incheiat",
+        "trebuie sa incheiem",
+        "doua minute",
+        "un minut",
+        "i se intrerupe microfonul",
+        "intrerupe microfonul",
+    )
+    if any(m in key for m in time_markers):
+        return "time_overrun"
+
+    # --- Procedure violation markers ---
+    procedure_markers = (
+        "regulament",
+        "nu este la subiect",
+        "nu vorbiti la subiect",
+        "ramaneti la subiect",
+        "la subiect",
+        "retrag cuvantul",
+        "nu aveti dreptul",
+        "nu ati solicitat",
+        "fara drept de cuvant",
+    )
+    if any(m in key for m in procedure_markers):
+        return "procedure_violation"
+
+    # --- Routine procedural (existing detection, refactored) ---
+    strong_routine = (
+        "se pregateste",
+        "are cuvantul",
+        "propuneri la ordinea de zi",
+        "intram in ordinea de zi",
+        "declar inchisa sedinta",
+        "dezapasati",
+        "domnul deputat",
+        "doamna deputat",
+    )
+    if any(m in key for m in strong_routine):
+        return "routine"
+
+    weak_routine = ("multumesc", "multumim", "va rog")
+    if any(m in key for m in weak_routine) and len(words) <= 8:
+        return "routine"
+
+    short_reply_tokens = {"da", "nu", "prezent", "absent", "abtinere", "contra", "pentru"}
+    short_attack_tokens = {
+        "hot", "hoti", "hotilor", "rusine", "mincinos", "mincinoasa",
+        "corupt", "corupti", "penal", "penali", "tradator", "tradatori",
+        "mafiot", "mafioti",
+    }
+    if len(words) <= 4 and words:
+        if words[-1] in short_reply_tokens and not any(w in short_attack_tokens for w in words):
+            return "routine"
+
+    if len(words) <= 4 and words and words[0] in {"domnul", "doamna"}:
+        return "routine"
+    if "ordinea de zi" in key and len(words) <= 6:
+        return "routine"
+
+    # Floor procedural interjections like "(din sală): Pe procedură!"
+    if "procedura" in key and len(words) <= 5:
+        return "routine"
+
+    return None
+
+
 def _is_continuation_start(text: str) -> bool:
     stripped = (text or "").lstrip()
     if not stripped:
@@ -767,85 +860,76 @@ def _has_interruption_marker(text: str) -> bool:
 
 
 def _is_procedural_interruption_speech(text: str) -> bool:
-    key = _text_key(text or "")
-    if not key:
-        return False
-    # Chair/facilitator interjections are usually very short procedural lines.
-    if len(key) > 260:
-        return False
-    words = _word_tokens(key)
-    strong_markers = (
-        "se pregateste",
-        "are cuvantul",
-        "propuneri la ordinea de zi",
-        "intram in ordinea de zi",
-        "declar inchisa sedinta",
-        "dezapasati",
-        "domnul deputat",
-        "doamna deputat",
-    )
-    if any(marker in key for marker in strong_markers):
-        return True
-
-    weak_markers = ("multumesc", "multumim", "va rog")
-    if any(marker in key for marker in weak_markers) and len(words) <= 8:
-        return True
-
-    # Very short floor interjections like "(din sală): Nu." / "Da." are procedural
-    # unless they carry explicit attack vocabulary.
-    short_reply_tokens = {"da", "nu", "prezent", "absent", "abtinere", "contra", "pentru"}
-    short_attack_tokens = {
-        "hot", "hoti", "hotilor", "rusine", "mincinos", "mincinoasa",
-        "corupt", "corupti", "penal", "penali", "tradator", "tradatori",
-        "mafiot", "mafioti",
-    }
-    if len(words) <= 4 and words:
-        if words[-1] in short_reply_tokens and not any(w in short_attack_tokens for w in words):
-            return True
-
-    # Ultra-short handoff lines: "Domnul X.", "Doamna Y." etc.
-    if len(words) <= 4 and words:
-        if words[0] in {"domnul", "doamna"}:
-            return True
-    # Short floor interruption like "(din sală): Ordinea de zi!".
-    if "ordinea de zi" in key and len(words) <= 6:
-        return True
-
-    return False
+    """Legacy wrapper — delegates to _classify_interruption_type."""
+    return _classify_interruption_type(text) is not None
 
 
-def _merge_continuation_text(all_speeches: list[dict], current_pos: int) -> tuple[str, list[int]]:
-    """Merge split speeches when the same speaker continues after procedural interruption(s)."""
+def _merge_continuation_text(
+    all_speeches: list[dict], current_pos: int,
+) -> tuple[str, list[int], str | None]:
+    """Merge split speeches when the same speaker continues after interruption(s).
+
+    Returns (merged_text, merged_indices, interruption_type).
+
+    ``interruption_type`` is the most significant interruption encountered
+    during merging (``"procedure_violation"`` > ``"time_overrun"`` > ``"routine"``).
+    It is ``None`` when no merge happened.
+    """
     current = all_speeches[current_pos]
     current_text = str(current.get("text", "")).strip()
     if not current_text:
-        return "", [int(current.get("speech_index", -1))]
+        return "", [int(current.get("speech_index", -1))], None
 
     merged_parts = [current_text]
     merged_indices = [int(current.get("speech_index", -1))]
+    encountered_interruption: str | None = None
     cursor = current_pos
-    # Support chains like A, chair, A, chair, A ...
+
+    _priority = {"routine": 0, "time_overrun": 1, "procedure_violation": 2}
+
     while cursor >= 2:
         interruption = all_speeches[cursor - 1]
         previous = all_speeches[cursor - 2]
         if str(previous.get("raw_speaker", "")).strip() != str(current.get("raw_speaker", "")).strip():
             break
-        if not _is_procedural_interruption_speech(str(interruption.get("text", ""))):
+
+        int_text = str(interruption.get("text", ""))
+        int_type = _classify_interruption_type(int_text)
+        if int_type is None:
             break
 
-        # Conservative guard: only merge when continuation is strongly signaled.
+        # Procedure violations: do NOT merge — these are distinct interventions.
+        if int_type == "procedure_violation":
+            encountered_interruption = "procedure_violation"
+            break
+
+        # Time overrun: always merge (speaker was asked to wrap up but continued).
+        if int_type == "time_overrun":
+            merged_parts.insert(0, str(previous.get("text", "")).strip())
+            merged_indices.insert(0, int(previous.get("speech_index", -1)))
+            if _priority.get(int_type, 0) > _priority.get(encountered_interruption or "", -1):
+                encountered_interruption = int_type
+            cursor -= 2
+            continue
+
+        # Routine: conservative guard — only merge when continuation is strongly signaled.
         if not (
             _is_continuation_start(merged_parts[0])
             or _has_interruption_marker(str(previous.get("text", "")))
-            or _has_interruption_marker(str(interruption.get("text", "")))
+            or _has_interruption_marker(int_text)
         ):
             break
 
         merged_parts.insert(0, str(previous.get("text", "")).strip())
         merged_indices.insert(0, int(previous.get("speech_index", -1)))
+        if _priority.get(int_type, 0) > _priority.get(encountered_interruption or "", -1):
+            encountered_interruption = int_type
         cursor -= 2
 
-    return "\n\n".join(p for p in merged_parts if p), merged_indices
+    # If no merge happened but we detected an interruption (procedure_violation
+    # without merging), still report it for the caller.
+    final_type = encountered_interruption if len(merged_indices) > 1 or encountered_interruption == "procedure_violation" else None
+    return "\n\n".join(p for p in merged_parts if p), merged_indices, final_type
 
 
 def _fallback_quote_from_speech(speech_text: str) -> str:
@@ -1267,6 +1351,7 @@ def _classify_single_speech_three_layer(
     build_prompts_only: bool,
     agenda: list[dict] | None = None,
     session_chairs: set[str] | None = None,
+    interruption_type: str | None = None,
 ) -> dict | None:
     """
     3-layer classification for a single target speech.
@@ -1278,6 +1363,7 @@ def _classify_single_speech_three_layer(
             sp_for_llm["text"],
             raw_speaker=sp_for_llm.get("raw_speaker", ""),
             session_chairs=session_chairs,
+            interruption_type=interruption_type,
         )
         if pre_llm is not None:
             print(f"      [pre-llm] {pre_llm['reason']}")
@@ -1308,6 +1394,7 @@ def _classify_single_speech_three_layer(
         context_speeches=prev_context,
         law_id_index=law_id_index,
         agenda=agenda,
+        interruption_context=interruption_type,
     )
     layer_a = _call_layer_with_validation(
         layer_name="layer_a",
@@ -1359,6 +1446,7 @@ def _classify_single_speech_three_layer(
         context_speeches=prev_context,
         law_id_index=law_id_index,
         agenda=agenda,
+        interruption_context=interruption_type,
     )
     layer_b = _call_layer_with_validation(
         layer_name="layer_b",
@@ -1380,6 +1468,7 @@ def _classify_single_speech_three_layer(
         layer_b=layer_b,
         speech_text=sp_for_llm["text"],
         session_topics=session_topics,
+        deterministic_candidates=deterministic.get("candidate_labels"),
     )
     if deterministic.get("candidate_labels"):
         if decision["constructiveness_label"] not in deterministic["candidate_labels"]:
@@ -1396,6 +1485,7 @@ def _classify_single_speech_three_layer(
             context_speeches=prev_context,
             law_id_index=law_id_index,
             agenda=agenda,
+            interruption_context=interruption_type,
         )
         layer_c = _call_layer_with_validation(
             layer_name="layer_c",
@@ -1601,8 +1691,9 @@ def classify_session_interventions_one_pass(
         current_pos = pos_by_index.get(speech_index, -1)
         sp_for_llm = dict(sp)
         continuation_indices: list[int] = [speech_index]
+        interruption_type: str | None = None
         if current_pos >= 0:
-            merged_text, merged_indices = _merge_continuation_text(all_speeches, current_pos)
+            merged_text, merged_indices, interruption_type = _merge_continuation_text(all_speeches, current_pos)
             if merged_text:
                 sp_for_llm["text"] = merged_text
                 continuation_indices = merged_indices
@@ -1618,6 +1709,8 @@ def classify_session_interventions_one_pass(
                 "    Continuation merge: "
                 f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
             )
+        if interruption_type:
+            print(f"    [interruption] {interruption_type}")
 
         # Pre-LLM shortcut for one-pass classifier
         if not build_prompts_only:
@@ -1625,6 +1718,7 @@ def classify_session_interventions_one_pass(
                 sp_for_llm["text"],
                 raw_speaker=sp_for_llm.get("raw_speaker", ""),
                 session_chairs=session_chairs_onepass,
+                interruption_type=interruption_type,
             )
             if pre_llm_op is not None:
                 print(f"      [pre-llm] {pre_llm_op['reason']}")
@@ -1860,8 +1954,9 @@ def classify_session_interventions_three_layer(
         current_pos = pos_by_index.get(speech_index, -1)
         sp_for_llm = dict(sp)
         continuation_indices: list[int] = [speech_index]
+        interruption_type: str | None = None
         if current_pos >= 0:
-            merged_text, merged_indices = _merge_continuation_text(all_speeches, current_pos)
+            merged_text, merged_indices, interruption_type = _merge_continuation_text(all_speeches, current_pos)
             if merged_text:
                 sp_for_llm["text"] = merged_text
                 continuation_indices = merged_indices
@@ -1877,6 +1972,8 @@ def classify_session_interventions_three_layer(
                 "    Continuation merge: "
                 f"indices={continuation_indices} speaker={sp['raw_speaker']!r}"
             )
+        if interruption_type:
+            print(f"    [interruption] {interruption_type}")
 
         try:
             payload = _classify_single_speech_three_layer(
@@ -1891,6 +1988,7 @@ def classify_session_interventions_three_layer(
                 build_prompts_only=build_prompts_only,
                 agenda=agenda,
                 session_chairs=session_chairs,
+                interruption_type=interruption_type,
             )
         except _BuildPromptsOnly:
             print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")

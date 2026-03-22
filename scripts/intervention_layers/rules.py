@@ -56,6 +56,7 @@ def apply_pre_llm_shortcuts(
     speech_text: str,
     raw_speaker: str = "",
     session_chairs: set[str] | None = None,
+    interruption_type: str | None = None,
 ) -> dict | None:
     """
     Deterministic classification that bypasses the LLM entirely.
@@ -63,11 +64,18 @@ def apply_pre_llm_shortcuts(
     Returns a dict with synthetic Layer A signals + final decision if a shortcut
     applies, or None if the speech should go through the normal LLM pipeline.
 
+    When ``interruption_type`` is ``"procedure_violation"``, all shortcuts are
+    suppressed — the speech must go through full LLM evaluation to assess
+    whether its content benefits citizens despite the procedural infraction.
+
     Shortcuts:
     1. Ultra-short greetings/thanks (≤10 words) → neutral
     2. Vote announcement patterns → neutral
     3. Very short chair name-calls (≤5 words, "Domnul/Doamna X") → neutral
     """
+    if interruption_type == "procedure_violation":
+        return None
+
     text = (speech_text or "").strip()
     key = _text_key(text)
     wc = _word_count(text)

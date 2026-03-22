@@ -216,6 +216,18 @@ def _format_agenda(agenda: list[dict] | None) -> str:
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
+_INTERRUPTION_HINT = (
+    "## Interruption context\n"
+    "This speaker was interrupted by the session chair for not following "
+    "parliamentary procedure. Consider whether the speech content, despite "
+    "the procedural violation, contains substantive policy proposals or "
+    "analysis that benefit citizens. A procedural violation alone does not "
+    "automatically make a speech non-constructive if the content is "
+    "substantively valuable, but purely disruptive behaviour without "
+    "substantive content should weigh toward non-constructive."
+)
+
+
 def build_layer_a_user_message(
     session: dict,
     session_topics: list,
@@ -223,6 +235,7 @@ def build_layer_a_user_message(
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
     agenda: list[dict] | None = None,
+    interruption_context: str | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     notes = str(session.get("initial_notes") or "").strip()
@@ -237,6 +250,8 @@ def build_layer_a_user_message(
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
+    if interruption_context == "procedure_violation":
+        parts.append(_INTERRUPTION_HINT)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)
@@ -253,6 +268,7 @@ def build_layer_b_user_message(
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
     agenda: list[dict] | None = None,
+    interruption_context: str | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
@@ -264,6 +280,8 @@ def build_layer_b_user_message(
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
+    if interruption_context == "procedure_violation":
+        parts.append(_INTERRUPTION_HINT)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)
@@ -283,6 +301,7 @@ def build_layer_c_user_message(
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
     agenda: list[dict] | None = None,
+    interruption_context: str | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
@@ -294,6 +313,8 @@ def build_layer_c_user_message(
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
+    if interruption_context == "procedure_violation":
+        parts.append(_INTERRUPTION_HINT)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)

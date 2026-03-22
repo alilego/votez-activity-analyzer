@@ -80,11 +80,18 @@ def evaluate_qa_triggers(
     layer_b: dict,
     speech_text: str,
     session_topics: list,
+    deterministic_candidates: list[str] | None = None,
 ) -> list[str]:
-    """Return trigger reasons for Layer C QA."""
+    """Return trigger reasons for Layer C QA.
+
+    ``deterministic_candidates`` — labels suggested by post-Layer-A deterministic
+    rules (e.g. ["constructive"]).  When the speech already has a clear
+    deterministic direction, the ``very_short_speech`` trigger is suppressed to
+    avoid redundant Layer C calls on trivially-classifiable speeches.
+    """
     reasons: list[str] = []
     confidence = float(layer_b.get("confidence", 0.0))
-    if confidence < 0.65:
+    if confidence < 0.70:
         reasons.append("low_confidence")
     if layer_a.get("primary_function") == "mixed":
         reasons.append("primary_function_mixed")
@@ -92,8 +99,16 @@ def evaluate_qa_triggers(
         reasons.append("analysis_and_partisan_conflict")
     if layer_a.get("procedural_content") == "partial" and _has_substantive_yes(layer_a):
         reasons.append("procedural_partial_with_substantive_yes")
-    if _word_count(speech_text) <= 25 or _sentence_count(speech_text) <= 2:
-        reasons.append("very_short_speech")
+
+    # very_short_speech: tightened from OR to AND, and suppressed when
+    # deterministic rules already provide a clear candidate direction.
+    has_deterministic_direction = bool(deterministic_candidates)
+    if not has_deterministic_direction:
+        wc = _word_count(speech_text)
+        sc = _sentence_count(speech_text)
+        if wc <= 25 and sc <= 2:
+            reasons.append("very_short_speech")
+
     if _reasoning_inconsistent(layer_a, layer_b):
         reasons.append("layer_b_inconsistent_with_layer_a")
     if (not layer_b.get("topics")) and _speech_mentions_session_topic(speech_text, session_topics):
