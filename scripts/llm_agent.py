@@ -81,7 +81,7 @@ from intervention_layers.schemas import (
     validate_layer_b_item,
     validate_layer_c_item,
 )
-from law_extractor import SessionLawIndex, validate_law_ids
+from law_extractor import AgendaItem, SessionLawIndex, format_agenda_for_prompt, validate_law_ids
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -377,20 +377,28 @@ Return EXACTLY one object for EACH input speech_index in "Speeches to classify".
 _LAW_INDEX_DIR = Path("state/law_indices")
 
 
-def _load_session_law_index(session_id: str) -> SessionLawIndex:
-    """Load the pre-computed law index for a session, if available."""
+def _load_session_law_index(session_id: str) -> tuple[SessionLawIndex, list[AgendaItem]]:
+    """Load the pre-computed law index and agenda for a session, if available."""
     index_path = _LAW_INDEX_DIR / f"{session_id}_law_index.json"
     idx = SessionLawIndex(session_id=session_id)
+    agenda: list[AgendaItem] = []
     if not index_path.exists():
-        return idx
+        return idx, agenda
     try:
         data = json.loads(index_path.read_text(encoding="utf-8"))
         idx.all_law_ids = data.get("all_law_ids", [])
         idx.law_to_speeches = {k: v for k, v in data.get("law_to_speeches", {}).items()}
         idx.speech_to_laws = {int(k): v for k, v in data.get("speech_to_laws", {}).items()}
+        for item in data.get("agenda", []):
+            if isinstance(item, dict):
+                agenda.append(AgendaItem(
+                    item_number=item.get("item_number"),
+                    title=item.get("title", ""),
+                    law_ids=item.get("law_ids", []),
+                ))
     except Exception:
         pass
-    return idx
+    return idx, agenda
 
 
 # ---------------------------------------------------------------------------
@@ -1728,11 +1736,18 @@ def classify_session_interventions_three_layer(
     topics_result = server.call("get_session_topics", {"session_id": session_id})
     session_topics: list = topics_result.get("topics", []) if topics_result.get("ok") else []
 
-    # Load pre-extracted law references for prompt enrichment.
-    session_law_index = _load_session_law_index(session_id)
+    # Load pre-extracted law references and agenda for prompt enrichment.
+    session_law_index, session_agenda = _load_session_law_index(session_id)
     law_index_text = session_law_index.format_for_prompt()
+    agenda_text = format_agenda_for_prompt(session_agenda)
+    if law_index_text and agenda_text:
+        law_index_text = f"{agenda_text}\n\n{law_index_text}"
+    elif agenda_text:
+        law_index_text = agenda_text
     if session_law_index.all_law_ids:
         print(f"  Law index: {len(session_law_index.all_law_ids)} reference(s) loaded")
+    if session_agenda:
+        print(f"  Agenda: {len(session_agenda)} item(s) parsed from notes")
 
     id_set = set(intervention_ids)
     with sqlite3.connect(db_path) as conn:

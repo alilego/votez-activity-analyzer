@@ -233,6 +233,97 @@ def build_session_law_index(
     return index
 
 
+@dataclass
+class AgendaItem:
+    """A single parsed agenda item from session initial_notes."""
+    item_number: int | None
+    title: str
+    law_ids: list[str]
+
+
+def parse_agenda_from_notes(initial_notes: str) -> list[AgendaItem]:
+    """Parse initial_notes for numbered agenda items with law references.
+
+    Romanian parliamentary session notes typically list agenda items as:
+      1. Proiectul de Lege privind ... (PL-x 45/2025)
+      2. Dezbaterea OUG nr. 114/2018
+      ...
+    or using dashes/bullets:
+      - Raportul Comisiei ... Legea nr. 107/1996
+    """
+    if not initial_notes or not initial_notes.strip():
+        return []
+
+    items: list[AgendaItem] = []
+
+    # Split on numbered items (1. / 1) / I. / a.) or bullet points (- / •)
+    # Each "chunk" is one potential agenda item.
+    item_pattern = re.compile(
+        r"(?:^|\n)\s*"
+        r"(?:"
+        r"(\d+)\s*[\.\)\-]\s*"  # numbered: "1." / "1)" / "1-"
+        r"|"
+        r"[IVXivx]+\s*[\.\)]\s*"  # roman numerals
+        r"|"
+        r"[a-z]\s*[\.\)]\s*"  # lettered: "a." / "a)"
+        r"|"
+        r"[-•–]\s*"  # bullets
+        r")"
+        r"(.+?)(?=\n\s*(?:\d+\s*[\.\)\-]|[IVXivx]+\s*[\.\)]|[a-z]\s*[\.\)]|[-•–])|\Z)",
+        re.DOTALL,
+    )
+
+    for match in item_pattern.finditer(initial_notes):
+        num_str = match.group(1)
+        item_number = int(num_str) if num_str else None
+        raw_title = match.group(2).strip()
+
+        # Clean up the title.
+        title = re.sub(r"\s+", " ", raw_title).strip()
+        if len(title) < 5:
+            continue
+
+        # Extract any law references from this agenda item.
+        refs = extract_law_references(title)
+        law_ids = [r.canonical_id for r in refs]
+
+        items.append(AgendaItem(
+            item_number=item_number,
+            title=title[:200],
+            law_ids=law_ids,
+        ))
+
+    # Also try a simpler split on newlines if the structured pattern found nothing.
+    if not items:
+        for line in initial_notes.split("\n"):
+            line = line.strip()
+            if len(line) < 10:
+                continue
+            refs = extract_law_references(line)
+            if refs:
+                # Strip leading numbering/bullets.
+                clean_title = re.sub(r"^\s*(?:\d+[\.\)\-]|[IVXivx]+[\.\)]|[a-z][\.\)]|[-•–])\s*", "", line)
+                items.append(AgendaItem(
+                    item_number=None,
+                    title=clean_title.strip()[:200],
+                    law_ids=[r.canonical_id for r in refs],
+                ))
+
+    return items
+
+
+def format_agenda_for_prompt(agenda: list[AgendaItem]) -> str:
+    """Format parsed agenda items as text for LLM prompts."""
+    if not agenda:
+        return ""
+    lines = ["## Session agenda (from initial notes)"]
+    for item in agenda:
+        num = f"{item.item_number}. " if item.item_number else "- "
+        law_part = f" [{', '.join(item.law_ids)}]" if item.law_ids else ""
+        lines.append(f"{num}{item.title}{law_part}")
+    return "\n".join(lines)
+
+
 def validate_law_ids(
     llm_law_ids: list[str],
     session_law_index: SessionLawIndex,

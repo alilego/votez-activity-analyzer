@@ -30,6 +30,8 @@ from init_db import DEFAULT_DB_PATH, init_db
 from law_extractor import (
     build_session_law_index,
     extract_law_references,
+    parse_agenda_from_notes,
+    format_agenda_for_prompt,
     SessionLawIndex,
 )
 import rag_store
@@ -980,17 +982,43 @@ def main() -> int:
                     speech_idxs = law_idx.law_to_speeches.get(lid, [])
                     print(f"    - {lid} (speeches: {speech_idxs})")
 
-        # Persist law indices as JSON for downstream LLM use.
+        # Build per-session agendas from initial notes.
+        session_agendas: dict[str, list] = {}
+        for session_id, stenogram_path in session_to_stenogram_path.items():
+            file_path = Path(stenogram_path)
+            if not file_path.exists():
+                continue
+            data = _read_json(file_path)
+            initial_notes = str(data.get("initial_notes", "")).strip()
+            agenda = parse_agenda_from_notes(initial_notes)
+            if agenda:
+                session_agendas[session_id] = agenda
+                print(f"  Session {session_id}: {len(agenda)} agenda item(s) parsed from notes")
+                for item in agenda:
+                    law_part = f" [{', '.join(item.law_ids)}]" if item.law_ids else ""
+                    num = f"{item.item_number}." if item.item_number else "-"
+                    print(f"    {num} {item.title[:80]}{law_part}")
+
+        # Persist law indices and agendas as JSON for downstream LLM use.
         law_index_dir = Path("state/law_indices")
         law_index_dir.mkdir(parents=True, exist_ok=True)
         for session_id, law_idx in session_law_indices.items():
             law_index_path = law_index_dir / f"{session_id}_law_index.json"
+            agenda = session_agendas.get(session_id, [])
             law_index_path.write_text(
                 json.dumps({
                     "session_id": session_id,
                     "law_to_speeches": law_idx.law_to_speeches,
                     "speech_to_laws": law_idx.speech_to_laws,
                     "all_law_ids": law_idx.all_law_ids,
+                    "agenda": [
+                        {
+                            "item_number": a.item_number,
+                            "title": a.title,
+                            "law_ids": a.law_ids,
+                        }
+                        for a in agenda
+                    ],
                 }, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
