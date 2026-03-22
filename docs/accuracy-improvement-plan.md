@@ -51,13 +51,13 @@
 ## Phase 2 — Deterministic improvements (no model change needed)
 
 ### 2.1 Deterministic law-ID regex extraction
-- [ ] Add a function that scans all session speech text for Romanian law patterns:
+- [x] Add a function that scans all session speech text for Romanian law patterns:
   - `PL-x NNN/YYYY`, `Legea nr. NNN/YYYY`, `OUG nr. NNN/YYYY`, `HG nr. NNN/YYYY`
   - `Directiva UE ...`, `Regulamentul UE ...`
   - Generic `nr. NNN/YYYY` in legislative context
-- [ ] Build a per-session `{law_id: [speech_indices]}` index
-- [ ] Inject this structured list into topic extraction and classification prompts as pre-extracted facts
-- [ ] Validate LLM-returned `law_id` against the pre-extracted list (reject hallucinated IDs)
+- [x] Build a per-session `{law_id: [speech_indices]}` index
+- [x] Inject this structured list into topic extraction and classification prompts as pre-extracted facts
+- [x] Validate LLM-returned `law_id` against the pre-extracted list (reject hallucinated IDs)
 - [ ] **Expected impact:** +10-15% on law attribution accuracy
 
 ### 2.2 Pre-extract legislative agenda from session notes
