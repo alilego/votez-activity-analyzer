@@ -58,13 +58,15 @@
 - [x] Build a per-session `{law_id: [speech_indices]}` index
 - [x] Inject this structured list into topic extraction and classification prompts as pre-extracted facts
 - [x] Validate LLM-returned `law_id` against the pre-extracted list (reject hallucinated IDs)
-- [ ] **Expected impact:** +10-15% on law attribution accuracy
+- **Expected impact:** +10-15% on law attribution accuracy
 
-### 2.2 Pre-extract legislative agenda from session notes
-- [ ] Parse `initial_notes` for agenda items (often numbered, with law references)
-- [ ] Build a structured agenda: `[{item_number, title, law_id}]`
-- [ ] Feed this to both topic extraction and classification prompts
-- [ ] **Expected impact:** +5-10% on law attribution accuracy
+### 2.2 Pre-extract legislative agenda from session notes ✅
+- [x] Parse `initial_notes` for agenda items (often numbered, with law references)
+- [x] Build a structured agenda: `[{item_number, title, law_id}]`
+- [x] Feed this to both topic extraction and classification prompts
+- [x] Also fixed incomplete 2.1: added `law_id_index` + `_format_preextracted_law_ids` to `prompts.py`
+- **Implementation:** `scripts/agenda.py` scans both `initial_notes` and session speeches for legislative item introductions (Proiect de Lege/Hotărâre, Propunere legislativă, PL-x, PHCD, OUG refs)
+- **Expected impact:** +5-10% on law attribution accuracy
 
 ### 2.3 Additional deterministic shortcut rules
 - [ ] Ultra-short speeches (≤10 words) that are greetings/thanks → `neutral` without LLM call
@@ -163,7 +165,9 @@
 | 2026-03-15 | AI first-pass labeling (229 speeches) | 8 parallel classification agents with full stenogram context; human-labeled 26 used as reference; saves manual effort while human review ensures quality |
 | 2026-03-15 | Human review completed | All 255 labels reviewed and corrected; minor shifts: +2 constructive, +1 neutral, -3 non_constructive vs AI first-pass |
 | 2026-03-15 | Evaluation harness built | `scripts/evaluate_accuracy.py` — baseline: 61.0% classification, 0% law attribution |
+| 2026-03-22 | Agenda extraction (2.2) | `scripts/agenda.py` — pre-extracts structured legislative agenda from session speeches; injected into all layer prompts and session topic extraction |
+| 2026-03-22 | Fixed incomplete 2.1 | Added `law_id_index` and `_format_preextracted_law_ids` to `prompts.py` — was missing from layer prompt builders |
 
 ---
 
-*Last updated: 2026-03-15*
+*Last updated: 2026-03-22*

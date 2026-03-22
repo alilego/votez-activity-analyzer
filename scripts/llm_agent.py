@@ -74,6 +74,7 @@ from intervention_layers.prompts import (
     build_layer_b_user_message,
     build_layer_c_user_message,
 )
+from agenda import extract_agenda_from_session
 from law_ids import extract_law_id_index_from_speeches
 from intervention_layers.qa import evaluate_qa_triggers
 from intervention_layers.rules import apply_deterministic_rules
@@ -392,11 +393,32 @@ def _format_session_topics(topics: list) -> str:
     return "\n".join(lines)
 
 
+def _format_agenda_for_one_pass(agenda: list[dict] | None) -> str:
+    if not agenda:
+        return ""
+    lines = ["## Legislative agenda (pre-extracted from session)"]
+    for item in agenda:
+        entry = ""
+        item_num = item.get("item_number")
+        if item_num is not None:
+            entry += f"{item_num}. "
+        title = str(item.get("title", "")).strip()
+        if title:
+            entry += title
+        law_id = str(item.get("law_id") or "").strip()
+        if law_id:
+            entry += f" ({law_id})"
+        if entry.strip():
+            lines.append(f"- {entry.strip()}")
+    return "\n".join(lines) if len(lines) > 1 else ""
+
+
 def _build_intervention_message(
     session: dict,
     session_topics: list,
     speeches: list[dict],
     context_speeches: list[dict] | None = None,
+    agenda: list[dict] | None = None,
 ) -> str:
     """Build the user message for one LLM call.
 
@@ -415,6 +437,10 @@ def _build_intervention_message(
     topics_text = _format_session_topics(session_topics)
     if topics_text:
         parts.append(f"## Session topics (grounding context)\n{topics_text}")
+
+    agenda_text = _format_agenda_for_one_pass(agenda)
+    if agenda_text:
+        parts.append(agenda_text)
 
     if context_speeches:
         parts.append(
@@ -542,6 +568,7 @@ def _call_llm(
     system_prompt: str | None = None,
     user_message_override: str | None = None,
     return_raw: bool = False,
+    agenda: list[dict] | None = None,
 ) -> list[dict] | tuple[str, list[dict]]:
     """
     Call the LLM for one prompt payload (typically one target speech).
@@ -560,6 +587,7 @@ def _call_llm(
             session_topics,
             speeches,
             context_speeches=context_speeches,
+            agenda=agenda,
         )
 
     # json_object mode requires the response to be a single JSON object, not an array.
@@ -1232,6 +1260,7 @@ def _classify_single_speech_three_layer(
     config: dict,
     call_label: str,
     build_prompts_only: bool,
+    agenda: list[dict] | None = None,
 ) -> dict | None:
     """
     3-layer classification for a single target speech.
@@ -1249,6 +1278,7 @@ def _classify_single_speech_three_layer(
         target_speech=sp_for_llm,
         context_speeches=prev_context,
         law_id_index=law_id_index,
+        agenda=agenda,
     )
     layer_a = _call_layer_with_validation(
         layer_name="layer_a",
@@ -1293,6 +1323,7 @@ def _classify_single_speech_three_layer(
         layer_a_output=layer_a,
         context_speeches=prev_context,
         law_id_index=law_id_index,
+        agenda=agenda,
     )
     layer_b = _call_layer_with_validation(
         layer_name="layer_b",
@@ -1329,6 +1360,7 @@ def _classify_single_speech_three_layer(
             qa_reasons=qa_reasons,
             context_speeches=prev_context,
             law_id_index=law_id_index,
+            agenda=agenda,
         )
         layer_c = _call_layer_with_validation(
             layer_name="layer_c",
@@ -1510,6 +1542,11 @@ def classify_session_interventions_one_pass(
     if not all_speeches:
         return {"classified": 0, "errors": 0, "error_log": []}
 
+    initial_notes = str(session.get("initial_notes") or "")
+    agenda = extract_agenda_from_session(initial_notes, all_speeches)
+    if agenda:
+        print(f"  Agenda: {len(agenda)} item(s) pre-extracted")
+
     target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
     pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
     total_chars = sum(len(sp["text"]) for sp in target_speeches)
@@ -1560,6 +1597,7 @@ def classify_session_interventions_one_pass(
                     call_label=call_label,
                     context_speeches=prev_context,
                     build_prompts_only=build_prompts_only,
+                    agenda=agenda,
                 )
                 if not raw_results:
                     raise ValueError("LLM returned empty results list")
@@ -1732,6 +1770,11 @@ def classify_session_interventions_three_layer(
     if not all_speeches:
         return {"classified": 0, "errors": 0, "error_log": []}
 
+    initial_notes = str(session.get("initial_notes") or "")
+    agenda = extract_agenda_from_session(initial_notes, all_speeches)
+    if agenda:
+        print(f"  Agenda: {len(agenda)} item(s) pre-extracted")
+
     target_speeches = [sp for sp in all_speeches if sp["intervention_id"] in id_set]
     pos_by_index = {int(sp["speech_index"]): idx for idx, sp in enumerate(all_speeches)}
     total_chars = sum(len(sp["text"]) for sp in target_speeches)
@@ -1779,6 +1822,7 @@ def classify_session_interventions_three_layer(
                 config=config,
                 call_label=call_label,
                 build_prompts_only=build_prompts_only,
+                agenda=agenda,
             )
         except _BuildPromptsOnly:
             print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")

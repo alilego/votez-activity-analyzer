@@ -45,6 +45,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from agenda import extract_agenda_from_session
 from init_db import DEFAULT_DB_PATH, init_db
 from law_ids import allowed_law_ids, extract_law_id_index_from_speeches, keep_only_allowed_law_id
 from mcp_server import MCPServer
@@ -1161,14 +1162,35 @@ def extract_session_topics(
     law_id_index = extract_law_id_index_from_speeches(session_speeches)
     allowed_ids = allowed_law_ids(law_id_index)
 
+    notes_text = (notes_rows[0]["text"].strip() if notes_rows else "")
+    agenda = extract_agenda_from_session(notes_text, session_speeches)
+    if agenda:
+        print(f"  Agenda: {len(agenda)} item(s) pre-extracted")
+
     # Build the header that goes at the top of every window message.
     session_header = (
         f"Ședința ID: {session_id}  Data: {session.get('session_date', '')}  "
         f"({len(speech_pool)} fragmente substantive)"
     )
-    notes_text = (notes_rows[0]["text"].strip() if notes_rows else "")
     if notes_text:
         session_header += f"\nNote inițiale: {notes_text[:200]}"
+    if agenda:
+        agenda_lines = ["Agenda legislativă (pre-extrasă din sesiune):"]
+        for item in agenda:
+            entry = ""
+            item_num = item.get("item_number")
+            if item_num is not None:
+                entry += f"{item_num}. "
+            title = str(item.get("title", "")).strip()
+            if title:
+                entry += title
+            law_id = str(item.get("law_id") or "").strip()
+            if law_id:
+                entry += f" ({law_id})"
+            if entry.strip():
+                agenda_lines.append(f"- {entry.strip()}")
+        if len(agenda_lines) > 1:
+            session_header += "\n" + "\n".join(agenda_lines)
     law_context = _build_law_ids_context(law_id_index)
     if law_context:
         session_header += f"\n{law_context}"

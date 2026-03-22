@@ -10,17 +10,10 @@ Task (Layer A): extract rubric signals from ONE target speech.
 You will receive ONE target speech from a single parliamentary session, plus up to 9 previous speeches for context.
 Evaluate ONLY the target speech. Do NOT evaluate/classify context speeches marked with [ctx].
 Context speeches are provided only to interpret references/replies/implied meaning in the target speech.
-Never transfer claims, tone, or accusations from [ctx] speeches into the target-speech reasoning.
-If the target speech is short/procedural, keep reasoning strictly about that line only.
-
-Being on-topic is NOT sufficient for constructive analysis.
 
 Early filter (apply first):
 If the target speech is clearly procedural (speaking order, vote instructions/announcements, greetings, chair logistics without policy substance),
 mark it as primarily procedural and continue with rubric fields accordingly.
-For very short floor interjections (e.g., "Nu.", "Da.", "Mulțumesc.") without explicit insult/accusation or policy content:
-- set procedural_content = yes
-- set partisan_rhetoric = no (or partial only if explicit attack words are present)
 
 Criteria to extract:
 1) policy_proposal: concrete policy action/amendment/solution (including compromise/refinement/implementation proposals)
@@ -39,7 +32,6 @@ Scale:
 Output requirements:
 - reasoning must be one Romanian sentence grounded in the speech.
 - evidence_quote must be short and verbatim from the target speech.
-- evidence_quote MUST be from the target speech, never from [ctx] speeches.
 
 Output JSON only (no prose), wrapped as {"results":[...]} with exactly one item:
 {
@@ -196,13 +188,32 @@ def _format_preextracted_law_ids(law_id_index: dict[str, list[int]] | None) -> s
         return ""
     lines = ["## Pre-extracted law IDs (ground truth candidates)"]
     for law_id, speech_indexes in law_id_index.items():
-        idx_text = ", ".join(str(i) for i in sorted(set(speech_indexes))[:12])
-        if idx_text:
-            lines.append(f"- {law_id}  [speech_index: {idx_text}]")
+        indices_text = ", ".join(str(i) for i in sorted(set(speech_indexes))[:12])
+        if indices_text:
+            lines.append(f"- {law_id} [speech_index: {indices_text}]")
         else:
             lines.append(f"- {law_id}")
-    lines.append("Use only these law IDs when referring to bills/laws from this session.")
     return "\n".join(lines)
+
+
+def _format_agenda(agenda: list[dict] | None) -> str:
+    if not agenda:
+        return ""
+    lines = ["## Legislative agenda (pre-extracted from session)"]
+    for item in agenda:
+        entry = ""
+        item_num = item.get("item_number")
+        if item_num is not None:
+            entry += f"{item_num}. "
+        title = str(item.get("title", "")).strip()
+        if title:
+            entry += title
+        law_id = str(item.get("law_id") or "").strip()
+        if law_id:
+            entry += f" ({law_id})"
+        if entry.strip():
+            lines.append(f"- {entry.strip()}")
+    return "\n".join(lines) if len(lines) > 1 else ""
 
 
 def build_layer_a_user_message(
@@ -211,6 +222,7 @@ def build_layer_a_user_message(
     target_speech: dict,
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
+    agenda: list[dict] | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     notes = str(session.get("initial_notes") or "").strip()
@@ -219,6 +231,9 @@ def build_layer_a_user_message(
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    agenda_text = _format_agenda(agenda)
+    if agenda_text:
+        parts.append(agenda_text)
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
@@ -237,11 +252,15 @@ def build_layer_b_user_message(
     layer_a_output: dict,
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
+    agenda: list[dict] | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    agenda_text = _format_agenda(agenda)
+    if agenda_text:
+        parts.append(agenda_text)
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
@@ -263,11 +282,15 @@ def build_layer_c_user_message(
     qa_reasons: list[str],
     context_speeches: list[dict] | None = None,
     law_id_index: dict[str, list[int]] | None = None,
+    agenda: list[dict] | None = None,
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    agenda_text = _format_agenda(agenda)
+    if agenda_text:
+        parts.append(agenda_text)
     laws = _format_preextracted_law_ids(law_id_index)
     if laws:
         parts.append(laws)
@@ -280,3 +303,4 @@ def build_layer_c_user_message(
     parts.append("## QA triggers\n" + json.dumps(qa_reasons, ensure_ascii=False, indent=2))
     parts.append("Review and confirm/revise minimally.")
     return "\n\n".join(parts)
+
