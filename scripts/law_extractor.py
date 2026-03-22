@@ -73,15 +73,15 @@ _PATTERNS: list[tuple[re.Pattern[str], str, str]] = [
         re.IGNORECASE),
      "hg", "HG nr. {ref}"),
 
-    # Directiva UE NNN/YYYY or "Directiva (UE) NNN/YYYY"
+    # Directiva UE NNN/YYYY or YYYY/NNN (EU uses both formats)
     (re.compile(
-        r"\bdirectiva\s+(?:\(?\s*(?:ue|ce)\s*\)?\s*)?(?:nr\.?\s*)?(\d+\s*/\s*\d{4})\b",
+        r"\bdirectiva\s+(?:\(?\s*(?:ue|ce)\s*\)?\s*)?(?:nr\.?\s*)?(\d+\s*/\s*\d+)\b",
         re.IGNORECASE),
      "directiva", "Directiva UE {ref}"),
 
-    # Regulamentul UE NNN/YYYY
+    # Regulamentul UE NNN/YYYY or YYYY/NNN (EU uses both formats)
     (re.compile(
-        r"\bregulamentul\s+(?:\(?\s*(?:ue|ce)\s*\)?\s*)?(?:nr\.?\s*)?(\d+\s*/\s*\d{4})\b",
+        r"\bregulamentul\s+(?:\(?\s*(?:ue|ce)\s*\)?\s*)?(?:nr\.?\s*)?(\d+\s*/\s*\d+)\b",
         re.IGNORECASE),
      "regulament", "Regulamentul UE {ref}"),
 

@@ -30,8 +30,8 @@ _VOTE_PATTERNS = re.compile(
     r"(?:supun (?:la )?vot|cine este pentru|cine este contra|cine se abtine"
     r"|votul a fost|s-a adoptat|nu s-a adoptat|a fost respins"
     r"|a fost adoptat|procedura de vot|va rog sa votati|va rog sa votați"
-    r"|supunem? votului|adoptarea proiectului|respingerea proiectului"
-    r"|cu unanimitate|cu majoritate|rezultatul votului"
+    r"|supunem? votului"
+    r"|cu unanimitate de voturi|cu majoritate de voturi|rezultatul votului"
     r"|cu \d+ voturi|pentru.*contra.*abtiner)",
     re.IGNORECASE,
 )
@@ -115,7 +115,7 @@ def apply_pre_llm_shortcuts(
 
     # Committee report with formal structure → constructive candidate
     # (not a shortcut, but flags it for the LLM to consider).
-    if _COMMITTEE_REPORT_PATTERNS.search(norm) and words >= 30:
+    if _COMMITTEE_REPORT_PATTERNS.search(norm) and words >= 20:
         return {
             "shortcut_label": None,
             "shortcut_confidence": None,
