@@ -81,6 +81,7 @@ from intervention_layers.schemas import (
     validate_layer_b_item,
     validate_layer_c_item,
 )
+from law_extractor import SessionLawIndex, validate_law_ids
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -367,6 +368,29 @@ Respond with ONLY valid JSON — one object per target speech, in the SAME ORDER
 ]
 
 Return EXACTLY one object for EACH input speech_index in "Speeches to classify". Do not skip any speech_index.""" 
+
+
+# ---------------------------------------------------------------------------
+# Law index loader
+# ---------------------------------------------------------------------------
+
+_LAW_INDEX_DIR = Path("state/law_indices")
+
+
+def _load_session_law_index(session_id: str) -> SessionLawIndex:
+    """Load the pre-computed law index for a session, if available."""
+    index_path = _LAW_INDEX_DIR / f"{session_id}_law_index.json"
+    idx = SessionLawIndex(session_id=session_id)
+    if not index_path.exists():
+        return idx
+    try:
+        data = json.loads(index_path.read_text(encoding="utf-8"))
+        idx.all_law_ids = data.get("all_law_ids", [])
+        idx.law_to_speeches = {k: v for k, v in data.get("law_to_speeches", {}).items()}
+        idx.speech_to_laws = {int(k): v for k, v in data.get("speech_to_laws", {}).items()}
+    except Exception:
+        pass
+    return idx
 
 
 # ---------------------------------------------------------------------------
@@ -1231,6 +1255,7 @@ def _classify_single_speech_three_layer(
     config: dict,
     call_label: str,
     build_prompts_only: bool,
+    law_index_text: str = "",
 ) -> dict | None:
     """
     3-layer classification for a single target speech.
@@ -1244,6 +1269,7 @@ def _classify_single_speech_three_layer(
         session_topics=session_topics,
         target_speech=sp_for_llm,
         context_speeches=prev_context,
+        law_index_text=law_index_text,
     )
     layer_a = _call_layer_with_validation(
         layer_name="layer_a",
@@ -1287,6 +1313,7 @@ def _classify_single_speech_three_layer(
         target_speech=sp_for_llm,
         layer_a_output=layer_a,
         context_speeches=prev_context,
+        law_index_text=law_index_text,
     )
     layer_b = _call_layer_with_validation(
         layer_name="layer_b",
@@ -1322,6 +1349,7 @@ def _classify_single_speech_three_layer(
             layer_b_output=layer_b,
             qa_reasons=qa_reasons,
             context_speeches=prev_context,
+            law_index_text=law_index_text,
         )
         layer_c = _call_layer_with_validation(
             layer_name="layer_c",
@@ -1700,6 +1728,12 @@ def classify_session_interventions_three_layer(
     topics_result = server.call("get_session_topics", {"session_id": session_id})
     session_topics: list = topics_result.get("topics", []) if topics_result.get("ok") else []
 
+    # Load pre-extracted law references for prompt enrichment.
+    session_law_index = _load_session_law_index(session_id)
+    law_index_text = session_law_index.format_for_prompt()
+    if session_law_index.all_law_ids:
+        print(f"  Law index: {len(session_law_index.all_law_ids)} reference(s) loaded")
+
     id_set = set(intervention_ids)
     with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
@@ -1772,6 +1806,7 @@ def classify_session_interventions_three_layer(
                 config=config,
                 call_label=call_label,
                 build_prompts_only=build_prompts_only,
+                law_index_text=law_index_text,
             )
         except _BuildPromptsOnly:
             print(f"    Speech {t_idx}/{len(target_speeches)}: Layer A prompt saved (build-prompts mode)")

@@ -27,6 +27,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from init_db import DEFAULT_DB_PATH, init_db
+from law_extractor import (
+    build_session_law_index,
+    extract_law_references,
+    SessionLawIndex,
+)
 import rag_store
 
 
@@ -344,14 +349,13 @@ def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
     normalized = _analysis_text(text)
     topics: list[str] = []
 
-    # 1) Enrich with explicit law/bill references.
-    for pattern, template in LAW_REFERENCE_PATTERNS:
-        for match in pattern.findall(normalized):
-            topic = template.format(ref=match)
-            if topic not in topics:
-                topics.append(topic)
-            if len(topics) >= max_topics:
-                return topics
+    # 1) Enrich with explicit law/bill references via comprehensive extractor.
+    for ref in extract_law_references(text):
+        topic = ref.canonical_id.lower()
+        if topic not in topics:
+            topics.append(topic)
+        if len(topics) >= max_topics:
+            return topics
 
     # 2) Add enriched taxonomy topics.
     for topic, keywords in TOPIC_TAXONOMY:
@@ -957,6 +961,38 @@ def main() -> int:
             print(
                 f"  Done: {len(speeches)} speeches,"
                 f" {session_matched} matched, {session_unmatched} unmatched."
+            )
+
+        # Build per-session law reference index and persist as JSON artifact.
+        session_law_indices: dict[str, SessionLawIndex] = {}
+        for session_id, stenogram_path in session_to_stenogram_path.items():
+            file_path = Path(stenogram_path)
+            if not file_path.exists():
+                continue
+            data = _read_json(file_path)
+            initial_notes = str(data.get("initial_notes", "")).strip()
+            speeches = data.get("speeches", [])
+            law_idx = build_session_law_index(session_id, initial_notes, speeches)
+            session_law_indices[session_id] = law_idx
+            if law_idx.all_law_ids:
+                print(f"  Session {session_id}: {len(law_idx.all_law_ids)} law reference(s) extracted")
+                for lid in law_idx.all_law_ids:
+                    speech_idxs = law_idx.law_to_speeches.get(lid, [])
+                    print(f"    - {lid} (speeches: {speech_idxs})")
+
+        # Persist law indices as JSON for downstream LLM use.
+        law_index_dir = Path("state/law_indices")
+        law_index_dir.mkdir(parents=True, exist_ok=True)
+        for session_id, law_idx in session_law_indices.items():
+            law_index_path = law_index_dir / f"{session_id}_law_index.json"
+            law_index_path.write_text(
+                json.dumps({
+                    "session_id": session_id,
+                    "law_to_speeches": law_idx.law_to_speeches,
+                    "speech_to_laws": law_idx.speech_to_laws,
+                    "all_law_ids": law_idx.all_law_ids,
+                }, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
 
         session_topics_map: dict[str, list[str]] = {}

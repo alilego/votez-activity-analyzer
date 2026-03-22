@@ -196,6 +196,7 @@ def build_layer_a_user_message(
     session_topics: list,
     target_speech: dict,
     context_speeches: list[dict] | None = None,
+    law_index_text: str = "",
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     notes = str(session.get("initial_notes") or "").strip()
@@ -204,6 +205,8 @@ def build_layer_a_user_message(
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    if law_index_text:
+        parts.append(law_index_text)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)
@@ -218,11 +221,14 @@ def build_layer_b_user_message(
     target_speech: dict,
     layer_a_output: dict,
     context_speeches: list[dict] | None = None,
+    law_index_text: str = "",
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    if law_index_text:
+        parts.append(law_index_text)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)
@@ -240,11 +246,14 @@ def build_layer_c_user_message(
     layer_b_output: dict,
     qa_reasons: list[str],
     context_speeches: list[dict] | None = None,
+    law_index_text: str = "",
 ) -> str:
     parts: list[str] = [f"## Session\nDate: {session.get('session_date', '')}"]
     topics = _format_session_topics(session_topics)
     if topics:
         parts.append(f"## Session topics (grounding context)\n{topics}")
+    if law_index_text:
+        parts.append(law_index_text)
     ctx = _format_context(context_speeches)
     if ctx:
         parts.append(ctx)
