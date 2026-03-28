@@ -102,8 +102,15 @@
 - [ ] Run a **quick screening benchmark** first on medium+hard gold speeches, reusing existing session topics:
 ```bash
 cd /Users/alilego/Projects/votez-activity-analyzer
-python3 scripts/benchmark_local_models.py --models qwen3:14b --only-hard --reuse-existing-topics
+python3 scripts/benchmark_local_models.py --models qwen3:14b --only-hard --reuse-existing-topics --skip-missing-sessions
 ```
+- [x] `qwen3:14b` quick screen completed on currently available gold subset:
+  - Command: `python3 scripts/benchmark_local_models.py --models qwen3:14b --only-hard --reuse-existing-topics --skip-missing-sessions`
+  - Scope: 26 medium/hard speeches across 5 available gold sessions (`8851`, `8856`, `8909`, `8957`, `8958`); 100% coverage on that subset
+  - Result: **61.54% classification accuracy** (16/26), **0.0% law attribution** (0/4 exact, 0/4 partial)
+  - Latency: ~5,994s total (~100 min) even in quick-screen mode
+  - Error pattern: very high `constructive` recall (92.9%) but poor `non_constructive` recall (27.3%); strongest failure mode remains overpredicting `constructive` for partisan/off-topic speeches
+  - Takeaway: this run does **not** yet show a clear Phase 3 accuracy gain; by itself it does not justify spending more time on wider local-model benchmarking
 - [ ] Promote a model to full benchmark only if quick screening shows a meaningful gain (target: at least +3pp classification accuracy on medium/hard cases, or materially better constructive/non_constructive recall) with acceptable latency.
 - [ ] Only then run a **full end-to-end benchmark** with per-model topic extraction for 1-2 finalists:
 ```bash
@@ -118,7 +125,7 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 - [x] Update `Modelfile-*` and default model constants accordingly
 - [x] Add shared model-profile config + isolated benchmark harness (`scripts/benchmark_local_models.py`)
 - **Current default local model:** `qwen3:14b`
-- **Decision rule:** if quick screening does not show a clear win, skip deeper local benchmarking and move to prompt improvements or hybrid escalation.
+- **Decision rule:** if quick screening does not show a clear win, skip deeper local benchmarking and move to prompt improvements or hybrid escalation. Current `qwen3:14b` quick-screen result falls into this bucket.
 - [ ] **Expected impact (only if the error profile is model-limited):** +5-10% classification accuracy over 7B
 
 ### 3.2 Make pipeline architecture model-aware
@@ -198,6 +205,7 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 | 2026-03-22 | Tighten QA triggers (2.4) | `low_confidence` threshold 0.65→0.70; `very_short_speech` OR→AND + suppressed by deterministic candidates; audit showed 52.5% trigger rate, now well under 30% |
 | 2026-03-22 | Step 3.1 scaffolding | Added shared local-model profiles, benchmark harness, `Modelfile-qwen2.5-14b-32k`, `Modelfile-qwen3-14b-32k`; switched default local model to `qwen3:14b` |
 | 2026-03-28 | Phase 3 narrowed to gated screening | Avoid multi-hour end-to-end benchmarks per model; first prove a model upgrade helps on medium/hard cases, then run a full benchmark only for finalists |
+| 2026-03-28 | `qwen3:14b` quick screen recorded | On 26 medium/hard speeches from 5 available gold sessions: 61.54% classification, 0% law attribution, ~100 min runtime; not enough evidence to expand local-model benchmarking yet |
 
 ---
 
