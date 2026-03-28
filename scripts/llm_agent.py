@@ -23,7 +23,7 @@ Per-session flow
 
 Supported providers:
   openai  — requires OPENAI_API_KEY; model default: gpt-4o-mini
-  ollama  — free local inference; model default: qwen2.5:7b-32k
+  ollama  — free local inference; model default: qwen3:14b
             Ollama must be running: `ollama serve`
 
 Environment variables:
@@ -88,6 +88,12 @@ from intervention_layers.schemas import (
     validate_layer_b_item,
     validate_layer_c_item,
 )
+from model_profiles import (
+    DEFAULT_MODEL_OLLAMA,
+    DEFAULT_MODEL_OPENAI,
+    DEFAULT_PIPELINE_ARCHITECTURE,
+    infer_ollama_num_ctx,
+)
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -96,10 +102,7 @@ from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 # ---------------------------------------------------------------------------
 
 DEFAULT_PROVIDER = "ollama"
-DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
-DEFAULT_PIPELINE_ARCHITECTURE = "three_layer"
 EST_CHARS_PER_TOKEN = 3.8
 LOG_TOKEN_USAGE_PER_CALL = False
 
@@ -109,9 +112,6 @@ PREVIOUS_CONTEXT_WINDOW = 9
 
 # Hard timeout per LLM request. 600s gives headroom for slow local inference.
 LLM_REQUEST_TIMEOUT_S = 600
-
-# num_ctx for qwen2.5:7b-32k. Passed via Ollama's extra_body.
-OLLAMA_NUM_CTX = 32768
 
 _LLM_USAGE = {
     "calls": 0,
@@ -629,7 +629,7 @@ def _call_llm(
     if provider in ("openai", "ollama"):
         extra_kwargs["response_format"] = {"type": "json_object"}
     if provider == "ollama":
-        extra_kwargs["extra_body"] = {"num_ctx": OLLAMA_NUM_CTX}
+        extra_kwargs["extra_body"] = {"num_ctx": getattr(client, "_ollama_num_ctx", infer_ollama_num_ctx(client._model))}
 
     response = client.chat.completions.create(
         model=client._model,
@@ -2112,6 +2112,7 @@ def _build_client(provider: str, model: str):
         client = openai_module.OpenAI(api_key="ollama", base_url=base_url)
         client._model = model
         client._provider = "ollama"
+        client._ollama_num_ctx = infer_ollama_num_ctx(model)
         return client
 
     raise SystemExit(f"Unknown provider: {provider!r}. Choose 'openai' or 'ollama'.")
@@ -2361,6 +2362,31 @@ def _load_all_intervention_ids(db_path: Path) -> list[str]:
     return [r[0] for r in rows]
 
 
+def _load_explicit_intervention_ids(path: Path) -> list[str]:
+    """Load intervention IDs from a JSON list or newline-delimited text file."""
+    raw = path.read_text(encoding="utf-8").strip()
+    if not raw:
+        return []
+
+    if raw.startswith("["):
+        data = json.loads(raw)
+        if not isinstance(data, list):
+            raise ValueError("intervention IDs JSON file must contain a top-level list")
+        out: list[str] = []
+        for item in data:
+            text = str(item).strip()
+            if text and text not in out:
+                out.append(text)
+        return out
+
+    out: list[str] = []
+    for line in raw.splitlines():
+        text = line.strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
 def _load_intervention_ids(
     db_path: Path,
     run_id: str,
@@ -2455,6 +2481,14 @@ def main() -> int:
         help="Classify all interventions for a single session (for debugging).",
     )
     parser.add_argument(
+        "--intervention-ids-file",
+        default="",
+        help=(
+            "Optional path to a JSON list or newline-delimited file of explicit "
+            "intervention_ids to classify. Overrides --session-id and stenogram selection."
+        ),
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=0,
@@ -2523,6 +2557,8 @@ def main() -> int:
         # Build-prompts targets ALL interventions so generated_prompts/ is a
         # complete snapshot — not just sessions with pending LLM work.
         intervention_ids = _load_all_intervention_ids(db_path)
+    elif args.intervention_ids_file.strip():
+        intervention_ids = _load_explicit_intervention_ids(Path(args.intervention_ids_file.strip()))
     else:
         list_path = Path(args.stenogram_list_path) if args.stenogram_list_path else None
         intervention_ids = _load_intervention_ids(db_path, args.run_id, list_path, session_id=args.session_id)

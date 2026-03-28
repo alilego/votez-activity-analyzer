@@ -27,26 +27,19 @@ Download from [ollama.com](https://ollama.com) or via Homebrew:
 brew install ollama
 ```
 
-Pull the model (one-time, ~4.7 GB) and create the 32k-context variant used by the pipeline:
+Pull the default local model used by the pipeline:
 
 ```bash
-ollama pull qwen2.5:7b
-
-ollama create qwen2.5:7b-32k -f - << 'EOF'
-FROM qwen2.5:7b
-PARAMETER num_ctx 32768
-EOF
+ollama pull qwen3:14b
 ```
 
-> **Why `qwen2.5:7b-32k`?** Ollama's default runtime context is 4096 tokens. The `-32k`
-> variant bakes in `num_ctx=32768`, giving the model enough context to receive an entire
-> parliamentary session (~15–20k tokens) in a **single call** for topic extraction — no
-> map-reduce splitting needed. No extra disk space is used; it references the same weights
-> with a different manifest.
+> **Why `qwen3:14b`?** Step 3.1 upgrades the default local model from the old 7B baseline to a stronger 14B model. The pipeline now requests a 32k runtime context for known large-context local models, so `qwen3:14b` can still receive full-session prompts without requiring a separate wrapper model name.
 >
 > **Legacy model** (`llama3.1:8b-8k`) still works if already set up — pass
 > `--llm-model llama3.1:8b-8k` to use it. The pipeline will automatically fall back to
 > map-reduce for any model with `num_ctx < 32768`.
+>
+> **Optional wrappers for benchmarking:** the repo also includes `Modelfile-qwen2.5-14b-32k` and `Modelfile-qwen3-14b-32k` if you want explicit 32k Ollama aliases for repeatable local comparisons.
 
 ---
 
@@ -143,6 +136,22 @@ This reads every unprocessed file from `state/external_prompts_output/`, validat
 
 ---
 
+### Benchmark local models on the gold set
+
+```bash
+python3 scripts/benchmark_local_models.py
+```
+
+This creates an isolated DB copy per model under `state/model_benchmarks/`, reruns LLM topic extraction plus intervention classification on the gold-standard sessions only, and writes both per-model `benchmark_report.json` files and an aggregated `summary.json`.
+
+For a shorter smoke test:
+
+```bash
+python3 scripts/benchmark_local_models.py --models qwen3:14b qwen2.5:14b-32k --session-limit 3
+```
+
+---
+
 ### Run baseline only (no LLM, no Ollama needed)
 
 ```bash
@@ -174,10 +183,10 @@ python3 scripts/run_pipeline.py --dry-run
 ### LLM pass (`--analyzer-mode llm`, runs after baseline — two sub-steps)
 
 **Step 3b — Session topic extraction** (`llm_session_topics.py`):
-- **Single-pass mode** (default with `qwen2.5:7b-32k`): sends the entire session to the LLM in one call for higher coverage and quality
+- **Single-pass mode** (default with `qwen3:14b`): sends the entire session to the LLM in one call for higher coverage and quality
 - **Map-reduce fallback**: used automatically for small-context models (`llama3.1:8b-8k`) or sessions > 80k chars — splits into windows, extracts bullet lists per window, then merges into structured topics
 - Skips sessions already processed by **any** LLM (any `topics_source LIKE 'llm_v1:%'`) by default
-- Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:qwen2.5:7b-32k`) for auditability
+- Stored with `topics_source='llm_v1:{model}'` (e.g. `llm_v1:qwen3:14b`) for auditability
 
 **Step 3c — Intervention classification** (`llm_agent.py`):
 - Sends **all speeches of a session in one call** so the model has full conversational context

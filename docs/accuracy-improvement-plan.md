@@ -94,13 +94,32 @@
 ## Phase 3 — Model upgrade (local)
 
 ### 3.1 Upgrade to a stronger local model
-- [ ] Test `qwen2.5:14b` (needs ~10GB VRAM) — best balance of quality vs. resource use
-- [ ] Test `qwen3:14b` if available — newer architecture may handle Romanian better
-- [ ] Test `gemma-3:27b` (needs ~18GB VRAM) — strong multilingual performance
-- [ ] Test `llama3.3:70b-q4` (needs ~40GB VRAM) — if hardware allows, best local option
-- [ ] For each model: run evaluation harness, compare accuracy, latency, and resource use
-- [ ] Update `Modelfile-*` and default model constants accordingly
-- [ ] **Expected impact:** +5-10% classification accuracy over 7B
+- **Why this can help accuracy:** a stronger model may better separate formal-but-substantive speeches from procedural ones, handle sharper political rhetoric without overpredicting `non_constructive`, and recover indirect law references that the 7B model misses.
+- **Important:** this is a hypothesis to validate after Phase 2, not a mandatory full benchmark of every candidate model.
+- [ ] First check whether the remaining errors are actually model-limited:
+  - If most errors are rubric/prompt/context failures, stay in Phase 2/3.3 instead of spending hours on model swaps.
+  - If most errors are nuanced semantic judgments or missed indirect legislative references, proceed with model screening.
+- [ ] Run a **quick screening benchmark** first on medium+hard gold speeches, reusing existing session topics:
+```bash
+cd /Users/alilego/Projects/votez-activity-analyzer
+python3 scripts/benchmark_local_models.py --models qwen3:14b --only-hard --reuse-existing-topics
+```
+- [ ] Promote a model to full benchmark only if quick screening shows a meaningful gain (target: at least +3pp classification accuracy on medium/hard cases, or materially better constructive/non_constructive recall) with acceptable latency.
+- [ ] Only then run a **full end-to-end benchmark** with per-model topic extraction for 1-2 finalists:
+```bash
+cd /Users/alilego/Projects/votez-activity-analyzer
+python3 scripts/benchmark_local_models.py --models qwen3:14b
+```
+- [ ] Candidate order:
+  - `qwen3:14b` — cheapest strong local baseline; already the default
+  - `qwen2.5:14b` (needs ~10GB VRAM) — useful regression check vs `qwen3:14b`
+  - `gemma-3:27b` (needs ~18GB VRAM) — only if 14B models plateau
+  - `llama3.3:70b-q4` (needs ~40GB VRAM) — only if hardware allows and local-only is still a hard requirement
+- [x] Update `Modelfile-*` and default model constants accordingly
+- [x] Add shared model-profile config + isolated benchmark harness (`scripts/benchmark_local_models.py`)
+- **Current default local model:** `qwen3:14b`
+- **Decision rule:** if quick screening does not show a clear win, skip deeper local benchmarking and move to prompt improvements or hybrid escalation.
+- [ ] **Expected impact (only if the error profile is model-limited):** +5-10% classification accuracy over 7B
 
 ### 3.2 Make pipeline architecture model-aware
 - [ ] For 7B-14B models: keep 3-layer pipeline (model needs guardrails)
@@ -158,7 +177,7 @@
 |-------------|------------------------|--------------------------|------------|
 | Current     | **61.0%** (measured)   | **0.0%** (measured)      | Free (local 7B) |
 | Phase 2     | ~87-90%                | ~75-80%                  | Free (local 7B) |
-| Phase 3     | ~93-95%                | ~85-90%                  | Free (local 14B+) |
+| Phase 3     | ~93-95% if model-limited | ~85-90% if model-limited | Free (local 14B+) |
 | Phase 4     | ~97-98%                | ~93-95%                  | ~$0.02-0.07/session |
 | Phase 5     | 98%+                   | 95%+                     | ~$0.02-0.07/session |
 
@@ -177,7 +196,9 @@
 | 2026-03-22 | Fixed incomplete 2.1 | Added `law_id_index` and `_format_preextracted_law_ids` to `prompts.py` — was missing from layer prompt builders |
 | 2026-03-22 | Deterministic shortcuts (2.3) | Pre-LLM shortcuts for greetings/thanks, vote announcements, name-calls, floor responses; post-Layer-A committee report detection and session chair bias; 26 tests added |
 | 2026-03-22 | Tighten QA triggers (2.4) | `low_confidence` threshold 0.65→0.70; `very_short_speech` OR→AND + suppressed by deterministic candidates; audit showed 52.5% trigger rate, now well under 30% |
+| 2026-03-22 | Step 3.1 scaffolding | Added shared local-model profiles, benchmark harness, `Modelfile-qwen2.5-14b-32k`, `Modelfile-qwen3-14b-32k`; switched default local model to `qwen3:14b` |
+| 2026-03-28 | Phase 3 narrowed to gated screening | Avoid multi-hour end-to-end benchmarks per model; first prove a model upgrade helps on medium/hard cases, then run a full benchmark only for finalists |
 
 ---
 
-*Last updated: 2026-03-22*
+*Last updated: 2026-03-28*

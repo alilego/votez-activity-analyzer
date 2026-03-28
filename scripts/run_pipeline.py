@@ -30,6 +30,7 @@ import shutil
 
 from init_db import init_db
 from mark_processed_stenograms import mark_candidates
+from model_profiles import DEFAULT_MODEL_OLLAMA, DEFAULT_MODEL_OPENAI, normalize_model_name
 from prompt_logger import GENERATED_PROMPTS_DIR
 from select_stenograms import DEFAULT_DB_PATH, DEFAULT_INPUT_DIR, StenogramCandidate, select_candidates
 
@@ -114,22 +115,21 @@ def _write_candidate_file(run_id: str, candidates: list[str]) -> Path:
 def _check_ollama_model(model: str) -> None:
     """Warn if the requested Ollama model doesn't exist, with setup instructions."""
     import urllib.request, urllib.error, json as _json
+    model = normalize_model_name(model)
     host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
     try:
         with urllib.request.urlopen(f"{host}/api/tags", timeout=3) as resp:
             tags = _json.loads(resp.read())
         available = [m["name"] for m in tags.get("models", [])]
-        # Normalise: ollama may return "llama3.1:8b-8k" or "llama3.1:8b-8k:latest"
-        available_base = [n.split(":")[0] + ":" + n.split(":")[1] if n.count(":") >= 1 else n for n in available]
+        available_base = [normalize_model_name(n) for n in available]
         if model not in available and model not in available_base:
             print(f"\n  WARNING: model '{model}' not found in Ollama.")
-            if model == "llama3.1:8b-8k":
+            if model.endswith("-32k") or model.endswith("-8k"):
+                base_model = model.rsplit("-", 1)[0]
+                modelfile_name = f"Modelfile-{model.replace(':', '-')}"
                 print("  Run these commands once to create it:")
-                print("    ollama pull llama3.1:8b")
-                print("    ollama create llama3.1:8b-8k -f - << 'EOF'")
-                print("    FROM llama3.1:8b")
-                print("    PARAMETER num_ctx 8192")
-                print("    EOF")
+                print(f"    ollama pull {base_model}")
+                print(f"    ollama create {model} -f {modelfile_name}")
             else:
                 print(f"  Run: ollama pull {model}")
             print()
@@ -181,7 +181,10 @@ def main() -> int:
     parser.add_argument(
         "--llm-model",
         default="",
-        help="Model name for LLM mode (default: llama3.1:8b-8k for ollama, gpt-4o-mini for openai).",
+        help=(
+            "Model name for LLM mode "
+            f"(default: {DEFAULT_MODEL_OLLAMA} for ollama, {DEFAULT_MODEL_OPENAI} for openai)."
+        ),
     )
     parser.add_argument(
         "--llm-sessions-limit",
@@ -264,7 +267,7 @@ def main() -> int:
         print(f"  [INGEST-EXTERNAL] Reading responses from state/external_prompts_output/")
     if args.analyzer_mode == "llm" and not args.ingest_external_outputs:
         provider = args.llm_provider
-        model_hint = args.llm_model or ("llama3.1:8b-8k" if provider == "ollama" else "gpt-4o-mini")
+        model_hint = args.llm_model or (DEFAULT_MODEL_OLLAMA if provider == "ollama" else DEFAULT_MODEL_OPENAI)
         print(f"  Provider:  {provider}  model={model_hint}")
         if args.log_token_usage_per_call:
             print("  Token log: per-call enabled")
@@ -335,7 +338,9 @@ def main() -> int:
         if not candidates:
             print("  No new/changed stenograms found.")
             if args.analyzer_mode == "llm":
-                model = args.llm_model.strip() or ("llama3.1:8b-8k" if args.llm_provider == "ollama" else "gpt-4o-mini")
+                model = args.llm_model.strip() or (
+                    DEFAULT_MODEL_OLLAMA if args.llm_provider == "ollama" else DEFAULT_MODEL_OPENAI
+                )
                 if _has_pending_llm_work(db_path, model, args.reprocess_session_topics):
                     print("  Pending LLM work detected — skipping baseline, proceeding to LLM steps.")
                 else:

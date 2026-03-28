@@ -48,6 +48,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 from agenda import extract_agenda_from_session
 from init_db import DEFAULT_DB_PATH, init_db
 from law_ids import allowed_law_ids, extract_law_id_index_from_speeches, keep_only_allowed_law_id
+from model_profiles import (
+    DEFAULT_MODEL_OLLAMA,
+    DEFAULT_MODEL_OPENAI,
+    infer_ollama_num_ctx,
+    model_supports_large_session_single_pass,
+)
 from mcp_server import MCPServer
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
@@ -56,8 +62,6 @@ from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 # ---------------------------------------------------------------------------
 
 DEFAULT_PROVIDER = "ollama"
-DEFAULT_MODEL_OPENAI = "gpt-4o-mini"
-DEFAULT_MODEL_OLLAMA = "qwen2.5:7b-32k"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 EST_CHARS_PER_TOKEN = 3.8
 LOG_TOKEN_USAGE_PER_CALL = False
@@ -65,14 +69,14 @@ LOG_TOKEN_USAGE_PER_CALL = False
 # Single-pass mode: each chunk is capped at this length before being concatenated
 # into one large prompt. This is different from MAP_CHUNK_CHARS (used in map-reduce)
 # because single-pass needs to fit the ENTIRE session in one context window.
-# qwen2.5:7b-32k: 32,768 tokens × 80% = ~26,200 usable tokens.
+# 32k-context profiles: 32,768 tokens × 80% = ~26,200 usable tokens.
 # Reserve ~600 tokens for the system prompt and ~2,048 for output → ~23,500 tokens for session text.
 # 23,500 tokens × 3.5 chars/token (Romanian text is denser than English) ≈ 82,000 chars budget.
 # Divide by max observed substantive chunks (142) → ~578 chars/chunk cap.
 # Use 600 chars as a round number — enough for most speech summaries while fitting the budget.
 SINGLE_PASS_CHUNK_CHARS = 600  # per-chunk cap in single-pass mode
 # Total budget for single-pass: if capped total > this, fall back to map-reduce.
-LARGE_CTX_THRESHOLD_CHARS = 82_000  # ~23k tokens — 80% of qwen2.5:7b-32k's 32k context
+LARGE_CTX_THRESHOLD_CHARS = 82_000  # ~23k tokens — safe budget for 32k-context models
 
 # Map-reduce parameters (used for small-context models or very large sessions).
 # Budget: 8,192 ctx × 80% = 6,554 usable tokens × ~4 chars/token ≈ 26,000 chars.
@@ -98,11 +102,6 @@ RETRY_DELAY_S = 10
 # Hard timeout per LLM request. If Ollama hangs this raises httpx.ReadTimeout
 # which the retry loop catches. 300s gives extra headroom for the large single-pass call.
 LLM_REQUEST_TIMEOUT_S = 300
-# num_ctx for large-context models (qwen2.5:7b-32k). Ollama reads this at the
-# top level of the request body so it is passed via extra_body.
-OLLAMA_NUM_CTX = 32768
-# Fallback num_ctx for small-context models (llama3.1:8b-8k).
-OLLAMA_NUM_CTX_SMALL = 8192
 TOPICS_MAX_OUTPUT_TOKENS = 3072
 RUN_OUTPUTS_DIR = Path("state/run_outputs")
 
@@ -464,6 +463,7 @@ def _build_client(provider: str, model: str):
         client = openai_module.OpenAI(api_key="ollama", base_url=base_url)
         client._model = model
         client._provider = "ollama"
+        client._ollama_num_ctx = infer_ollama_num_ctx(model)
         return client
 
     raise SystemExit(f"Unknown provider: {provider!r}. Choose 'openai' or 'ollama'.")
@@ -517,7 +517,7 @@ def _chat(
     # truncated. Ollama reads num_ctx at the top level of the request body
     # (not nested under "options"), so extra_body merges it correctly.
     if getattr(client, "_provider", "") == "ollama":
-        extra_kwargs["extra_body"] = {"num_ctx": OLLAMA_NUM_CTX}
+        extra_kwargs["extra_body"] = {"num_ctx": getattr(client, "_ollama_num_ctx", infer_ollama_num_ctx(client._model))}
     response = client.chat.completions.create(
         model=client._model,
         messages=[
@@ -972,7 +972,7 @@ def _call_single_pass(
     """Single-pass topic extraction for large-context models.
 
     Sends the entire session in one LLM call. Only used when the model's
-    context window is large enough (signalled by OLLAMA_NUM_CTX >= 32768)
+    context window is large enough (at least 32k tokens)
     and the session text fits within LARGE_CTX_THRESHOLD_CHARS.
     """
     user_msg = _build_single_pass_message(session_header, chunks)
@@ -1200,10 +1200,13 @@ def extract_session_topics(
         f"substantive={len(speech_pool)}/{len(all_rows)} chunks"
     )
 
-    # For large-context models (OLLAMA_NUM_CTX >= 32768) send the full session in
+    # For large-context models send the full session in
     # one call when the total text fits within LARGE_CTX_THRESHOLD_CHARS.
     # For small-context models or very large sessions fall back to map-reduce.
-    is_large_ctx = getattr(client, "_provider", "") != "ollama" or OLLAMA_NUM_CTX >= 32768
+    is_large_ctx = model_supports_large_session_single_pass(
+        getattr(client, "_provider", ""),
+        getattr(client, "_model", ""),
+    )
     full_text_chars = sum(len(r["text"]) for r in speech_pool)
 
     if is_large_ctx:
