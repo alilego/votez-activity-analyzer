@@ -99,7 +99,7 @@
 - [ ] First check whether the remaining errors are actually model-limited:
   - If most errors are rubric/prompt/context failures, stay in Phase 2/3.3 instead of spending hours on model swaps.
   - If most errors are nuanced semantic judgments or missed indirect legislative references, proceed with model screening.
-- [ ] Run a **quick screening benchmark** first on medium+hard gold speeches, reusing existing session topics:
+- [x] Run a **quick screening benchmark** first on medium+hard gold speeches, reusing existing session topics:
 ```bash
 cd /Users/alilego/Projects/votez-activity-analyzer
 python3 scripts/benchmark_local_models.py --models qwen3:14b --only-hard --reuse-existing-topics --skip-missing-sessions
@@ -209,4 +209,4 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 
 ---
 
-*Last updated: 2026-03-28*
+*Last updated: 2026-03-29*
