@@ -61,6 +61,13 @@ python3 scripts/run_pipeline.py --analyzer-mode llm
 
 This processes only new/changed stenograms, classifies every intervention via LLM, and exports results to `outputs/`.
 
+Use a specific model:
+
+```bash
+python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider ollama --llm-model qwen3:14b
+python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-4o-mini
+```
+
 > **First time?** Test on a small batch before running the full set:
 > ```bash
 > # Run a single stenogram end-to-end (topics + interventions) — fastest feedback loop
@@ -136,19 +143,47 @@ This reads every unprocessed file from `state/external_prompts_output/`, validat
 
 ---
 
-### Benchmark local models on the gold set
+### Benchmark models on the gold set
 
 ```bash
 python3 scripts/benchmark_local_models.py
 ```
 
-This creates an isolated DB copy per model under `state/model_benchmarks/`, reruns LLM topic extraction plus intervention classification on the gold-standard sessions only, and writes both per-model `benchmark_report.json` files and an aggregated `summary.json`.
+This creates an isolated DB copy per model under `state/model_benchmarks/`, reruns LLM topic extraction plus intervention classification on the gold-standard sessions only, and writes both per-model `benchmark_report.json` files and an aggregated `summary.json`. The JSON format is the same for Ollama and OpenAI runs so you can compare results side by side; benchmark summaries now include a `provider` field. `summary.json` keeps a run history under `runs`, with each entry stamped by `run_started_at`, while the top-level `results` still reflects the latest run for convenience.
+
+If a gold session is missing from `state/state.sqlite` but its stenogram file exists in `input/stenograme/`, the benchmark now auto-imports that session into a prepared temporary source DB before evaluation so you can benchmark against the full gold set without manually rebuilding the main DB first.
+
+Benchmark one specific local model:
+
+```bash
+python3 scripts/benchmark_local_models.py --models qwen3:14b
+```
+
+Benchmark GPT models with the same harness:
+
+```bash
+python3 scripts/benchmark_local_models.py --provider openai --models gpt-5.4-mini gpt-4o-mini --benchmark-scope limited
+```
+
+Run a more thorough OpenAI benchmark across all medium/hard gold sessions:
+
+```bash
+python3 scripts/benchmark_local_models.py --provider openai --models gpt-5.4-mini
+```
+
+Mix Ollama and OpenAI models in one run:
+
+```bash
+python3 scripts/benchmark_local_models.py --models ollama/qwen3:14b openai/gpt-5.4-mini --benchmark-scope limited
+```
 
 For a shorter smoke test:
 
 ```bash
-python3 scripts/benchmark_local_models.py --models qwen3:14b qwen2.5:14b-32k --session-limit 3
+python3 scripts/benchmark_local_models.py --models qwen3:14b qwen2.5:14b-32k --benchmark-scope limited
 ```
+
+`--benchmark-scope limited` is the cheaper preset: it defaults to the first 3 gold sessions and evaluates only medium/hard gold speeches. You can still override `--session-limit` manually if you want a different cap.
 
 ---
 
@@ -226,6 +261,12 @@ export OPENAI_API_KEY=sk-...
 python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai
 ```
 
+OpenAI runs now default to Flex Processing (`service_tier=flex`) for lower-cost background-style workloads. To force standard processing instead, set:
+
+```bash
+export OPENAI_SERVICE_TIER=auto
+```
+
 ---
 
 ## Inspect & Debug
@@ -233,10 +274,12 @@ python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai
 ```bash
 # Classify a single session (all its interventions) directly
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id>
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --provider ollama --model qwen3:14b
 
-# Choose architecture explicitly (default: three_layer)
+# Choose architecture explicitly (default: `auto`, resolved from the model profile)
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --pipeline-architecture three_layer
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --pipeline-architecture one_pass
+python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --pipeline-architecture auto
 
 # Build prompts for a single session without calling the LLM
 python3 scripts/llm_agent.py --session-id <session_id> --run-id <run_id> --build-prompts

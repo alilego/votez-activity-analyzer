@@ -129,9 +129,10 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 - [ ] **Expected impact (only if the error profile is model-limited):** +5-10% classification accuracy over 7B
 
 ### 3.2 Make pipeline architecture model-aware
-- [ ] For 7B-14B models: keep 3-layer pipeline (model needs guardrails)
-- [ ] For 27B+ local or API models: default to `one_pass` (stronger models do better holistically)
-- [ ] Add a config mapping: `{model_name: {architecture, num_ctx, chunk_chars}}`
+- [x] For 7B-14B models: keep 3-layer pipeline (model needs guardrails)
+- [x] For 27B+ local or API models: default to `one_pass` (stronger models do better holistically)
+- [x] Add a config mapping: `{model_name: {architecture, num_ctx, chunk_chars}}`
+- **Implementation:** shared runtime config in `scripts/model_profiles.py` now resolves preferred architecture, context size, and prompt chunk caps per model; `llm_agent.py` defaults to `auto` architecture selection, `llm_session_topics.py` reuses model-specific chunk caps, `run_pipeline.py` surfaces the resolved defaults, and `benchmark_local_models.py` supports `--pipeline-architecture auto`
 - [ ] **Expected impact:** Better accuracy for strong models, reduced latency
 
 ### 3.3 Enhance prompts with few-shot examples
@@ -206,6 +207,7 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 | 2026-03-22 | Step 3.1 scaffolding | Added shared local-model profiles, benchmark harness, `Modelfile-qwen2.5-14b-32k`, `Modelfile-qwen3-14b-32k`; switched default local model to `qwen3:14b` |
 | 2026-03-28 | Phase 3 narrowed to gated screening | Avoid multi-hour end-to-end benchmarks per model; first prove a model upgrade helps on medium/hard cases, then run a full benchmark only for finalists |
 | 2026-03-28 | `qwen3:14b` quick screen recorded | On 26 medium/hard speeches from 5 available gold sessions: 61.54% classification, 0% law attribution, ~100 min runtime; not enough evidence to expand local-model benchmarking yet |
+| 2026-03-29 | Step 3.2 implemented | Added shared runtime model config (`architecture`, `num_ctx`, `chunk_chars`), switched intervention classifier default to profile-driven `auto`, reused chunk caps in session topic extraction, and enabled `auto` in the benchmark harness |
 
 ---
 

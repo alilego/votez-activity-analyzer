@@ -51,10 +51,12 @@ from law_ids import allowed_law_ids, extract_law_id_index_from_speeches, keep_on
 from model_profiles import (
     DEFAULT_MODEL_OLLAMA,
     DEFAULT_MODEL_OPENAI,
+    get_model_runtime_config,
     infer_ollama_num_ctx,
     model_supports_large_session_single_pass,
 )
 from mcp_server import MCPServer
+from openai_runtime import create_chat_completion, resolve_openai_service_tier
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
 # ---------------------------------------------------------------------------
@@ -441,10 +443,12 @@ def _build_client(provider: str, model: str):
                 "OPENAI_API_KEY environment variable is not set.\n"
                 "Export it before running: export OPENAI_API_KEY=sk-..."
             )
-        print(f"Provider: OpenAI  |  Model: {model}")
+        service_tier = resolve_openai_service_tier(provider)
+        print(f"Provider: OpenAI  |  Model: {model}  |  Service tier: {service_tier}")
         client = openai_module.OpenAI(api_key=api_key)
         client._model = model
         client._provider = "openai"
+        client._openai_service_tier = service_tier
         return client
 
     if provider == "ollama":
@@ -518,7 +522,8 @@ def _chat(
     # (not nested under "options"), so extra_body merges it correctly.
     if getattr(client, "_provider", "") == "ollama":
         extra_kwargs["extra_body"] = {"num_ctx": getattr(client, "_ollama_num_ctx", infer_ollama_num_ctx(client._model))}
-    response = client.chat.completions.create(
+    response = create_chat_completion(
+        client,
         model=client._model,
         messages=[
             {"role": "system", "content": system},
@@ -1207,6 +1212,11 @@ def extract_session_topics(
         getattr(client, "_provider", ""),
         getattr(client, "_model", ""),
     )
+    runtime_config = get_model_runtime_config(
+        getattr(client, "_provider", ""),
+        getattr(client, "_model", ""),
+    )
+    single_pass_chunk_chars = runtime_config.chunk_chars or SINGLE_PASS_CHUNK_CHARS
     full_text_chars = sum(len(r["text"]) for r in speech_pool)
 
     if is_large_ctx:
@@ -1216,14 +1226,18 @@ def extract_session_topics(
             {
                 "chunk_id": r["chunk_id"],
                 "chunk_type": r["chunk_type"],
-                "text": r["text"][:SINGLE_PASS_CHUNK_CHARS] + ("…" if len(r["text"]) > SINGLE_PASS_CHUNK_CHARS else ""),
+                "text": r["text"][:single_pass_chunk_chars] + ("…" if len(r["text"]) > single_pass_chunk_chars else ""),
             }
             for r in speech_pool
         ]
         capped_total = sum(len(c["text"]) for c in single_pass_chunks)
         session_date = session.get("session_date", "")
         if capped_total <= LARGE_CTX_THRESHOLD_CHARS:
-            print(f"  Mode: single-pass (large-ctx model, capped total {capped_total:,} chars ≤ {LARGE_CTX_THRESHOLD_CHARS:,})")
+            print(
+                "  Mode: single-pass "
+                f"(large-ctx model, chunk cap={single_pass_chunk_chars}, "
+                f"capped total {capped_total:,} chars ≤ {LARGE_CTX_THRESHOLD_CHARS:,})"
+            )
             llm_data = _call_single_pass(
                 client, session_header, single_pass_chunks,
                 session_id=session_id, session_date=session_date,

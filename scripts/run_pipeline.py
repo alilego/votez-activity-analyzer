@@ -30,7 +30,12 @@ import shutil
 
 from init_db import init_db
 from mark_processed_stenograms import mark_candidates
-from model_profiles import DEFAULT_MODEL_OLLAMA, DEFAULT_MODEL_OPENAI, normalize_model_name
+from model_profiles import (
+    DEFAULT_MODEL_OLLAMA,
+    DEFAULT_MODEL_OPENAI,
+    get_model_runtime_config,
+    normalize_model_name,
+)
 from prompt_logger import GENERATED_PROMPTS_DIR
 from select_stenograms import DEFAULT_DB_PATH, DEFAULT_INPUT_DIR, StenogramCandidate, select_candidates
 
@@ -268,7 +273,12 @@ def main() -> int:
     if args.analyzer_mode == "llm" and not args.ingest_external_outputs:
         provider = args.llm_provider
         model_hint = args.llm_model or (DEFAULT_MODEL_OLLAMA if provider == "ollama" else DEFAULT_MODEL_OPENAI)
+        runtime_config = get_model_runtime_config(provider, model_hint)
         print(f"  Provider:  {provider}  model={model_hint}")
+        print(
+            f"  Defaults:  intervention_arch={runtime_config.architecture}  "
+            f"topic_chunk_chars={runtime_config.chunk_chars}"
+        )
         if args.log_token_usage_per_call:
             print("  Token log: per-call enabled")
         if args.build_prompts:

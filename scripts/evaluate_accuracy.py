@@ -24,6 +24,7 @@ from pathlib import Path
 LABELS = ["constructive", "neutral", "non_constructive"]
 DEFAULT_DB_PATH = Path("state/state.sqlite")
 DEFAULT_GOLD_PATH = Path("tests/gold_standard.json")
+DISPLAY_PREVIEW_CHARS = 120
 
 
 def _norm(text: str) -> str:
@@ -43,6 +44,13 @@ def _norm_law_id(law_id: str) -> str:
     key = _norm(law_id)
     key = re.sub(r"\s+", " ", key).strip()
     return key
+
+
+def _display_preview(text: str, max_chars: int = DISPLAY_PREVIEW_CHARS) -> str:
+    value = str(text or "")
+    if max_chars <= 0 or len(value) <= max_chars:
+        return value
+    return value[:max_chars] + "..."
 
 
 # ── Metrics ──────────────────────────────────────────────────────────────
@@ -213,9 +221,9 @@ def evaluate(
                 "predicted": predicted_label,
                 "confidence": pred["confidence"],
                 "difficulty": gs.get("difficulty", ""),
-                "text_preview": gs["text"][:120],
+                "text_preview": gs["text"],
                 "gold_notes": gs.get("labeling_notes", ""),
-                "pred_reasoning": pred["reasoning"][:120],
+                "pred_reasoning": pred["reasoning"],
             })
 
         conf = pred["confidence"]
@@ -391,12 +399,12 @@ def print_report(report: dict, verbose: bool = False) -> None:
         for m in mismatches:
             print(f"\n  id={m['id']} [{m['difficulty']}] {m['speaker'][:35]}")
             print(f"    expected={m['expected']}  predicted={m['predicted']}  conf={m['confidence']:.2f}")
-            print(f"    text: {m['text_preview']}...")
+            print(f"    text: {_display_preview(m['text_preview'])}")
             if verbose:
                 if m["gold_notes"]:
-                    print(f"    gold notes: {m['gold_notes'][:200]}")
+                    print(f"    gold notes: {_display_preview(m['gold_notes'], 200)}")
                 if m["pred_reasoning"]:
-                    print(f"    pred reasoning: {m['pred_reasoning']}...")
+                    print(f"    pred reasoning: {_display_preview(m['pred_reasoning'])}")
 
     print(f"\n{'='*70}")
 

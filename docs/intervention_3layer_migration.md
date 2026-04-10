@@ -11,6 +11,7 @@ This project moved intervention classification from a monolithic one-pass prompt
   - Layer C: QA/normalization (targeted only when triggered)
 
 Legacy path is still available via `--pipeline-architecture one_pass`.
+Current default is `--pipeline-architecture auto`, which resolves to `three_layer` for 7B/14B local models and `one_pass` for stronger local/API profiles.
 
 ## What Was Preserved
 
@@ -47,10 +48,10 @@ Legacy path is still available via `--pipeline-architecture one_pass`.
 
 ## Running
 
-Default (new architecture):
+Default (profile-aware):
 
 ```bash
-python3 scripts/llm_agent.py --run-id <run_id> --pipeline-architecture three_layer
+python3 scripts/llm_agent.py --run-id <run_id>
 ```
 
 Legacy:
@@ -58,4 +59,3 @@ Legacy:
 ```bash
 python3 scripts/llm_agent.py --run-id <run_id> --pipeline-architecture one_pass
 ```
-

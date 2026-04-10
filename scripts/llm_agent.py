@@ -30,6 +30,7 @@ Environment variables:
   LLM_PROVIDER     (optional, default: ollama)
   OPENAI_API_KEY   (required for openai provider)
   OPENAI_MODEL     (optional, overrides --model default)
+  OPENAI_SERVICE_TIER  (optional, default: flex; set to auto to disable Flex)
   OLLAMA_HOST      (optional, default: http://localhost:11434)
 
 Usage:
@@ -92,9 +93,13 @@ from model_profiles import (
     DEFAULT_MODEL_OLLAMA,
     DEFAULT_MODEL_OPENAI,
     DEFAULT_PIPELINE_ARCHITECTURE,
+    DEFAULT_PIPELINE_ARCHITECTURE_SELECTION,
     infer_ollama_num_ctx,
+    PIPELINE_ARCHITECTURE_CHOICES,
+    resolve_pipeline_architecture,
 )
 from mcp_server import MCPServer
+from openai_runtime import create_chat_completion, resolve_openai_service_tier
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
 # ---------------------------------------------------------------------------
@@ -631,7 +636,8 @@ def _call_llm(
     if provider == "ollama":
         extra_kwargs["extra_body"] = {"num_ctx": getattr(client, "_ollama_num_ctx", infer_ollama_num_ctx(client._model))}
 
-    response = client.chat.completions.create(
+    response = create_chat_completion(
+        client,
         model=client._model,
         messages=[
             {"role": "system", "content": wrapped_system},
@@ -2053,7 +2059,12 @@ def classify_session_interventions(
     build_prompts_only: bool = False,
     pipeline_architecture: str = DEFAULT_PIPELINE_ARCHITECTURE,
 ) -> dict:
-    if pipeline_architecture == "one_pass":
+    resolved_architecture = resolve_pipeline_architecture(
+        provider,
+        getattr(client, "_model", ""),
+        pipeline_architecture,
+    )
+    if resolved_architecture == "one_pass":
         return classify_session_interventions_one_pass(
             server=server,
             session_id=session_id,
@@ -2090,10 +2101,12 @@ def _build_client(provider: str, model: str):
                 "OPENAI_API_KEY environment variable is not set.\n"
                 "Export it before running: export OPENAI_API_KEY=sk-..."
             )
-        print(f"Provider: OpenAI  |  Model: {model}")
+        service_tier = resolve_openai_service_tier(provider)
+        print(f"Provider: OpenAI  |  Model: {model}  |  Service tier: {service_tier}")
         client = openai_module.OpenAI(api_key=api_key)
         client._model = model
         client._provider = "openai"
+        client._openai_service_tier = service_tier
         return client
 
     if provider == "ollama":
@@ -2136,6 +2149,7 @@ def run_agent(
     """
     _reset_usage_stats()
     client = _build_client(provider, model)
+    resolved_pipeline_architecture = resolve_pipeline_architecture(provider, model, pipeline_architecture)
 
     # Group intervention_ids by session_id (preserving order within each session).
     with sqlite3.connect(db_path) as conn:
@@ -2177,7 +2191,7 @@ def run_agent(
                 config=config,
                 db_path=db_path,
                 build_prompts_only=build_prompts_only,
-                pipeline_architecture=pipeline_architecture,
+                pipeline_architecture=resolved_pipeline_architecture,
             )
             classified += result["classified"]
             errors += result["errors"]
@@ -2519,10 +2533,11 @@ def main() -> int:
     )
     parser.add_argument(
         "--pipeline-architecture",
-        choices=["three_layer", "one_pass"],
-        default=os.environ.get("VOTEZ_PIPELINE_ARCHITECTURE", DEFAULT_PIPELINE_ARCHITECTURE),
+        choices=list(PIPELINE_ARCHITECTURE_CHOICES),
+        default=os.environ.get("VOTEZ_PIPELINE_ARCHITECTURE", DEFAULT_PIPELINE_ARCHITECTURE_SELECTION),
         help=(
             "Classification architecture. "
+            "'auto' = choose by model profile (default). "
             "'three_layer' = Layer A rubric + Layer B decision + Layer C QA. "
             "'one_pass' = legacy single prompt."
         ),
@@ -2539,6 +2554,14 @@ def main() -> int:
         model = os.environ.get("OPENAI_MODEL", DEFAULT_MODEL_OPENAI)
     else:
         model = DEFAULT_MODEL_OLLAMA
+    resolved_pipeline_architecture = resolve_pipeline_architecture(
+        args.provider,
+        model,
+        args.pipeline_architecture,
+    )
+    architecture_label = resolved_pipeline_architecture
+    if args.pipeline_architecture == DEFAULT_PIPELINE_ARCHITECTURE_SELECTION:
+        architecture_label = f"auto→{resolved_pipeline_architecture}"
 
     db_path = Path(args.db_path)
     init_db(db_path)
@@ -2573,7 +2596,7 @@ def main() -> int:
 
     mode_note = "  [BUILD-PROMPTS — writing to state/generated_prompts/]" if args.build_prompts else ""
     print(
-        f"LLM agent ({args.pipeline_architecture}): {len(intervention_ids)} intervention(s) "
+        f"LLM agent ({architecture_label}): {len(intervention_ids)} intervention(s) "
         f"(run_id={args.run_id}){mode_note}"
     )
 
@@ -2583,7 +2606,7 @@ def main() -> int:
         intervention_ids=intervention_ids,
         model=model,
         provider=args.provider,
-        pipeline_architecture=args.pipeline_architecture,
+        pipeline_architecture=resolved_pipeline_architecture,
         build_prompts_only=args.build_prompts,
     )
 
