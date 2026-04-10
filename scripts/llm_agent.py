@@ -224,32 +224,68 @@ Return JSON only.
 - Harsh but evidence-based criticism can still be `constructive`.
 - A speech can be on-topic yet `non_constructive` if it mainly serves narrow interests, attacks opponents without substance, or blocks progress.
 
-## Criteria to score
-Use `yes` / `partial` / `no` for criteria 1-6 and `strong` / `weak` / `none` for criterion 7.
+## Context-first interpretation
+- First identify the active debate thread using the agenda, session topics, and immediate context speeches.
+- Evaluate the target speech relative to that active debate thread, not in isolation.
+- A speech may sound coherent on its own but still be `non_constructive` if it derails the current debate, revives an unrelated controversy, or abuses a procedural slot for off-topic political messaging.
+- For very short, fragmentary, or interruption-affected speeches, use immediate context to infer whether the line is procedural, substantive, or part of a personal/partisan attack.
+- When the speaker appears to be acting as chair/moderator, procedural moderation is usually `neutral`, but partisan commentary from the chair should weigh toward `non_constructive`.
 
-1. `policy_proposal`: the speaker proposes aconcrete policy action, amendment, solution, compromise, refinement, or implementation proposal.
-2. `policy_analysis`: the speeaker provides reasoning, evidence, facts, legal/technical consequences, or substantive questions that improve debate.
+## Criteria to score
+Use `yes` / `partial` / `no` for criteria 1-6 and 8, and `strong` / `weak` / `none` for criterion 7.
+
+1. `policy_proposal`: the speaker proposes a concrete policy action, amendment, solution, compromise, refinement, or implementation proposal.
+2. `policy_analysis`: the speaker provides reasoning, evidence, facts, comparisons, legal/technical consequences, institutional consequences, risk analysis, or substantive questions that improve understanding of the issue.
 3. `public_interest_orientation`: the speaker focuses on outcomes for citizens or society, not only party advantage.
 4. `partisan_rhetoric`: the speech contains mainly attacks, slogans, mockery, guilt by association, obstruction, or partisan messaging without substantive argument.
 5. `legislative_engagement`: the speech contains a direct reference to legislative material such as an article, committee report, amendment, or bill ID like `PL-x`.
 6. `procedural_content`: the speech contains mainly procedural/logistical content.
 7. `argumentation_quality`: how well the position is supported by reasoning, evidence, examples, or logic; use `none` for conspiracy theories or other non-substantive content.
+8. `debate_advancement`: the speech helps the debate progress by clarifying the issue, narrowing disagreement, proposing a concrete next step, identifying a relevant legislative or institutional consequence, documenting a serious public risk, correcting a misunderstanding in a useful way, or asking a substantive question that enables a better decision.
 
 ## Label decision
-- `constructive`: substantive contribution to policy discussion. Usually at least one of `policy_proposal`, `policy_analysis`, or `legislative_engagement` is `yes`, and `partisan_rhetoric` is not dominant.
-- `neutral`: mainly procedural or non-substantive. Usually `procedural_content = yes` and substantive criteria are absent or weak.
-- `non_constructive`: mainly partisan, obstructive, or self-serving without substantive contribution. Usually `partisan_rhetoric = yes` and both `policy_proposal` and `policy_analysis` are `no`.
+- `constructive`: the speech makes a substantive contribution that helps Parliament understand, evaluate, or improve the issue under discussion. This can happen through a concrete proposal, legislative engagement, or well-supported analysis of risks, harms, tradeoffs, constitutional concerns, security concerns, or institutional consequences. Usually at least one of `policy_proposal`, `policy_analysis`, `legislative_engagement`, or `debate_advancement` is `yes`, and `partisan_rhetoric` is not dominant.
+- `neutral`: mainly procedural, logistical, or formally administrative, with little or no substantive policy contribution. Use `neutral` for vote instructions, chair logistics, speaking-order remarks, greetings, quorum/time-management remarks, or short procedural clarifications. Do NOT use `neutral` when the speech is mainly accusatory, slogan-heavy, obstructionist, or politically performative, even if it is framed as a procedural intervention.
+- `non_constructive`: mainly partisan, obstructive, self-serving, or politically performative without substantive contribution or meaningful debate advancement.
 
 ## Conflict resolution
-- `partisan_rhetoric = yes` and both `policy_proposal` / `policy_analysis = no` => `non_constructive`
-- `procedural_content = yes` and substantive criteria are only `no` / `partial` => `neutral`
-- any of `policy_proposal`, `policy_analysis`, or `legislative_engagement = yes` and partisan rhetoric is not dominant => `constructive`
+- `partisan_rhetoric = yes` and both `policy_proposal` / `policy_analysis = no` and `debate_advancement != yes` => `non_constructive`
+- `procedural_content = yes` and substantive criteria are only `no` / `partial` and `debate_advancement != yes` => `neutral`
+- if a speech is framed as a procedural complaint but mainly contains accusations, outrage, slogans, personal or party attacks, or obstruction without substantive policy analysis or useful clarification => `non_constructive`, not `neutral`
+- if a speech is procedurally framed but redirects the floor toward a different political controversy than the active agenda item or local debate thread, prefer `non_constructive`
+- if a speech is short or fragmentary, classify it using the immediate exchange it belongs to; do not assume `neutral` only because the isolated text is brief
+- if the speaker is acting as chair/moderator and uses the procedural floor to insert partisan blame, mockery, or political talking points, prefer `non_constructive`
+- a procedural intervention can still be `constructive` when it invokes a rule, article, report, or parliamentary mechanism in order to produce a concrete accountability or decision-making step
+- a speech can be `constructive` even without a concrete proposal when it offers evidence-based warning, risk analysis, factual comparison, or well-supported public-interest reasoning that materially improves understanding of the issue
+- do NOT require an amendment, bill text reference, or operational plan if the speech still contributes substantive diagnostic value
+- in political declarations, a speech may be `constructive` when it presents structured and evidence-based analysis of a public problem, democratic risk, security threat, or institutional failure, even if it does not propose legislative text
+- do NOT upgrade to `constructive` when the speech only invokes values, dangers, patriotism, democracy, freedom, or public interest in a vague or symbolic way without concrete reasoning, issue-specific substance, or identifiable consequences
+- distinguish evidence-based risk analysis from alarmist rhetoric:
+  - documented harms, comparisons, mechanisms, or consequences can support `constructive`
+  - slogans, conspiracies, generalized outrage, and symbolic fear appeals without substantiation should favor `non_constructive`
+- any of `policy_proposal`, `policy_analysis`, `legislative_engagement`, or `debate_advancement = yes` can support `constructive`, but do NOT upgrade to `constructive` when those signals are only partial and `argumentation_quality` is `weak` or `none`, unless the speech clearly advances the debate in a concrete way
+- professional tone, formal language, or orderly delivery do NOT by themselves make a speech `constructive`
+- a speech is NOT `constructive` merely because it contains an imperative, demand, or proposal-shaped phrase; if it lacks substantive support, evidence, legislative reasoning, realistic policy elaboration, or useful debate advancement and is mainly rhetorical or performative, prefer `non_constructive`
 - if substantive content and partisan rhetoric are both strong, use `argumentation_quality` as a tie-breaker:
   - `argumentation_quality = strong` favors `constructive`
   - `argumentation_quality = none` favors `non_constructive`
   - `argumentation_quality = weak` => classify by the dominant share of the speech and lower confidence
 - formal committee or report speeches with substantive recommendations can be `constructive`
+- political declarations or ideological speeches are `non_constructive` when they mainly deliver slogans, blame, symbolic positioning, or broad grievances without concrete policy reasoning or actionable substance
 - <=2 sentences with no policy substance, or a pure chair line, should usually be `neutral`
+
+## Short examples
+- Example: "Este o procedură care a fost aprobată în Biroul permanent..." => `non_constructive` if, in context, it revives an unrelated political controversy instead of the active legislative debate.
+- Example: "USR-ul a plecat de la guvernare..." => `non_constructive` when spoken from the chair during moderation, because it uses procedural authority for partisan attack.
+- Example: "Conform art. 211, vă rog să supuneţi la vot chemarea prim-ministrului în plen." => `constructive` because it uses a concrete parliamentary mechanism to advance accountability.
+- Example: "Eu sunt de acord că domnul X nu se confundă cu..." => use immediate context; if it is the opening of a personal attack, do not default to `neutral` just because the fragment is short.
+- Example: "România a coborât de la 6,45 la 5,99 în Indexul Democrațiilor și a pierdut 12 locuri; asta arată degradarea instituțională și necesitatea unor alegeri libere." => `constructive` because it offers evidence-based democratic risk analysis, even without legislative text.
+- Example: "Lipsa României din rețeaua EuroHPC și absența unei metodologii clare pentru sistemele IA cu risc ridicat creează vulnerabilități concrete pentru drepturi și competitivitate." => `constructive` because it identifies concrete institutional and policy risks.
+- Example: "Critic proiectul pentru că transferă costuri către primării; propun amendarea art. 5 pentru a evita incapacitatea de plată." => `constructive` because it contains concrete legislative reasoning and a policy proposal.
+- Example: "Vă rog să precizați care este textul final al raportului, pentru că forma primită cu 20 de minute înainte schimbă sensul amendamentului." => `constructive` because it is procedural in form but usefully clarifies the decision before plen.
+- Example: "România este în pericol, globaliștii ne distrug viitorul!" => `non_constructive` because it is political messaging and slogans without substantive policy contribution.
+- Example: "Nu ne puteți reduce la tăcere! România va fi liberă!" => `non_constructive` because it is mainly symbolic rhetoric about values without concrete reasoning or issue-specific analysis.
+- Example: "Stimați colegi, vă rog să respectăm programul și să continuăm ședința." => `neutral` because it is orderly and professional, but only procedural.
 
 ## Confidence
 - clear single-rule case: 0.80-0.95
@@ -276,10 +312,11 @@ Respond with ONLY valid JSON — one object per target speech, in the SAME ORDER
     "legislative_engagement": "yes" | "partial" | "no",
     "procedural_content": "yes" | "partial" | "no",
     "argumentation_quality": "strong" | "weak" | "none",
+    "debate_advancement": "yes" | "partial" | "no",
     "confidence": 0.0-1.0,
     "topics": ["topic1", "topic2"],
     "reasoning": "o propoziție în română care explică clasificarea, referindu-se la conținut concret din discurs",
-    "evidence_quote": "un citat scurt exact (6-20 cuvinte), care apare verbatim în acel discurs"
+    "evidence_quote": "un citat scurt exact (ideal 6-20 cuvinte), care apare verbatim în acel discurs și este cât mai relevant pentru reasoning"
   },
   ...
 ]
@@ -309,6 +346,17 @@ def _format_session_topics(topics: list) -> str:
     return "\n".join(lines)
 
 
+_CONTEXT_STOPWORDS = {
+    "acest", "aceasta", "aceste", "acesti", "pentru", "privind", "asupra", "care",
+    "este", "sunt", "fara", "despre", "dupa", "inainte", "intre", "unde", "cand",
+    "doar", "foarte", "mai", "mult", "putin", "lege", "legea", "proiect", "proiectul",
+    "camerei", "deputatilor", "senatului", "plen", "sedinta", "sedintei", "politica",
+    "politice", "interventii", "publice", "public", "national", "nationale", "romania",
+    "romanilor", "romaniei", "domnul", "doamna", "stimați", "stimati", "colegi",
+}
+_IMMEDIATE_CONTEXT_WINDOW = 3
+
+
 def _format_agenda_for_one_pass(agenda: list[dict] | None) -> str:
     if not agenda:
         return ""
@@ -329,6 +377,100 @@ def _format_agenda_for_one_pass(agenda: list[dict] | None) -> str:
     return "\n".join(lines) if len(lines) > 1 else ""
 
 
+def _normalize_overlap_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", str(text or "").lower())
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
+
+
+def _tokenize_overlap(text: str) -> set[str]:
+    return {
+        tok for tok in re.findall(r"[a-z0-9]+", _normalize_overlap_text(text))
+        if len(tok) >= 4 and tok not in _CONTEXT_STOPWORDS
+    }
+
+
+def _candidate_texts_for_overlap(session_topics: list, agenda: list[dict] | None) -> list[tuple[str, str, str]]:
+    candidates: list[tuple[str, str, str]] = []
+    for t in session_topics or []:
+        if isinstance(t, dict):
+            label = str(t.get("label", "")).strip()
+            desc = str(t.get("description", "")).strip()
+            law_id = str(t.get("law_id", "")).strip()
+            if label:
+                detail = " ".join(part for part in (label, desc, law_id) if part)
+                candidates.append(("session topic", label, detail))
+        else:
+            raw = str(t).strip()
+            if raw:
+                candidates.append(("session topic", raw, raw))
+    for item in agenda or []:
+        title = str(item.get("title", "")).strip()
+        law_id = str(item.get("law_id") or "").strip()
+        if title:
+            label = f"{title} ({law_id})" if law_id else title
+            detail = " ".join(part for part in (title, law_id) if part)
+            candidates.append(("agenda item", label, detail))
+    return candidates
+
+
+def _format_active_debate_thread_one_pass(
+    session_topics: list,
+    agenda: list[dict] | None,
+    context_speeches: list[dict] | None,
+    speeches: list[dict],
+) -> str:
+    recent_context = context_speeches[-_IMMEDIATE_CONTEXT_WINDOW:] if context_speeches else []
+    recent_text = " ".join(str(sp.get("text", "")) for sp in recent_context)
+    target_text = " ".join(str(sp.get("text", "")) for sp in speeches)
+    tokens = _tokenize_overlap(f"{recent_text} {target_text}")
+    if not tokens:
+        return ""
+    recent_norm = _normalize_overlap_text(f"{recent_text} {target_text}")
+    scored: list[tuple[int, str, str]] = []
+    for source, label, detail in _candidate_texts_for_overlap(session_topics, agenda):
+        cand_tokens = _tokenize_overlap(detail)
+        if not cand_tokens:
+            continue
+        overlap = len(tokens & cand_tokens)
+        exact_bonus = 2 if _normalize_overlap_text(label) and _normalize_overlap_text(label) in recent_norm else 0
+        score = overlap + exact_bonus
+        if score > 0:
+            scored.append((score, source, label))
+    if not scored:
+        return ""
+    scored.sort(key=lambda item: (-item[0], item[1], item[2]))
+    lines = [
+        "## Likely active debate thread",
+        "- Prioritize the issue repeated in the immediate context below, not older unrelated controversies.",
+    ]
+    for _, source, label in scored[:3]:
+        lines.append(f"- Candidate from {source}: {label}")
+    return "\n".join(lines)
+
+
+def _speaker_line_one_pass(
+    raw_speaker: str,
+    target_speaker: str,
+    session_chairs: set[str],
+    *,
+    immediate: bool = False,
+    immediately_before: bool = False,
+    include_same_speaker: bool = True,
+) -> str:
+    tags: list[str] = []
+    if session_chairs and any(name in raw_speaker for name in session_chairs):
+        tags.append("chair")
+    if include_same_speaker and raw_speaker.strip() == target_speaker.strip():
+        tags.append("same speaker")
+    if immediately_before:
+        tags.append("immediately before target")
+    elif immediate:
+        tags.append("immediate context")
+    if not tags:
+        return raw_speaker
+    return f"{raw_speaker} ({', '.join(tags)})"
+
+
 def _build_intervention_message(
     session: dict,
     session_topics: list,
@@ -345,6 +487,7 @@ def _build_intervention_message(
     # Session header
     header = f"## Session\nDate: {session.get('session_date', '')}"
     notes = (session.get("initial_notes") or "").strip()
+    session_chairs = extract_session_chairs(notes)
     if notes:
         header += f"\nInitial notes: {notes[:300]}"
     parts.append(header)
@@ -359,14 +502,43 @@ def _build_intervention_message(
         parts.append(agenda_text)
 
     if context_speeches:
-        parts.append(
-            f"## Previous speeches for context ({len(context_speeches)}; do NOT classify)"
+        active_thread = _format_active_debate_thread_one_pass(
+            session_topics=session_topics,
+            agenda=agenda,
+            context_speeches=context_speeches,
+            speeches=speeches,
         )
-        for sp in context_speeches:
+        if active_thread:
+            parts.append(active_thread)
+        parts.append(
+            "## Context use guidance\n"
+            "- Use the immediate context first to determine the active debate thread.\n"
+            "- Decide whether the target speech follows that thread, redirects it, or derails it.\n"
+            "- Short fragments should be interpreted as part of the exchange they belong to, not in isolation."
+        )
+        recent = context_speeches[-_IMMEDIATE_CONTEXT_WINDOW:]
+        older = context_speeches[:-_IMMEDIATE_CONTEXT_WINDOW]
+        target_speaker = str(speeches[0].get("raw_speaker", "")) if len(speeches) == 1 else ""
+        if recent:
             parts.append(
-                f"[ctx {sp['speech_index']}] Speaker: {sp['raw_speaker']}\n"
-                f"{sp['text'].strip()}"
+                f"## Immediate context ({len(recent)} previous speeches; highest priority; do NOT classify)"
             )
+            for idx, sp in enumerate(recent):
+                parts.append(
+                    f"[ctx {sp['speech_index']}] Speaker: "
+                    f"{_speaker_line_one_pass(str(sp['raw_speaker']), target_speaker, session_chairs, immediate=True, immediately_before=(idx == len(recent) - 1))}\n"
+                    f"{sp['text'].strip()}"
+                )
+        if older:
+            parts.append(
+                f"## Earlier previous context ({len(older)} speeches; lower priority; do NOT classify)"
+            )
+            for sp in older:
+                parts.append(
+                    f"[ctx {sp['speech_index']}] Speaker: "
+                    f"{_speaker_line_one_pass(str(sp['raw_speaker']), target_speaker, session_chairs)}\n"
+                    f"{sp['text'].strip()}"
+                )
 
     # Target speech/speeches to classify
     if len(speeches) == 1:
@@ -374,8 +546,10 @@ def _build_intervention_message(
     else:
         parts.append(f"## Speeches to classify ({len(speeches)} target speeches)")
     for sp in speeches:
+        target_speaker = str(sp.get("raw_speaker", ""))
         parts.append(
-            f"[{sp['speech_index']}] Speaker: {sp['raw_speaker']}\n"
+            f"[{sp['speech_index']}] Speaker: "
+            f"{_speaker_line_one_pass(target_speaker, target_speaker, session_chairs, include_same_speaker=False)}\n"
             f"{sp['text'].strip()}"
         )
 
@@ -1006,6 +1180,11 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
         {"yes", "partial", "no"},
         "partial",
     )
+    debate_advancement = normalize_choice(
+        item.get("debate_advancement"),
+        {"yes", "partial", "no"},
+        "partial",
+    )
     arg_raw = str(item.get("argumentation_quality") or "").strip().lower()
     if not arg_raw:
         # Backward-compatible fallback when model omits the new field.
@@ -1123,6 +1302,7 @@ def _validate_one(item: dict, config: dict, session_topics: list) -> dict:
         "legislative_engagement": legislative_engagement,
         "procedural_content": procedural_content,
         "argumentation_quality": argumentation_quality,
+        "debate_advancement": debate_advancement,
         "topics": topics,
         "confidence": confidence,
         "evidence_chunk_ids": [],  # no RAG here — speech + local session context are provided

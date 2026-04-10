@@ -35,6 +35,7 @@ def merge_for_compatibility(
         "legislative_engagement": str(layer_a.get("legislative_engagement", "partial")),
         "procedural_content": str(layer_a.get("procedural_content", "partial")),
         "argumentation_quality": str(layer_a.get("argumentation_quality", "weak")),
+        "debate_advancement": str(layer_a.get("debate_advancement", "partial")),
         "confidence": float(decision.get("confidence", 0.5)),
         "topics": list(decision.get("topics", [])),
         "reasoning": str(decision.get("reasoning", "")).strip(),
@@ -63,4 +64,3 @@ def decision_from_layer_c(layer_c: dict) -> dict:
         "reasoning": str(layer_c.get("reasoning", "")).strip(),
         "evidence_quote": str(layer_c.get("evidence_quote", "")).strip(),
     }
-

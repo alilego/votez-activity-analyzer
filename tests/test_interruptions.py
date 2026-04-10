@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from llm_agent import _classify_interruption_type, _merge_continuation_text
+from llm_agent import _build_intervention_message, _classify_interruption_type, _merge_continuation_text
 from intervention_layers.rules import apply_pre_llm_shortcuts
 from intervention_layers.prompts import (
     build_layer_a_user_message,
@@ -263,6 +263,73 @@ class TestInterruptionPromptHint(unittest.TestCase):
         )
         self.assertIn("Interruption context", msg)
         self.assertIn("benefit citizens", msg)
+
+
+class TestContextRichPromptFormatting(unittest.TestCase):
+    _session = {
+        "session_date": "2026-01-15",
+        "initial_notes": "Ședința este condusă de domnul Ion Popescu. Dezbatere privind finanțe publice locale.",
+    }
+    _session_topics = [{"label": "Finanțe publice locale"}]
+    _agenda = [{"item_number": 1, "title": "Modificarea art. 5 privind finanțele publice locale"}]
+    _target = {
+        "speech_index": 15,
+        "raw_speaker": "Deputat Maria Ionescu",
+        "text": "Articolul 5 privind finanțele publice locale trebuie amendat pentru primării.",
+    }
+    _context = [
+        {
+            "speech_index": 11,
+            "raw_speaker": "Deputat Andrei Vasilescu",
+            "text": "Discutăm modificarea articolului 5 și impactul asupra finanțelor publice locale.",
+        },
+        {
+            "speech_index": 12,
+            "raw_speaker": "Deputat Maria Ionescu",
+            "text": "Primăriile au nevoie de clarificări privind raportul comisiei.",
+        },
+        {
+            "speech_index": 13,
+            "raw_speaker": "Domnul Ion Popescu",
+            "text": "Trecem la următorul vorbitor.",
+        },
+        {
+            "speech_index": 14,
+            "raw_speaker": "Deputat Elena Matei",
+            "text": "Raportul comisiei pentru finanțe locale trebuie clarificat înainte de vot.",
+        },
+    ]
+
+    def test_layer_a_message_adds_active_thread_and_role_hints(self):
+        msg = build_layer_a_user_message(
+            session=self._session,
+            session_topics=self._session_topics,
+            target_speech=self._target,
+            context_speeches=self._context,
+            agenda=self._agenda,
+        )
+        self.assertIn("Likely active debate thread", msg)
+        self.assertIn("Candidate from session topic: Finanțe publice locale", msg)
+        self.assertIn("Immediate context (3 previous speeches; highest priority; do NOT classify)", msg)
+        self.assertIn("Earlier previous context (1 speeches; lower priority; do NOT classify)", msg)
+        self.assertIn("Domnul Ion Popescu (chair, immediate context)", msg)
+        self.assertIn("Deputat Elena Matei (immediately before target)", msg)
+        self.assertIn("Deputat Maria Ionescu (same speaker, immediate context)", msg)
+
+    def test_one_pass_message_adds_active_thread_and_role_hints(self):
+        msg = _build_intervention_message(
+            session=self._session,
+            session_topics=self._session_topics,
+            speeches=[self._target],
+            context_speeches=self._context,
+            agenda=self._agenda,
+        )
+        self.assertIn("Likely active debate thread", msg)
+        self.assertIn("Context use guidance", msg)
+        self.assertIn("Immediate context (3 previous speeches; highest priority; do NOT classify)", msg)
+        self.assertIn("Earlier previous context (1 speeches; lower priority; do NOT classify)", msg)
+        self.assertIn("Domnul Ion Popescu (chair, immediate context)", msg)
+        self.assertIn("Deputat Elena Matei (immediately before target)", msg)
 
 
 if __name__ == "__main__":

@@ -77,6 +77,7 @@ def validate_layer_a_item(item: dict) -> dict:
         ),
         "procedural_content": _as_choice(item.get("procedural_content"), YES_PARTIAL_NO, "procedural_content"),
         "argumentation_quality": _as_choice(item.get("argumentation_quality"), ARG_QUALITY, "argumentation_quality"),
+        "debate_advancement": _as_choice(item.get("debate_advancement"), YES_PARTIAL_NO, "debate_advancement"),
         "primary_function": _as_choice(item.get("primary_function"), PRIMARY_FUNCTIONS, "primary_function"),
         "reasoning": _as_reasoning(item.get("reasoning")),
         "evidence_quote": _as_quote(item.get("evidence_quote")),
@@ -124,4 +125,3 @@ def validate_layer_c_item(item: dict, max_topics: int = 3) -> dict:
         "evidence_quote": _as_quote(item.get("evidence_quote")),
         "qa_action": _as_choice(item.get("qa_action"), QA_ACTIONS, "qa_action"),
     }
-

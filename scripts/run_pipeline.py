@@ -117,6 +117,33 @@ def _write_candidate_file(run_id: str, candidates: list[str]) -> Path:
     return out_path
 
 
+def _resolve_session_id_for_stenogram(db_path: Path, stenogram_path: str) -> str | None:
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT DISTINCT session_id FROM session_chunks WHERE stenogram_path = ? LIMIT 1",
+            (stenogram_path,),
+        ).fetchone()
+    return str(row[0]) if row else None
+
+
+def _reset_llm_analysis_for_session(db_path: Path, session_id: str) -> int:
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("PRAGMA foreign_keys = ON;")
+        deleted = conn.execute(
+            """DELETE FROM intervention_analysis
+               WHERE intervention_id IN (
+                   SELECT intervention_id FROM interventions_raw WHERE session_id = ?
+               ) AND relevance_source = 'llm_agent_v1'""",
+            (session_id,),
+        ).rowcount
+        conn.execute(
+            "UPDATE session_topics SET topics_source='keyword_baseline_v1', updated_at=CURRENT_TIMESTAMP WHERE session_id=?",
+            (session_id,),
+        )
+        conn.commit()
+    return int(deleted)
+
+
 def _check_ollama_model(model: str) -> None:
     """Warn if the requested Ollama model doesn't exist, with setup instructions."""
     import urllib.request, urllib.error, json as _json
@@ -309,33 +336,16 @@ def main() -> int:
     if args.stenogram.strip():
         forced_path = str(Path(args.stenogram.strip()))
         print(f"\nStep 2/4  Forced stenogram: {forced_path}")
-        # Resolve session_id for this stenogram from the DB.
-        with sqlite3.connect(db_path) as conn:
-            row = conn.execute(
-                "SELECT DISTINCT session_id FROM session_chunks WHERE stenogram_path = ? LIMIT 1",
-                (forced_path,),
-            ).fetchone()
-        if row is None:
-            print(f"  ERROR: stenogram '{forced_path}' not found in DB. Run the baseline first.")
-            return 1
-        forced_session_id = row[0]
-        print(f"  session_id={forced_session_id}")
-        # Reset LLM analysis for this session so it is fully reprocessed.
-        with sqlite3.connect(db_path) as conn:
-            conn.execute("PRAGMA foreign_keys = ON;")
-            n_ia = conn.execute(
-                """DELETE FROM intervention_analysis
-                   WHERE intervention_id IN (
-                       SELECT intervention_id FROM interventions_raw WHERE session_id = ?
-                   ) AND relevance_source = 'llm_agent_v1'""",
-                (forced_session_id,),
-            ).rowcount
-            conn.execute(
-                "UPDATE session_topics SET topics_source='keyword_baseline_v1', updated_at=CURRENT_TIMESTAMP WHERE session_id=?",
-                (forced_session_id,),
-            )
-            conn.commit()
-        print(f"  Reset: {n_ia} intervention_analysis rows + session_topics for session {forced_session_id}")
+        # If the stenogram is already in the DB, resolve/reset before the
+        # forced baseline rerun. On a freshly reset DB, baseline below will
+        # import it first and we resolve the session_id afterwards.
+        forced_session_id = _resolve_session_id_for_stenogram(db_path, forced_path)
+        if forced_session_id:
+            print(f"  session_id={forced_session_id}")
+            n_ia = _reset_llm_analysis_for_session(db_path, forced_session_id)
+            print(f"  Reset: {n_ia} intervention_analysis rows + session_topics for session {forced_session_id}")
+        else:
+            print("  Not yet in DB — baseline step will import it first.")
         candidates = [StenogramCandidate(path=str(forced_path), content_hash="", file_mtime_ns=0, reason="forced")]
     else:
         print("\nStep 2/4  Selecting stenograms...")
@@ -401,6 +411,20 @@ def main() -> int:
             marked = mark_candidates(conn, candidates, run_id)
             conn.commit()
             print(f"  Stenograms marked as processed: {marked}")
+
+        if args.stenogram.strip() and forced_session_id is None:
+            forced_session_id = _resolve_session_id_for_stenogram(db_path, str(Path(args.stenogram.strip())))
+            if forced_session_id is None:
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    _finish_run(conn, run_id, "failed", 0)
+                    conn.commit()
+                print(
+                    f"\nBaseline completed, but stenogram '{args.stenogram.strip()}' "
+                    "still was not found in session_chunks."
+                )
+                return 1
+            print(f"  Resolved forced session after baseline: session_id={forced_session_id}")
 
     # Optional LLM passes (run outside conn context to avoid lock contention).
     if args.analyzer_mode == "llm":

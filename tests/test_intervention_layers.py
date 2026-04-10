@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from intervention_layers.orchestrator import build_shortcut_decision, merge_for_compatibility
 from intervention_layers.qa import evaluate_qa_triggers
 from intervention_layers.rules import apply_deterministic_rules
+from intervention_layers.schemas import validate_layer_a_item
 
 
 class TestInterventionLayers(unittest.TestCase):
@@ -262,6 +263,7 @@ class TestInterventionLayers(unittest.TestCase):
             "legislative_engagement": "yes",
             "procedural_content": "no",
             "argumentation_quality": "strong",
+            "debate_advancement": "yes",
         }
         decision = {
             "speech_index": 42,
@@ -281,11 +283,29 @@ class TestInterventionLayers(unittest.TestCase):
         self.assertIn("legislative_engagement", out)
         self.assertIn("procedural_content", out)
         self.assertIn("argumentation_quality", out)
+        self.assertEqual(out["debate_advancement"], "yes")
         self.assertIn("topics", out)
         self.assertIn("reasoning", out)
         self.assertIn("evidence_quote", out)
 
+    def test_validate_layer_a_accepts_debate_advancement(self):
+        item = {
+            "speech_index": 7,
+            "policy_proposal": "partial",
+            "policy_analysis": "yes",
+            "public_interest_orientation": "yes",
+            "partisan_rhetoric": "no",
+            "legislative_engagement": "partial",
+            "procedural_content": "partial",
+            "argumentation_quality": "strong",
+            "debate_advancement": "yes",
+            "primary_function": "substantive_support",
+            "reasoning": "Clarifică impactul amendamentului.",
+            "evidence_quote": "Articolul 5 schimbă formula de calcul.",
+        }
+        out = validate_layer_a_item(item)
+        self.assertEqual(out["debate_advancement"], "yes")
+
 
 if __name__ == "__main__":
     unittest.main()
-
