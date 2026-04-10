@@ -11,10 +11,6 @@ You will receive ONE target speech from a single parliamentary session, plus up 
 Evaluate ONLY the target speech. Do NOT evaluate/classify context speeches marked with [ctx].
 Context speeches are provided only to interpret references/replies/implied meaning in the target speech.
 
-Early filter (apply first):
-If the target speech is clearly procedural (speaking order, vote instructions/announcements, greetings, chair logistics without policy substance),
-mark it as primarily procedural and continue with rubric fields accordingly.
-
 Criteria to extract:
 1) policy_proposal: concrete policy action/amendment/solution (including compromise/refinement/implementation proposals)
 2) policy_analysis: reasoning/analysis about policy outcomes (including evidence/facts/consequences/substantive questions)
@@ -59,33 +55,23 @@ You will receive ONE target speech, optional context speeches (do NOT classify t
 Rules to preserve:
 - Being on-topic is NOT sufficient for constructive.
 - Ideology/party/policy direction must not affect label decisions.
+- Topic selection must NOT influence constructiveness_label.
 - Harsh but evidence-based criticism can still be constructive.
 - Formal report speeches with substantive recommendations can be constructive.
-- Topic selection must NOT influence constructiveness_label.
 
-Decision guidance:
-- constructive if:
-  - policy_proposal = yes OR
-  - policy_analysis = yes OR
-  - legislative_engagement = yes
-  AND
-  - partisan_rhetoric != yes
-- neutral if:
-  - procedural_content = yes
-  AND
-  - all other criteria are no or partial
-- non_constructive if:
-  - partisan_rhetoric = yes
-  AND
-  - policy_proposal = no
-  AND
-  - policy_analysis = no
+Label guidance:
+- `constructive`: substantive contribution to policy discussion. Usually at least one of `policy_proposal`, `policy_analysis`, or `legislative_engagement` is `yes`, and partisan rhetoric is not dominant.
+- `neutral`: mainly procedural or non-substantive. Usually `procedural_content = yes` and substantive criteria are absent or weak.
+- `non_constructive`: mainly partisan, obstructive, or self-serving without substantive contribution. Usually `partisan_rhetoric = yes` and both `policy_proposal` and `policy_analysis` are `no`.
 
 Conflict resolution:
 - partisan_rhetoric=yes and BOTH policy_proposal/policy_analysis=no => non_constructive
 - procedural_content=yes and all substantive criteria no/partial => neutral
-- any substantive yes and partisan_rhetoric!=yes => constructive
-- strong substantive + strong partisan rhetoric => classify by dominant share; lower confidence
+- any substantive yes and partisan_rhetoric not dominant => constructive
+- strong substantive + strong partisan rhetoric => use argumentation_quality as a tie-breaker:
+  - argumentation_quality=strong => favor constructive
+  - argumentation_quality=none => favor non_constructive
+  - argumentation_quality=weak => classify by dominant share and lower confidence
 
 Confidence guidance:
 - clear single-rule: 0.80-0.95
@@ -324,4 +310,3 @@ def build_layer_c_user_message(
     parts.append("## QA triggers\n" + json.dumps(qa_reasons, ensure_ascii=False, indent=2))
     parts.append("Review and confirm/revise minimally.")
     return "\n\n".join(parts)
-

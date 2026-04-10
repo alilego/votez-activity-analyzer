@@ -52,10 +52,16 @@ def _normalize_openai_request(request: dict[str, Any]) -> dict[str, Any]:
     model = str(normalized.get("model", "")).strip().lower()
     if _openai_model_uses_max_completion_tokens(model) and "max_tokens" in normalized:
         normalized["max_completion_tokens"] = normalized.pop("max_tokens")
+    if _openai_model_uses_default_temperature_only(model) and "temperature" in normalized:
+        normalized.pop("temperature")
     return normalized
 
 
 def _openai_model_uses_max_completion_tokens(model: str) -> bool:
+    return any(model.startswith(prefix) for prefix in OPENAI_MAX_COMPLETION_TOKENS_PREFIXES)
+
+
+def _openai_model_uses_default_temperature_only(model: str) -> bool:
     return any(model.startswith(prefix) for prefix in OPENAI_MAX_COMPLETION_TOKENS_PREFIXES)
 
 
@@ -72,6 +78,14 @@ def _build_retry_request(
             "max_completion_tokens",
             retry_request,
             "OpenAI model rejected max_tokens; retrying with max_completion_tokens.",
+        )
+    if _should_retry_without_temperature(exc, request):
+        retry_request = dict(request)
+        retry_request.pop("temperature", None)
+        return (
+            "default_temperature",
+            retry_request,
+            "OpenAI model rejected explicit temperature; retrying with the model default temperature.",
         )
     if _should_retry_with_standard_processing(exc, requested_tier):
         retry_request = dict(request)
@@ -93,6 +107,25 @@ def _should_retry_with_max_completion_tokens(exc: Exception, request: dict[str, 
     lowered = _extract_error_text(exc).lower()
     return "max_tokens" in lowered and "max_completion_tokens" in lowered and any(
         marker in lowered for marker in ("unsupported", "not supported", "unsupported_parameter")
+    )
+
+
+def _should_retry_without_temperature(exc: Exception, request: dict[str, Any]) -> bool:
+    if "temperature" not in request:
+        return False
+    status_code = getattr(exc, "status_code", None)
+    if status_code not in (400, 422):
+        return False
+    lowered = _extract_error_text(exc).lower()
+    return "temperature" in lowered and any(
+        marker in lowered
+        for marker in (
+            "default (1) value is supported",
+            "only the default",
+            "unsupported value",
+            "does not support",
+            "not supported",
+        )
     )
 
 

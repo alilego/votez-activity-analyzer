@@ -8,10 +8,17 @@
 
 ## Current State
 
-- **Model:** `qwen2.5:7b` (32k context) via Ollama
-- **Pipeline:** 3-layer (Layer A rubric extraction → deterministic rules → Layer B decision → QA triggers → Layer C review)
-- **Measured baseline accuracy:** 61.0% classification (77 speeches), 0% law attribution (on 5 processed sessions)
-- **Main weaknesses:** 7B model struggles with nuanced Romanian parliamentary language, law IDs are often missed or hallucinated, no evaluation framework to measure progress
+- **Default local model:** `qwen3:14b` via Ollama
+- **Benchmark API model tested:** `gpt-5.4-mini` via OpenAI
+- **Pipeline:** model-aware defaults now resolve via shared profiles:
+  - 7B-14B local models default to the guarded `three_layer` classifier
+  - stronger local/API models default to `one_pass`
+  - session topic extraction reuses model-specific chunk caps
+- **Measured baseline accuracy:** 61.0% classification (77 speeches), 0% law attribution (original baseline on 5 processed sessions)
+- **Latest benchmark signal:** `gpt-5.4-mini` reached **70.79% classification accuracy** and **21.4% exact-or-partial law attribution** on **89 medium/hard gold speeches across 17 sessions** with 100% coverage
+- **Latest local benchmark signal:** `qwen3:14b` quick screen remained at **61.54% classification** and **0.0% law attribution** on 26 medium/hard speeches
+- **Benchmark tooling status:** `scripts/benchmark_local_models.py` now supports Ollama and OpenAI models, mixed-provider runs, limited-cost smoke benchmarks, auto-import of missing gold sessions from `input/stenograme/`, and append-only benchmark history in `state/model_benchmarks/summary.json`
+- **Main weaknesses:** non-constructive vs. neutral remains the hardest boundary, law IDs are still frequently missed, and even the stronger API benchmark is still far from the 98% / 95% target
 
 ---
 
@@ -124,8 +131,20 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
   - `llama3.3:70b-q4` (needs ~40GB VRAM) — only if hardware allows and local-only is still a hard requirement
 - [x] Update `Modelfile-*` and default model constants accordingly
 - [x] Add shared model-profile config + isolated benchmark harness (`scripts/benchmark_local_models.py`)
+- [x] Extend benchmark harness to support OpenAI models with the same output format as Ollama benchmarks
+- [x] Add a cheaper benchmark preset (`--benchmark-scope limited`) for first-pass API screening on medium/hard gold speeches
+- [x] Auto-import missing gold sessions from `input/stenograme/` into a prepared benchmark DB so full gold-session benchmarks do not depend on the current contents of `state/state.sqlite`
+- [x] Preserve benchmark history in `state/model_benchmarks/summary.json` via timestamped appended runs (`run_started_at`)
+- [x] Store full mismatch text and full prediction reasoning in benchmark reports (no JSON truncation of `text_preview` / `pred_reasoning`)
 - **Current default local model:** `qwen3:14b`
 - **Decision rule:** if quick screening does not show a clear win, skip deeper local benchmarking and move to prompt improvements or hybrid escalation. Current `qwen3:14b` quick-screen result falls into this bucket.
+- **Current API benchmark signal:** `gpt-5.4-mini` full medium/hard benchmark:
+  - Command: `python3 scripts/benchmark_local_models.py --provider openai --models gpt-5.4-mini --only-hard`
+  - Scope: 89 medium/hard gold speeches across 17 sessions; 100% coverage after auto-preparing missing gold sessions
+  - Result: **70.79% classification accuracy** (63/89), **14.3% exact law attribution**, **21.4% exact-or-partial law attribution**, **34.0% topic F1**
+  - Latency: ~280.89s total (122.84s topics + 158.06s classification)
+  - Error pattern: much better than the local 14B quick screen on non-trivial classification and topic attribution, but still weak on neutral recall (37.5% F1) and still misses most law references
+  - Takeaway: stronger API models help, but current gains are still not enough to skip prompt/rubric improvements
 - [ ] **Expected impact (only if the error profile is model-limited):** +5-10% classification accuracy over 7B
 
 ### 3.2 Make pipeline architecture model-aware
@@ -149,6 +168,7 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 - [ ] After local model classifies all speeches, identify uncertain ones (confidence < 0.75 or QA-triggered)
 - [ ] Send ONLY uncertain speeches (~7-15% of total) to `gpt-4o-mini` for re-classification
 - [ ] Accept API result when its confidence > local confidence
+- **Current evidence:** a full-benchmark run with `gpt-5.4-mini` improves medium/hard classification over the local 14B baseline, which supports continuing Phase 4 exploration, but the current prompt/rubric stack is still the main bottleneck
 - [ ] **Expected impact:** +5-8% classification accuracy at ~80-90% cost reduction vs. full API
 - [ ] **Estimated cost:** ~$0.01-0.05 per session (vs. $0.10-0.50 for full API)
 
@@ -208,7 +228,11 @@ python3 scripts/benchmark_local_models.py --models qwen3:14b
 | 2026-03-28 | Phase 3 narrowed to gated screening | Avoid multi-hour end-to-end benchmarks per model; first prove a model upgrade helps on medium/hard cases, then run a full benchmark only for finalists |
 | 2026-03-28 | `qwen3:14b` quick screen recorded | On 26 medium/hard speeches from 5 available gold sessions: 61.54% classification, 0% law attribution, ~100 min runtime; not enough evidence to expand local-model benchmarking yet |
 | 2026-03-29 | Step 3.2 implemented | Added shared runtime model config (`architecture`, `num_ctx`, `chunk_chars`), switched intervention classifier default to profile-driven `auto`, reused chunk caps in session topic extraction, and enabled `auto` in the benchmark harness |
+| 2026-04-10 | Benchmark harness generalized beyond Ollama | Added provider-aware benchmarking for OpenAI and Ollama, mixed-provider model lists, limited-cost smoke benchmark mode, and GPT-specific request handling (`max_completion_tokens` for GPT-5-family models) |
+| 2026-04-10 | Full medium/hard gold benchmarking unblocked | Benchmark harness now auto-imports missing gold sessions from `input/stenograme/`, so full gold-session benchmarking no longer depends on the current main DB contents |
+| 2026-04-10 | Benchmark reporting improved | `state/model_benchmarks/summary.json` now keeps append-only run history with timestamps, and `benchmark_report.json` mismatch payloads now store full `text_preview` and `pred_reasoning` instead of truncated snippets |
+| 2026-04-10 | `gpt-5.4-mini` benchmark recorded | On 89 medium/hard speeches across 17 sessions: 70.79% classification, 14.3% exact law attribution, 21.4% exact-or-partial law attribution, 34.0% topic F1; clear improvement over local 14B quick screen, but still far from target |
 
 ---
 
-*Last updated: 2026-03-29*
+*Last updated: 2026-04-10*

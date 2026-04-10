@@ -77,6 +77,19 @@ class TestOpenaiRuntime(unittest.TestCase):
         self.assertNotIn("max_tokens", client.chat.completions.calls[0])
         self.assertEqual(client.chat.completions.calls[0]["max_completion_tokens"], 512)
 
+    def test_create_chat_completion_omits_temperature_for_gpt5_models(self):
+        client = _FakeClient("openai", side_effects=[{"ok": True}], service_tier="flex")
+
+        result = create_chat_completion(
+            client,
+            model="gpt-5-mini",
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=0.0,
+        )
+
+        self.assertEqual(result, {"ok": True})
+        self.assertNotIn("temperature", client.chat.completions.calls[0])
+
     def test_create_chat_completion_retries_resource_unavailable_with_auto(self):
         err = _FakeError(
             "429 Resource Unavailable",
@@ -128,6 +141,30 @@ class TestOpenaiRuntime(unittest.TestCase):
         self.assertEqual(client.chat.completions.calls[0]["max_tokens"], 256)
         self.assertNotIn("max_tokens", client.chat.completions.calls[1])
         self.assertEqual(client.chat.completions.calls[1]["max_completion_tokens"], 256)
+
+    def test_create_chat_completion_retries_without_temperature_when_requested(self):
+        err = _FakeError(
+            "Unsupported temperature",
+            status_code=400,
+            body={
+                "error": {
+                    "message": "Unsupported value: 'temperature' does not support 0.0 with this model. Only the default (1) value is supported.",
+                    "code": "unsupported_value",
+                }
+            },
+        )
+        client = _FakeClient("openai", side_effects=[err, {"ok": True}], service_tier="flex")
+
+        result = create_chat_completion(
+            client,
+            model="custom-openai-model",
+            messages=[{"role": "user", "content": "hi"}],
+            temperature=0.0,
+        )
+
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(client.chat.completions.calls[0]["temperature"], 0.0)
+        self.assertNotIn("temperature", client.chat.completions.calls[1])
 
     def test_create_chat_completion_does_not_inject_service_tier_for_ollama(self):
         client = _FakeClient("ollama", side_effects=[{"ok": True}])
