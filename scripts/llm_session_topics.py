@@ -105,6 +105,8 @@ RETRY_DELAY_S = 10
 # which the retry loop catches. 300s gives extra headroom for the large single-pass call.
 LLM_REQUEST_TIMEOUT_S = 300
 TOPICS_MAX_OUTPUT_TOKENS = 3072
+GPT5_NANO_MODEL_PREFIXES = ("gpt-5-nano", "gpt-5.4-nano")
+GPT5_NANO_MAX_OUTPUT_TOKENS = 128_000
 RUN_OUTPUTS_DIR = Path("state/run_outputs")
 
 _LLM_USAGE = {
@@ -181,6 +183,19 @@ def _record_llm_usage(
         else:
             total_est = est_prompt + est_completion
             print(f"    [tokens~] {label}: prompt~={est_prompt} completion~={est_completion} total~={total_est}")
+
+
+def _topics_max_output_tokens(client, default: int = TOPICS_MAX_OUTPUT_TOKENS) -> int:
+    """Return the topic-extraction output budget for the active model."""
+    provider = str(getattr(client, "_provider", "") or "").strip().lower()
+    model = str(getattr(client, "_model", "") or "").strip().lower()
+    if provider == "openai" and model.startswith(GPT5_NANO_MODEL_PREFIXES):
+        return GPT5_NANO_MAX_OUTPUT_TOKENS
+    return default
+
+
+def _is_empty_llm_output(raw: str) -> bool:
+    return not str(raw or "").strip()
 
 
 def _usage_summary_payload() -> dict:
@@ -737,7 +752,7 @@ Rules:
             system=system,
             user=user,
             json_mode=True,
-            max_tokens=3072,
+            max_tokens=_topics_max_output_tokens(client),
             prompt_label=f"{label}_json_repair",
             session_id=session_id,
             session_date=session_date,
@@ -782,7 +797,11 @@ def _call_reduce_once(
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, reduce_system, reduce_msg, json_mode=True, max_tokens=TOPICS_MAX_OUTPUT_TOKENS,
+                client,
+                reduce_system,
+                reduce_msg,
+                json_mode=True,
+                max_tokens=_topics_max_output_tokens(client),
                 prompt_label=label.lower().replace(" ", "_"),
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
@@ -804,6 +823,8 @@ def _call_reduce_once(
                     print(f"  Saved failed raw output: {path}")
                 except Exception:
                     pass
+                if _is_empty_llm_output(raw):
+                    raise ValueError("LLM returned empty output; not attempting JSON repair") from exc
                 repaired = _repair_topics_json(
                     client=client,
                     raw_text=raw,
@@ -840,7 +861,11 @@ def _call_reduce_once(
             print(f"  {label} attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY_S)
-    return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
+        except Exception as exc:
+            print(f"  {label} LLM call attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    raise ValueError(f"{label}: exhausted retries without valid topic JSON")
 
 
 def _reduce(
@@ -989,7 +1014,11 @@ def _call_single_pass(
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             raw = _chat(
-                client, single_pass_system, user_msg, json_mode=True, max_tokens=TOPICS_MAX_OUTPUT_TOKENS,
+                client,
+                single_pass_system,
+                user_msg,
+                json_mode=True,
+                max_tokens=_topics_max_output_tokens(client),
                 prompt_label="single_pass",
                 session_id=session_id, session_date=session_date,
                 build_prompts_only=build_prompts_only,
@@ -1011,6 +1040,8 @@ def _call_single_pass(
                     print(f"  Saved failed raw output: {path}")
                 except Exception:
                     pass
+                if _is_empty_llm_output(raw):
+                    raise ValueError("LLM returned empty output; not attempting JSON repair") from exc
                 repaired = _repair_topics_json(
                     client=client,
                     raw_text=raw,
@@ -1047,7 +1078,11 @@ def _call_single_pass(
             print(f"  Single-pass attempt {attempt}/{MAX_RETRIES} failed: {exc}")
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY_S)
-    return {"topics": [], "matched_topics": [], "new_topics": [], "session_summary": ""}
+        except Exception as exc:
+            print(f"  Single-pass LLM call attempt {attempt}/{MAX_RETRIES} failed: {exc}")
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY_S)
+    raise ValueError("Single-pass exhausted retries without valid topic JSON")
 
 
 def _call_map_reduce(
@@ -1078,7 +1113,10 @@ def _call_map_reduce(
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 prose = _chat(
-                    client, WINDOW_SYSTEM, user_msg, max_tokens=512,
+                    client,
+                    WINDOW_SYSTEM,
+                    user_msg,
+                    max_tokens=_topics_max_output_tokens(client, default=512),
                     prompt_label=f"window_{w_idx}of{total_windows}",
                     session_id=session_id, session_date=session_date,
                     build_prompts_only=build_prompts_only,
@@ -1413,16 +1451,25 @@ def run_session_topics(
         with MCPServer(db_path=db_path, run_id=run_id) as server:
             for i, session_id in enumerate(session_ids, 1):
                 print(f"\n[{i}/{total}] session={session_id}")
-                result = extract_session_topics(
-                    server=server,
-                    session_id=session_id,
-                    run_id=run_id,
-                    model=model,
-                    client=client,
-                    provider=provider,
-                    conn=raw_conn,
-                    build_prompts_only=build_prompts_only,
-                )
+                try:
+                    result = extract_session_topics(
+                        server=server,
+                        session_id=session_id,
+                        run_id=run_id,
+                        model=model,
+                        client=client,
+                        provider=provider,
+                        conn=raw_conn,
+                        build_prompts_only=build_prompts_only,
+                    )
+                except Exception as exc:
+                    result = {
+                        "ok": False,
+                        "error": {
+                            "code": "session_topic_extraction_failed",
+                            "message": str(exc),
+                        },
+                    }
                 if result.get("ok"):
                     extracted += 1
                     if build_prompts_only:

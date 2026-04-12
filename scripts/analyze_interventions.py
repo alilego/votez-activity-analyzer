@@ -38,62 +38,83 @@ class SessionStats:
     speeches_count: int
 
 
-TOPIC_TAXONOMY: list[tuple[str, tuple[str, ...]]] = [
-    ("costul vietii si inflatie", ("inflatie", "preturi", "scumpiri", "costul vietii")),
-    ("echitate si simplitate fiscala", ("tax", "impozit", "fiscalitate", "tva")),
-    ("eficienta cheltuielilor publice", ("cheltuieli publice", "eficienta bugetara", "risipa")),
-    ("transparenta si responsabilitate bugetara", ("transparenta bugetara", "executie bugetara")),
-    ("sustenabilitate fiscala", ("deficit", "datorie publica", "sustenabilitate fiscala")),
-    ("sustenabilitatea pensiilor", ("pensie", "pensii", "sistem de pensii")),
-    ("salarii si productivitate", ("salariu", "productivitate", "venituri salariale")),
-    ("calitatea ocuparii si protectia muncii", ("contract de munca", "protectia muncii", "somaj")),
-    ("formare profesionala si recalificare", ("formare profesionala", "recalificare", "ucenicie")),
-    ("ocuparea tinerilor si primul loc de munca", ("tineri", "primul loc de munca", "internship")),
-    ("educatie timpurie", ("educatie timpurie", "gradinita", "crese")),
-    ("relevanta curriculumului scolar", ("curriculum", "programa scolara", "manuale")),
-    ("recrutarea si retentia profesorilor", ("cadre didactice", "profesori", "cariera didactica")),
-    ("infrastructura si siguranta scolara", ("infrastructura scolara", "siguranta in scoli")),
-    ("competente digitale in educatie", ("competente digitale", "digitalizare in educatie")),
-    ("calitate universitara si cercetare", ("universitate", "cercetare", "doctorat")),
-    ("reducerea abandonului scolar", ("abandon scolar", "parasire timpurie")),
-    ("acces la educatie rurala", ("educatie rurala", "transport scolar", "scoli rurale")),
-    ("invatare pe tot parcursul vietii", ("invatare continua", "educatia adultilor")),
-    ("sanatatea mintala a elevilor", ("consiliere scolara", "sanatate mintala elevi")),
-    ("asistenta medicala primara", ("medicina de familie", "asistenta primara")),
-    ("reforma managementului spitalicesc", ("spital", "management spitalicesc")),
-    ("preventie si screening", ("preventie", "screening", "vaccinare")),
-    ("acces si accesibilitate la medicamente", ("medicamente", "compensate", "farmacii")),
-    ("retentia personalului medical", ("medici", "asistenti medicali", "exod medical")),
-    ("pregatirea sistemului de urgenta", ("urgenta", "smurd", "upu")),
-    ("servicii de sanatate mintala", ("psihiatrie", "psiholog", "sanatate mintala")),
-    ("interoperabilitatea datelor medicale", ("dosar electronic", "interoperabilitate", "date medicale")),
-    ("ingrijire pe termen lung si imbatranire", ("ingrijire pe termen lung", "varstnici")),
-    ("sanatatea mamei si copilului", ("maternitate", "pediatrie", "sanatate materna")),
-    ("securitate energetica si rezilienta retelei", ("securitate energetica", "sistem energetic", "retea electrica")),
-    ("accesibilitatea energiei", ("facturi energie", "pret energie", "compensare energie")),
-    ("tranzitie catre energie regenerabila", ("energie regenerabila", "eolian", "fotovoltaic")),
-    ("competitivitate industriala si costuri energetice", ("costuri energetice industrie", "competitivitate industriala")),
-    ("infrastructura de apa si rezilienta la seceta", ("apa", "canalizare", "seceta")),
-    ("gestionarea deseurilor si economie circulara", ("deseuri", "reciclare", "economie circulara")),
-    ("calitatea aerului urban", ("calitatea aerului", "poluare urbana")),
-    ("adaptare climatica si pregatire pentru dezastre", ("adaptare climatica", "dezastre", "inundatii")),
-    ("protectia padurilor si biodiversitate", ("paduri", "defrisari", "biodiversitate")),
-    ("agricultura sustenabila si securitate alimentara", ("agricultura", "fermieri", "securitate alimentara")),
-    ("mentenanta infrastructurii de transport", ("drumuri", "intretinere infrastructura", "autostrazi")),
-    ("modernizare feroviara si capacitate de marfa", ("cale ferata", "feroviar", "transport marfa")),
-    ("siguranta rutiera", ("siguranta rutiera", "accidente rutiere")),
-    ("mobilitate urbana si transport public", ("transport public", "mobilitate urbana", "metrou")),
-    ("accesibilitatea locuirii si urbanism", ("locuinte", "chirii", "urbanism")),
-    ("stat de drept si eficienta justitiei", ("stat de drept", "justitie", "instante")),
-    ("aplicarea legislatiei anticoruptie", ("coruptie", "dna", "integritate")),
-    ("integritate in achizitii publice", ("achizitii publice", "licitatii", "seap")),
-    ("simplificare administrativa si guvernare digitala", ("debirocratizare", "digitalizare", "ghiseu unic")),
-    ("securitate nationala si infrastructura critica", ("securitate nationala", "infrastructura critica", "aparare")),
-    ("procedura parlamentara si agenda", ("ordine de zi", "regulament", "procedura de vot", "motiune", "cenzura")),
-    ("cadru constitutional", ("constitutie", "constitutional", "curtea constitutionala")),
-    ("proces legislativ", ("proiect", "lege", "amendament", "ordonanta", "comisie", "articol")),
-    ("dezbatere privind suspendarea presedintelui", ("suspend", "iohannis", "presedinte ilegitim")),
-]
+TOPIC_TAXONOMY_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "topic_taxonomy.json"
+
+
+def _normalize_taxonomy_keyword(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text or "")
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = normalized.casefold()
+    return " ".join(normalized.split())
+
+
+def _unique_keywords(values: list[str]) -> tuple[str, ...]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        keyword = _normalize_taxonomy_keyword(str(value))
+        if keyword and keyword not in seen:
+            out.append(keyword)
+            seen.add(keyword)
+    return tuple(out)
+
+
+def _load_topic_taxonomy(config_path: Path = TOPIC_TAXONOMY_CONFIG_PATH) -> list[tuple[str, tuple[str, ...]]]:
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{config_path}: expected top-level JSON object")
+
+    catalog_topics = payload.get("catalog_topics", [])
+    direction_rules = payload.get("direction_rules", [])
+    if not isinstance(catalog_topics, list) or not isinstance(direction_rules, list):
+        raise ValueError(f"{config_path}: expected catalog_topics and direction_rules lists")
+
+    token_equivalents = payload.get("token_equivalents", {})
+    equivalent_terms_by_token: dict[str, list[str]] = defaultdict(list)
+    if isinstance(token_equivalents, dict):
+        for raw_term, mapped_token in token_equivalents.items():
+            normalized_raw = _normalize_taxonomy_keyword(str(raw_term))
+            normalized_mapped = _normalize_taxonomy_keyword(str(mapped_token))
+            if normalized_raw and normalized_mapped:
+                equivalent_terms_by_token[normalized_mapped].append(normalized_raw)
+
+    rules_by_label: dict[str, dict] = {}
+    for rule in direction_rules:
+        if isinstance(rule, dict):
+            label = str(rule.get("label", "")).strip()
+            if label:
+                rules_by_label[label] = rule
+
+    taxonomy: list[tuple[str, tuple[str, ...]]] = []
+    for item in catalog_topics:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get("label", "")).strip()
+        if not label:
+            continue
+
+        rule = rules_by_label.get(label, {})
+        raw_values: list[str] = [label]
+        for key in ("aliases",):
+            values = item.get(key, [])
+            if isinstance(values, list):
+                raw_values.extend(str(value) for value in values)
+        for key in ("raw_roots", "mapped_tokens"):
+            values = rule.get(key, []) if isinstance(rule, dict) else []
+            if isinstance(values, list):
+                raw_values.extend(str(value) for value in values)
+                if key == "mapped_tokens":
+                    for mapped_token in values:
+                        normalized_token = _normalize_taxonomy_keyword(str(mapped_token))
+                        raw_values.extend(equivalent_terms_by_token.get(normalized_token, []))
+
+        keywords = _unique_keywords(raw_values)
+        taxonomy.append((label, keywords))
+
+    return taxonomy
+
+
+TOPIC_TAXONOMY: list[tuple[str, tuple[str, ...]]] = _load_topic_taxonomy()
 
 LAW_REFERENCE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bpl[-\s]?x\s*(?:nr\.?\s*)?(\d+/\d{4})\b"), "plx {ref}"),
@@ -355,11 +376,21 @@ def _extract_topics(text: str, max_topics: int = 5) -> list[str]:
 
     # 2) Add enriched taxonomy topics.
     for topic, keywords in TOPIC_TAXONOMY:
-        if any(keyword in normalized for keyword in keywords) and topic not in topics:
+        if any(_taxonomy_keyword_matches(normalized, keyword) for keyword in keywords) and topic not in topics:
             topics.append(topic)
         if len(topics) >= max_topics:
             break
     return topics
+
+
+def _taxonomy_keyword_matches(normalized_text: str, keyword: str) -> bool:
+    if not keyword:
+        return False
+    if " " in keyword:
+        return keyword in normalized_text
+    if len(keyword) <= 4:
+        return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", normalized_text) is not None
+    return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}[a-z0-9]*(?![a-z0-9])", normalized_text) is not None
 
 
 def _is_law_reference_topic(topic: str) -> bool:

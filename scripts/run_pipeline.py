@@ -498,7 +498,10 @@ def main() -> int:
                     conn.execute("PRAGMA foreign_keys = ON;")
                     _finish_run(conn, run_id, "failed", 0)
                     conn.commit()
-                print(f"\nLLM session topic extraction failed (exit code {topics_proc.returncode}). Nothing was marked processed.")
+                print(
+                    f"\nLLM session topic extraction failed (exit code {topics_proc.returncode}). "
+                    "Baseline results and processed-stenogram markers remain committed; rerun to resume LLM work."
+                )
                 return topics_proc.returncode
 
             # Step 3c: LLM intervention classification.
@@ -524,7 +527,10 @@ def main() -> int:
                     conn.execute("PRAGMA foreign_keys = ON;")
                     _finish_run(conn, run_id, "failed", 0)
                     conn.commit()
-                print(f"\nLLM intervention classification failed (exit code {llm_proc.returncode}). Nothing was marked processed.")
+                print(
+                    f"\nLLM intervention classification failed (exit code {llm_proc.returncode}). "
+                    "Completed LLM rows remain committed; rerun to resume pending LLM work."
+                )
                 return llm_proc.returncode
 
     with sqlite3.connect(db_path) as conn:
