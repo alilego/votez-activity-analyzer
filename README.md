@@ -293,6 +293,41 @@ python3 scripts/demo_mcp.py --session-id <id> --speech-index <n>
 
 ---
 
+## Effectiveness export (`scripts/export_effectiveness.py`)
+
+Generate word- and letter-weighted effectiveness metrics from the current DB state:
+
+```bash
+python3 scripts/export_effectiveness.py
+```
+
+This reads only interventions already processed by the LLM (`relevance_source='llm_agent_v1'`) and writes separate JSON artifacts under `outputs/effectiveness/`:
+
+```text
+outputs/effectiveness/effectiveness_total.json
+outputs/effectiveness/members/effectiveness_index.json
+outputs/effectiveness/members/effectiveness_{member_id}_{name_slug}.json
+outputs/effectiveness/parties/effectiveness_index.json
+outputs/effectiveness/parties/effectiveness_{party_id}.json
+```
+
+Effectiveness is computed twice:
+
+```text
+word_effectiveness_pct   = constructive_word_count / total_word_count * 100
+letter_effectiveness_pct = constructive_letter_count / total_letter_count * 100
+```
+
+The totals include `parliament_members`, `non_parliament_speakers`, and `all_llm_processed_speeches`. Member and party outputs include `member_id`, `name`, `party_id`, `party_name`, processed intervention counts, constructive counts, total/constructive word counts, total/constructive letter counts, and both effectiveness percentages.
+
+Use a different DB or output directory:
+
+```bash
+python3 scripts/export_effectiveness.py --db-path state/state.sqlite --output-dir outputs/effectiveness
+```
+
+---
+
 ## Other commands
 
 ```bash
@@ -300,6 +335,7 @@ python3 scripts/init_db.py                                         # initialize 
 python3 scripts/reset_state.py                                     # reset state for a clean rerun
 python3 scripts/select_stenograms.py                               # show files that would be selected
 python3 scripts/export_outputs.py                                  # re-export outputs without re-analyzing
+python3 scripts/export_effectiveness.py                            # export word/letter effectiveness metrics
 python3 scripts/validate_outputs.py                                # validate exported output integrity
 python3 scripts/run_pipeline.py --analyzer-cmd "<your command>"    # use a custom analyzer
 ```
@@ -320,6 +356,7 @@ When using `--analyzer-cmd`, these env vars are injected:
 | `scripts/llm_agent.py` | LLM intervention classification — the main intelligence layer |
 | `scripts/rag_store.py` | Vector index build and retrieval (`sentence-transformers` + FAISS) |
 | `scripts/mcp_server.py` | MCP tool server (all read, RAG, and write tools) |
+| `scripts/export_effectiveness.py` | Export word/letter effectiveness metrics by member, party, and total |
 | `scripts/inspect_retrieval.py` | Inspect retrieved chunks for any intervention |
 | `scripts/demo_mcp.py` | Exercise all MCP tools end-to-end |
 
