@@ -213,7 +213,9 @@ __marimo__/
 input/stenograme/*.json
 
 # Local analyzer state
-state/
+state/*
+!state/
+!state/state.sqlite
 
 # Generated frontend artifacts
 outputs/
