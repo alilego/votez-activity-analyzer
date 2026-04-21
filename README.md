@@ -64,7 +64,7 @@ ollama serve
 python3 scripts/run_pipeline.py --analyzer-mode llm
 # or, for paid OpenAI classification:
 # export OPENAI_API_KEY=sk-...
-# python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-4o-mini
+# python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-5-nano
 ```
 
 Writes to `outputs/members/`, `outputs/parties/`, `outputs/topics/`, `outputs/session_topics/`.
@@ -80,7 +80,6 @@ Writes to `outputs/productivity/`.
 **Step D — crawl the CDEP deputy activity pages, hydrate law initiators, and export activity snapshots.** Single command, end-to-end:
 
 ```bash
-export OPENAI_API_KEY=sk-...   # optional — enables the handwriting-signature vision fallback
 python3 scripts/crawl_deputy_activity.py \
     --update-existing \
     --hydrate-law-initiators \
@@ -88,6 +87,7 @@ python3 scripts/crawl_deputy_activity.py \
 ```
 
 Writes to `state/state.sqlite` (crawler tables) and `outputs/activity/members/` + `outputs/activity/parties/`.
+The hydrator also caches the downloaded initiator PDFs under `outputs/pdfs/law_initiators/` so reruns can extract locally without re-fetching the same law PDFs.
 
 ### 4. Where everything lands
 
@@ -100,6 +100,7 @@ outputs/topics/                         # per-topic roll-ups
 outputs/productivity/                   # word/letter productivity metrics (members + parties + total)
 outputs/activity/members/               # per-member crawler activity snapshots (motions, Q&I, laws, ...)
 outputs/activity/parties/               # per-party aggregations (initiated laws, majority support, ...)
+outputs/pdfs/law_initiators/            # cached law-initiator PDFs reused by OCR hydration
 ```
 
 ### 5. Iterating
@@ -182,7 +183,7 @@ Use a specific model:
 
 ```bash
 python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider ollama --llm-model qwen3:14b
-python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-4o-mini
+python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-5-nano
 ```
 
 > **First time?** Test on a small batch before running the full set:
@@ -478,7 +479,7 @@ When using `--analyzer-cmd`, these env vars are injected:
 | `scripts/rag_store.py` | Vector index build and retrieval (`sentence-transformers` + FAISS) |
 | `scripts/mcp_server.py` | MCP tool server (all read, RAG, and write tools) |
 | `scripts/export_effectiveness.py` | Export word/letter productivity metrics by member, party, and total |
-| `scripts/crawl_deputy_activity.py` | Crawl deputy profile activity pages from CDEP and store laws, decision projects, questions/interpellations, motions, and written political declarations in SQLite; also drives law-initiator OCR/vision hydration and the activity JSON export |
+| `scripts/crawl_deputy_activity.py` | Crawl deputy profile activity pages from CDEP and store laws, decision projects, questions/interpellations, motions, and written political declarations in SQLite; also drives local law-initiator OCR hydration and the activity JSON export |
 | `scripts/export_activity.py` | Serialize the crawler DB into per-member and per-party activity JSON snapshots under `outputs/activity/` (invoked from `crawl_deputy_activity.py` via `--export-activity`) |
 | `scripts/inspect_retrieval.py` | Inspect retrieved chunks for any intervention |
 | `scripts/demo_mcp.py` | Exercise all MCP tools end-to-end |
@@ -487,10 +488,9 @@ When using `--analyzer-cmd`, these env vars are injected:
 
 ## Crawl deputy activity from CDEP
 
-**Recommended usage** — one command that does the full pipeline end-to-end: crawl every deputy's activity pages, OCR/vision-hydrate law initiators, and refresh the per-member + per-party JSON snapshots under `outputs/activity/`:
+**Recommended usage** — one command that does the full pipeline end-to-end: crawl every deputy's activity pages, OCR-hydrate law initiators, and refresh the per-member + per-party JSON snapshots under `outputs/activity/`:
 
 ```bash
-export OPENAI_API_KEY=sk-...   # optional, enables the handwriting-signature vision fallback
 python3 scripts/crawl_deputy_activity.py \
     --update-existing \
     --hydrate-law-initiators \
@@ -517,6 +517,7 @@ python3 scripts/crawl_deputy_activity.py --member-id deputat_1
 python3 scripts/crawl_deputy_activity.py --member-id 1
 python3 scripts/crawl_deputy_activity.py --update-existing --limit 5
 python3 scripts/crawl_deputy_activity.py --update-existing --hydrate-law-initiators --limit 5
+python3 scripts/crawl_deputy_activity.py --only-hydrate-law-initiators --hydrate-law-limit 10
 python3 scripts/crawl_deputy_activity.py --only-hydrate-law-initiators
 python3 scripts/crawl_deputy_activity.py --export-activity --limit 5
 python3 scripts/crawl_deputy_activity.py --only-export-activity
@@ -527,7 +528,11 @@ For every processed deputy, the script logs the profile count, stored record cou
 
 Pass `--hydrate-law-initiators` to run a second phase after the normal crawl finishes: the script reads stored laws from `dep_act_laws`, fetches each law's `Expunerea de motive` PDF through `source_url`, OCRs it locally with Tesseract, extracts the `Iniţiatori` section, and marks matching deputies in `dep_act_member_laws.is_initiator`. This is intentionally optional because scanned PDF OCR is slower than the normal crawl.
 
+Before fetching anything, the hydrator looks for a cached initiator PDF in `outputs/pdfs/law_initiators/` named `initiators_<law_identifier>.pdf` (sanitized for filenames). If that file exists, extraction runs entirely locally and the law page/PDF are not fetched again. On a cache miss, the hydrator fetches the law page, picks the best initiator PDF candidate, downloads it into that cache folder, and then runs extraction from the cached local file.
+
 Pass `--only-hydrate-law-initiators` to skip the crawl phase and retry only stored laws that do not yet have any `is_initiator = 1` association in `dep_act_member_laws`. OCR progress logs include the `dep_act_laws.source_url` law page link for debugging no-match cases.
+
+Pass `--hydrate-law-limit N` to cap the hydration phase to the first `N` stored laws in `law_id` order after the normal member scoping/filtering. This is mainly useful for local smoke tests when you want to exercise the OCR/cache flow on a small subset without touching the whole backlog.
 
 The crawler writes only its own tables: `dep_act_member_activity_crawl`, `dep_act_laws`, `dep_act_member_laws`, `dep_act_decision_projects`, `dep_act_member_decision_projects`, `dep_act_questions_interpellations`, `dep_act_motions`, `dep_act_member_motions`, and `dep_act_political_declarations`. It validates that targeted deputies already exist in `members`, but it never inserts or updates `members`, interventions, runs, outputs, or other pipeline tables.
 

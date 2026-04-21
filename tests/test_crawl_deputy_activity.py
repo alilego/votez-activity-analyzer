@@ -15,11 +15,9 @@ from crawl_deputy_activity import (  # noqa: E402
     _fuzzy_member_matches_initiator_lines,
     _INITIATOR_BEFORE_SUSTINATORI_NOTE,
     _embedded_pdf_missing_initiator_name_signals,
-    _is_senat_ad_pdf_url,
     _is_transient_network_exception,
+    _law_initiator_pdf_cache_path,
     _normalize_law_source_url,
-    _parse_vision_transcription_response,
-    build_synthetic_initiator_snippet_from_names,
     ensure_activity_schema,
     hydrate_law_initiators_for_records,
     ListingRecord,
@@ -45,7 +43,6 @@ from crawl_deputy_activity import (  # noqa: E402
     parse_profile_activity,
     single_signature_fuzzy_match,
     store_records,
-    transcribe_handwritten_signatures_with_vision,
     update_member_activity_crawl,
     update_member_activity_error,
 )
@@ -446,6 +443,153 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                     skip_if_initiator_linked=True,
                 )
             fetcher.fetch.assert_not_called()
+
+    def test_hydrate_law_initiators_uses_cached_pdf_without_fetching(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            cache_path = _law_initiator_pdf_cache_path(
+                cache_dir,
+                law_id="law:test:cached",
+                identifier="PL-x 1/2026",
+            )
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_bytes(b"%PDF-1.4 cached")
+
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:test:cached",
+                        "https://example.test/law/cached",
+                        "PL-x 1/2026",
+                        "Title",
+                        "Details",
+                        "[]",
+                    ),
+                )
+                conn.commit()
+
+            fetcher = MagicMock()
+            fetcher.fetch.side_effect = AssertionError("law page fetch must not run")
+            fetcher.fetch_bytes.side_effect = AssertionError("pdf download must not run")
+
+            with patch(
+                "crawl_deputy_activity.extract_pdf_text_local",
+                return_value="Inițiatori:\nDeputat Test\nExpunerea de motive",
+            ):
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    hydrate_law_initiators_for_records(
+                        conn,
+                        records=[
+                            ListingRecord(
+                                record_id="law:test:cached",
+                                source_url="https://example.test/law/cached",
+                                identifier="PL-x 1/2026",
+                                adopted_law_identifier=None,
+                                title="Title",
+                                details_text="Details",
+                                columns=[],
+                            )
+                        ],
+                        fetcher=fetcher,
+                        member_rows=[("deputat_1", "Deputat Test", "deputat test")],
+                        force=True,
+                        skip_if_initiator_linked=False,
+                        law_initiator_pdf_dir=cache_dir,
+                    )
+                    conn.commit()
+                    row = conn.execute(
+                        "SELECT initiators_text FROM dep_act_laws WHERE law_id = ?",
+                        ("law:test:cached",),
+                    ).fetchone()
+                    self.assertIn("Deputat Test", row[0] or "")
+            fetcher.fetch.assert_not_called()
+            fetcher.fetch_bytes.assert_not_called()
+
+    def test_hydrate_law_initiators_downloads_pdf_into_local_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            cache_path = _law_initiator_pdf_cache_path(
+                cache_dir,
+                law_id="law:test:download",
+                identifier="PL-x 2/2026",
+            )
+            pdf_bytes = b"%PDF-1.4 downloaded"
+            law_page_html = """
+            <table>
+              <tr>
+                <td>Expunerea de motive</td>
+                <td><a href="/pdfs/init.pdf">PDF</a></td>
+              </tr>
+            </table>
+            """
+
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:test:download",
+                        "https://example.test/law/download",
+                        "PL-x 2/2026",
+                        "Title",
+                        "Details",
+                        "[]",
+                    ),
+                )
+                conn.commit()
+
+            fetcher = MagicMock()
+            fetcher.fetch.return_value = law_page_html
+            fetcher.fetch_bytes.return_value = pdf_bytes
+
+            with patch(
+                "crawl_deputy_activity.extract_pdf_text_local",
+                return_value="Inițiatori:\nDeputat Test\nExpunerea de motive",
+            ):
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    hydrate_law_initiators_for_records(
+                        conn,
+                        records=[
+                            ListingRecord(
+                                record_id="law:test:download",
+                                source_url="https://example.test/law/download",
+                                identifier="PL-x 2/2026",
+                                adopted_law_identifier=None,
+                                title="Title",
+                                details_text="Details",
+                                columns=[],
+                            )
+                        ],
+                        fetcher=fetcher,
+                        member_rows=[("deputat_1", "Deputat Test", "deputat test")],
+                        force=True,
+                        skip_if_initiator_linked=False,
+                        law_initiator_pdf_dir=cache_dir,
+                    )
+                    conn.commit()
+
+            self.assertTrue(cache_path.exists())
+            self.assertEqual(cache_path.read_bytes(), pdf_bytes)
+            fetcher.fetch.assert_called_once_with("https://example.test/law/download")
+            fetcher.fetch_bytes.assert_called_once_with("https://example.test/pdfs/init.pdf")
 
     def test_extract_and_match_law_initiators_text(self):
         text = """
@@ -1399,6 +1543,50 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                     1,
                 )
 
+    def test_load_law_records_for_initiator_hydration_honors_limit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = init_db(Path(tmp) / "state.sqlite")
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                for idx in range(3):
+                    law_id = f"law:test:limit:{idx}"
+                    conn.execute(
+                        """
+                        INSERT INTO dep_act_laws (
+                            law_id, source_url, identifier, title, details_text, columns_json
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            law_id,
+                            f"https://example.test/law/{idx}",
+                            f"PL-x {idx}/2026",
+                            f"Title {idx}",
+                            "Details",
+                            "[]",
+                        ),
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO dep_act_member_laws (member_id, law_id)
+                        VALUES ('deputat_1', ?)
+                        """,
+                        (law_id,),
+                    )
+                conn.commit()
+
+                records = load_law_records_for_initiator_hydration(
+                    conn,
+                    member_ids=["deputat_1"],
+                    limit=2,
+                )
+
+                self.assertEqual(len(records), 2)
+                self.assertEqual(
+                    [record.record_id for record in records],
+                    ["law:test:limit:0", "law:test:limit:1"],
+                )
+
     def test_store_political_declarations(self):
         with tempfile.TemporaryDirectory() as tmp:
             db_path = init_db(Path(tmp) / "state.sqlite")
@@ -2272,346 +2460,9 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             ["d_plopeanu"],
         )
 
-    # ------------------------------------------------------------------
-    # Vision-LLM handwriting fallback tests (AD.PDF cover letters only).
-    # ------------------------------------------------------------------
-
-    def test_is_senat_ad_pdf_url_accepts_real_ad_urls(self):
-        """Forward- and back-slashed AD.PDF hrefs should both be recognized."""
-        self.assertTrue(
-            _is_senat_ad_pdf_url(
-                "https://senat.ro/legis/PDF/2026/26b135AD.PDF?nocache=true"
-            )
-        )
-        self.assertTrue(
-            _is_senat_ad_pdf_url(
-                "https://senat.ro/legis/PDF/2026/26b135ad.pdf"
-            )
-        )
-
-    def test_is_senat_ad_pdf_url_rejects_em_forma_and_cdep(self):
-        """Only the AD PDF is eligible for the vision handwriting fallback."""
-        self.assertFalse(
-            _is_senat_ad_pdf_url(
-                "https://senat.ro/legis/PDF/2026/26b135EM.PDF"
-            )
-        )
-        self.assertFalse(
-            _is_senat_ad_pdf_url(
-                "https://senat.ro/legis/PDF/2026/26b135FG.PDF"
-            )
-        )
-        self.assertFalse(
-            _is_senat_ad_pdf_url(
-                "https://www.cdep.ro/proiecte/2025/100/60/1/em178.pdf"
-            )
-        )
-        self.assertFalse(_is_senat_ad_pdf_url(""))
-
-    def test_parse_vision_transcription_response_filters_noise(self):
-        """Strip list markers, ignore NONE sentinel, and drop blank lines."""
-        content = (
-            "- Șipoș Eugen-Cristian\n"
-            "\n"
-            "1. Federovici Doina-Elena AUR\n"
-            "   \n"
-            "NONE\n"
-        )
-        parsed = _parse_vision_transcription_response(content)
-        self.assertEqual(
-            parsed,
-            ["Șipoș Eugen-Cristian", "Federovici Doina-Elena AUR"],
-        )
-
-    def test_parse_vision_transcription_response_explicit_none(self):
-        """A lone NONE token means the model declined — return no candidates."""
-        self.assertEqual(_parse_vision_transcription_response("NONE"), [])
-        self.assertEqual(_parse_vision_transcription_response("  none  "), [])
-
-    def test_build_synthetic_initiator_snippet_strips_party_tokens(self):
-        """The synthetic snippet must drop trailing party tokens (AUR, PSD, ...)
-        and retain a true `Inițiatori,` header so downstream matching uses
-        the same surname-gate / per-line rules as printed PDFs."""
-        snippet = build_synthetic_initiator_snippet_from_names(
-            ["Șipoș Eugen-Cristian AUR", "Federovici Doina-Elena"]
-        )
-        self.assertIn("Inițiatori", snippet)
-        # AUR token must be stripped so it does not leak into `_name_tokens`.
-        self.assertNotIn("AUR", snippet)
-        self.assertIn("Șipoș Eugen-Cristian", snippet)
-        self.assertIn("Federovici Doina-Elena", snippet)
-
-    def test_build_synthetic_initiator_snippet_handles_only_party_line(self):
-        """If every token on a candidate line is a party suffix, drop the
-        line entirely instead of emitting an empty line under the header."""
-        snippet = build_synthetic_initiator_snippet_from_names(["AUR", "PSD"])
-        self.assertEqual(snippet, "")
-
-    def test_match_initiator_rejects_short_surname_shared_given_name(self):
-        """Regression: a member with a ≤3-char surname (e.g. `BEM Cristian`)
-        must NOT match a signature that only shares the given name
-        (`Șipoș Cristian`). Before the surname _keep fix, short surnames
-        were filtered out of the per-line matcher entirely, which let
-        every member sharing just the given name match a one-line
-        handwritten signature. Pre-existing bug; exposed when the AD.PDF
-        vision fallback started producing short, single-line synthetic
-        snippets.
-        """
-        snippet = build_synthetic_initiator_snippet_from_names(["Șipoș Cristian"])
-        matched = match_initiator_member_ids(
-            snippet,
-            [
-                ("s_sipos", "ȘIPOȘ Eugen-Cristian", "sipos eugen-cristian"),
-                ("s_bem", "BEM Cristian", "bem cristian"),
-            ],
-        )
-        self.assertEqual(matched, ["s_sipos"])
-
-    def test_build_synthetic_initiator_snippet_resolves_via_match_helper(self):
-        """End-to-end: the synthetic snippet round-trips through the regular
-        initiator matcher and resolves a vision-transcribed name — including
-        a trailing party token — to the correct member row."""
-        snippet = build_synthetic_initiator_snippet_from_names(
-            ["Șipoș Eugen-Cristian AUR"]
-        )
-        matched = match_initiator_member_ids(
-            snippet,
-            [
-                ("s_sipos", "Șipoș Eugen-Cristian", "sipos eugen-cristian"),
-                ("s_other", "Federovici Doina-Elena", "federovici doina-elena"),
-            ],
-        )
-        self.assertEqual(matched, ["s_sipos"])
-
-    def test_transcribe_handwritten_signatures_skips_without_api_key(self):
-        """Without an API key, the helper must short-circuit and NOT render
-        the PDF — this is how we keep the fallback opt-in.
-        """
-        def forbidden_poster(**kwargs):  # pragma: no cover - must not run
-            raise AssertionError("poster must not be called without api_key")
-
-        result = transcribe_handwritten_signatures_with_vision(
-            b"%PDF-1.4 fake",
-            api_key="",
-            http_poster=forbidden_poster,
-        )
-        self.assertEqual(result, [])
-
-    def test_hydrate_law_initiators_vision_fallback_matches_ad_signature(self):
-        """End-to-end hydrate-loop wiring: when an AD.PDF yields no printed
-        initiator section (only a handwritten signature), the vision
-        fallback is invoked, its transcription is shaped into a synthetic
-        snippet, and the resolved member is linked with source
-        `ad_handwriting_vision`.
-        """
-        law_page_html = (
-            "<html><body><table>"
-            "<tr><td>adresa de înaintare a iniţiativei legislative pentru dezbatere</td>"
-            "<td><a href=\"/legis/PDF/2026/26b135AD.PDF?nocache=true\">AD</a></td></tr>"
-            "<tr><td>Expunerea de motive</td>"
-            "<td><a href=\"/legis/PDF/2026/26b135EM.PDF?nocache=true\">EM</a></td></tr>"
-            "</table></body></html>"
-        )
-        fetcher = MagicMock()
-        fetcher.fetch.return_value = law_page_html
-        fetcher.fetch_bytes.return_value = b"%PDF-1.4 dummy"
-
-        with tempfile.TemporaryDirectory() as tmp:
-            db_path = init_db(Path(tmp) / "state.sqlite")
-            with sqlite3.connect(db_path) as conn:
-                conn.execute("PRAGMA foreign_keys = ON;")
-                ensure_activity_schema(conn)
-                conn.execute(
-                    """
-                    INSERT INTO members (
-                        member_id, source_member_id, chamber, name,
-                        normalized_name, party_id, profile_url, circumscriptie
-                    ) VALUES (
-                        's_sipos', '42', 'senator', 'Șipoș Eugen-Cristian',
-                        'sipos eugen-cristian', 'AUR',
-                        'https://example.test/sipos', NULL
-                    )
-                    """,
-                )
-                conn.execute(
-                    """
-                    INSERT INTO dep_act_laws (
-                        law_id, source_url, identifier, title,
-                        details_text, columns_json
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        "law:b135_2026",
-                        "https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
-                        "L 135/2026",
-                        "Test title",
-                        "Details",
-                        "[]",
-                    ),
-                )
-                conn.commit()
-
-            # Simulate: PDF text extraction yields only the cover preamble
-            # (no `Inițiator` anchor, no matchable names). The vision poster
-            # is our injection point that returns the handwritten name(s).
-            cover_text = (
-                "ROMÂNIA\nPARLAMENTUL ROMÂNIEI\nCAMERA DEPUTAȚILOR\n"
-                "Către,\nBiroul Permanent al Senatului\n"
-                "În conformitate cu prevederile art. 74 alin. (1) și ale "
-                "art. 75 alin. (1) din Constituția României, republicată "
-                "vă înaintăm alăturat spre dezbatere și adoptare propunerea "
-                "legislativă pentru completarea art. 25 din Legea 36/1995."
-            )
-
-            def fake_poster(**kwargs):
-                self.assertTrue(kwargs["prompt"])
-                self.assertEqual(kwargs["model"], "gpt-4o-mini")
-                self.assertTrue(kwargs["image_b64_list"])
-                return "Șipoș Eugen-Cristian AUR\n"
-
-            with patch(
-                "crawl_deputy_activity.extract_pdf_text_local",
-                return_value=cover_text,
-            ), patch(
-                "crawl_deputy_activity._render_pdf_tail_pages_to_png_b64",
-                return_value=["fake_b64_png_bytes"],
-            ):
-                with sqlite3.connect(db_path) as conn:
-                    conn.execute("PRAGMA foreign_keys = ON;")
-                    hydrate_law_initiators_for_records(
-                        conn,
-                        records=[
-                            ListingRecord(
-                                record_id="law:b135_2026",
-                                source_url="https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
-                                identifier="L 135/2026",
-                                adopted_law_identifier=None,
-                                title="Test title",
-                                details_text="Details",
-                                columns=[],
-                            )
-                        ],
-                        fetcher=fetcher,
-                        member_rows=[],
-                        force=True,
-                        skip_if_initiator_linked=True,
-                        senator_member_rows=[
-                            ("s_sipos", "Șipoș Eugen-Cristian", "sipos eugen-cristian"),
-                        ],
-                        vision_api_key="sk-test-key",
-                        vision_http_poster=fake_poster,
-                    )
-                    conn.commit()
-
-            with sqlite3.connect(db_path) as conn:
-                row = conn.execute(
-                    "SELECT initiators_source, motive_pdf_url "
-                    "FROM dep_act_laws WHERE law_id = ?",
-                    ("law:b135_2026",),
-                ).fetchone()
-                self.assertEqual(row[0], "ad_handwriting_vision")
-                self.assertIn("26b135AD", row[1] or "")
-                links = conn.execute(
-                    "SELECT member_id, is_initiator FROM dep_act_member_laws "
-                    "WHERE law_id = ?",
-                    ("law:b135_2026",),
-                ).fetchall()
-                self.assertEqual(links, [("s_sipos", 1)])
-            # The vision fallback must not have caused us to fetch the EM PDF
-            # (only the law page + the AD PDF should have been fetched).
-            fetched_pdf_urls = [
-                call.args[0] for call in fetcher.fetch_bytes.call_args_list
-            ]
-            self.assertEqual(len(fetched_pdf_urls), 1)
-            self.assertIn("AD", fetched_pdf_urls[0])
-
-    def test_hydrate_law_initiators_vision_fallback_unmatched_marks_source(self):
-        """When vision returns a transcription but no member matches,
-        record the transcription under `ad_handwriting_vision_unmatched`
-        so operators can diagnose handwriting failures from the DB without
-        re-running the pipeline.
-        """
-        law_page_html = (
-            "<html><body><table>"
-            "<tr><td>adresa de înaintare a iniţiativei legislative pentru dezbatere</td>"
-            "<td><a href=\"/legis/PDF/2026/26b135AD.PDF\">AD</a></td></tr>"
-            "</table></body></html>"
-        )
-        fetcher = MagicMock()
-        fetcher.fetch.return_value = law_page_html
-        fetcher.fetch_bytes.return_value = b"%PDF-1.4 dummy"
-
-        with tempfile.TemporaryDirectory() as tmp:
-            db_path = init_db(Path(tmp) / "state.sqlite")
-            with sqlite3.connect(db_path) as conn:
-                conn.execute("PRAGMA foreign_keys = ON;")
-                ensure_activity_schema(conn)
-                conn.execute(
-                    """
-                    INSERT INTO dep_act_laws (
-                        law_id, source_url, identifier, title,
-                        details_text, columns_json
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        "law:b999_2026",
-                        "https://senat.ro/legis/lista.aspx?nr_cls=b999&an_cls=2026",
-                        "L 999/2026",
-                        "Unknown initiator",
-                        "Details",
-                        "[]",
-                    ),
-                )
-                conn.commit()
-
-            def fake_poster(**kwargs):
-                return "Xyzzy Nonexistent\n"
-
-            with patch(
-                "crawl_deputy_activity.extract_pdf_text_local",
-                return_value="Către,\nBiroul Permanent al Senatului\n"
-                "vă înaintăm alăturat spre dezbatere propunerea legislativă.",
-            ), patch(
-                "crawl_deputy_activity._render_pdf_tail_pages_to_png_b64",
-                return_value=["fake_b64"],
-            ):
-                with sqlite3.connect(db_path) as conn:
-                    conn.execute("PRAGMA foreign_keys = ON;")
-                    hydrate_law_initiators_for_records(
-                        conn,
-                        records=[
-                            ListingRecord(
-                                record_id="law:b999_2026",
-                                source_url="https://senat.ro/legis/lista.aspx?nr_cls=b999&an_cls=2026",
-                                identifier="L 999/2026",
-                                adopted_law_identifier=None,
-                                title="Unknown initiator",
-                                details_text="Details",
-                                columns=[],
-                            )
-                        ],
-                        fetcher=fetcher,
-                        member_rows=[],
-                        force=True,
-                        skip_if_initiator_linked=True,
-                        senator_member_rows=[],
-                        vision_api_key="sk-test-key",
-                        vision_http_poster=fake_poster,
-                    )
-                    conn.commit()
-
-            with sqlite3.connect(db_path) as conn:
-                row = conn.execute(
-                    "SELECT initiators_source, initiators_text "
-                    "FROM dep_act_laws WHERE law_id = ?",
-                    ("law:b999_2026",),
-                ).fetchone()
-                self.assertEqual(row[0], "ad_handwriting_vision_unmatched")
-                self.assertIn("Xyzzy Nonexistent", row[1] or "")
-
-    def test_hydrate_law_initiators_vision_disabled_without_api_key(self):
-        """With no api_key, the fallback must stay dormant and the loop
-        must continue to the next candidate PDF (EM.PDF)."""
+    def test_hydrate_law_initiators_ad_without_names_falls_back_to_em(self):
+        """When AD.PDF contains no usable initiator snippet, keep the flow
+        purely local and continue to the next candidate PDF (EM.PDF)."""
         law_page_html = (
             "<html><body><table>"
             "<tr><td>adresa de înaintare a iniţiativei legislative pentru dezbatere</td>"
@@ -2624,12 +2475,10 @@ class TestDeputyActivityCrawler(unittest.TestCase):
         fetcher.fetch.return_value = law_page_html
         fetcher.fetch_bytes.return_value = b"%PDF-1.4 dummy"
 
-        forbidden_poster = MagicMock(
-            side_effect=AssertionError("vision poster must not run without api_key")
-        )
-
         with tempfile.TemporaryDirectory() as tmp:
-            db_path = init_db(Path(tmp) / "state.sqlite")
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
             with sqlite3.connect(db_path) as conn:
                 conn.execute("PRAGMA foreign_keys = ON;")
                 ensure_activity_schema(conn)
@@ -2675,14 +2524,12 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                         force=True,
                         skip_if_initiator_linked=True,
                         senator_member_rows=[],
-                        vision_api_key=None,
-                        vision_http_poster=forbidden_poster,
+                        law_initiator_pdf_dir=cache_dir,
                     )
                     conn.commit()
 
-            forbidden_poster.assert_not_called()
             # Both AD and EM must have been tried since AD produced no
-            # snippet and no vision fallback fired.
+            # snippet and hydration now relies only on local OCR/parsing.
             fetched_pdf_urls = [
                 call.args[0] for call in fetcher.fetch_bytes.call_args_list
             ]

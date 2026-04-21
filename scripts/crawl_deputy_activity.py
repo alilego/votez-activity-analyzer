@@ -48,6 +48,7 @@ from init_db import DEFAULT_DB_PATH
 
 
 DEFAULT_INPUT_PATH = Path("input/toti_deputatii.json")
+DEFAULT_LAW_INITIATOR_PDF_DIR = Path("outputs/pdfs/law_initiators")
 
 # Inițiatori blocks are often on an early cover sheet but may appear on page 2+ of the PDF.
 DEFAULT_LAW_INITIATOR_OCR_PAGES = 10
@@ -1668,6 +1669,38 @@ def _normalize_law_source_url(url: str) -> str:
     return urllib.parse.urlunparse(parsed._replace(query=new_query))
 
 
+def _safe_filename_component(value: str | None) -> str:
+    text = unicodedata.normalize("NFKD", value or "")
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    text = re.sub(r"_+", "_", text).strip("_")
+    return text or "unknown"
+
+
+def _law_initiator_pdf_cache_path(
+    pdf_dir: Path,
+    *,
+    law_id: str,
+    identifier: str | None,
+) -> Path:
+    cache_key = _safe_filename_component(identifier or law_id)
+    return pdf_dir / f"initiators_{cache_key}.pdf"
+
+
+def _write_bytes_atomic(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent,
+        prefix=path.stem + ".",
+        suffix=path.suffix + ".tmp",
+        delete=False,
+    ) as tmp:
+        tmp.write(data)
+        temp_path = Path(tmp.name)
+    temp_path.replace(path)
+
+
 class Fetcher:
     def __init__(
         self,
@@ -2084,219 +2117,6 @@ def extract_pdf_text_local(
             from_tail=True,
         )
     return direct_text
-
-
-# ---------------------------------------------------------------------------
-# Handwriting signature fallback via a vision LLM.
-#
-# The senat.ro "adresă de înaintare" (AD.PDF) is a short formal cover letter
-# whose printed body does NOT name the initiator(s) — the only place the
-# initiator's identity appears on these PDFs is the *handwritten signature*
-# at the bottom of the last page. Tesseract cannot reliably read cursive
-# handwriting, so for this narrow case we optionally delegate the signature
-# transcription to a multimodal model (default: OpenAI gpt-4o-mini) and then
-# fuzzy-match the transcribed name(s) against the known member list.
-#
-# This fallback is gated on:
-#   * the current candidate PDF being an AD.PDF (URL shape below), AND
-#   * local text extraction having failed to find any initiator snippet, AND
-#   * a vision API key being configured.
-# It is strictly opt-in via `OPENAI_API_KEY` being set in the environment;
-# if the key is missing, the fallback is silently skipped (i.e. the loop
-# behaves exactly as before and falls through to EM.PDF).
-# ---------------------------------------------------------------------------
-
-DEFAULT_VISION_MODEL = "gpt-4o-mini"
-DEFAULT_VISION_MAX_PAGES = 2
-DEFAULT_VISION_TIMEOUT = 60
-
-_SENAT_AD_URL_RE = re.compile(
-    r"/legis/pdf/\d{4}/\d{2}b\d+ad\.pdf",
-    flags=re.IGNORECASE,
-)
-
-
-def _is_senat_ad_pdf_url(url: str) -> bool:
-    """True iff `url` points to a senat.ro 'adresă de înaintare' (AD.PDF)."""
-    if not url:
-        return False
-    return bool(_SENAT_AD_URL_RE.search(url.casefold()))
-
-
-_VISION_TRANSCRIPTION_PROMPT = (
-    "You are reading the last page of a Romanian Senate cover letter "
-    "(\"adresa de înaintare a inițiativei legislative pentru dezbatere\"). "
-    "This letter ends with one or more HANDWRITTEN signatures of the "
-    "bill's initiator(s). Each signature is typically a person's name "
-    "(e.g. \"Șipoș Eugen-Cristian\") sometimes followed by the party "
-    "abbreviation (e.g. \"AUR\", \"PSD\", \"PNL\", \"USR\").\n\n"
-    "Task: transcribe ONLY the handwritten signature(s), one per line, "
-    "as a Romanian-language name. Use the most likely Romanian spelling "
-    "(use diacritics where you can). Do not include the party "
-    "abbreviation on the line unless it is part of the written name. "
-    "Do not include any other text, stamps, printed body, or commentary. "
-    "If you cannot read any handwritten name with reasonable confidence, "
-    "respond with the single word NONE on a line by itself."
-)
-
-
-def _render_pdf_tail_pages_to_png_b64(
-    pdf_bytes: bytes,
-    *,
-    max_pages: int = DEFAULT_VISION_MAX_PAGES,
-    render_scale: float = 3.0,
-) -> list[str]:
-    """Render the last `max_pages` pages to PNG and return base64-encoded strings."""
-    import base64
-
-    import pypdfium2 as pdfium  # type: ignore[import-not-found]
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        pdf_path = tmp_path / "document.pdf"
-        pdf_path.write_bytes(pdf_bytes)
-        document = pdfium.PdfDocument(str(pdf_path))
-        total_pages = len(document)
-        if total_pages <= 0:
-            return []
-        effective = min(total_pages, max(1, max_pages))
-        page_range = range(total_pages - effective, total_pages)
-        out: list[str] = []
-        for index in page_range:
-            page = document[index]
-            image = page.render(scale=render_scale).to_pil()
-            image_path = tmp_path / f"page_{index + 1}.png"
-            image.save(image_path, format="PNG")
-            out.append(base64.b64encode(image_path.read_bytes()).decode("ascii"))
-        return out
-
-
-def _post_openai_chat_completions(
-    *,
-    api_key: str,
-    model: str,
-    prompt: str,
-    image_b64_list: list[str],
-    timeout: int = DEFAULT_VISION_TIMEOUT,
-) -> str:
-    """POST to OpenAI's Chat Completions endpoint with one or more inline PNG images.
-
-    Returns the `choices[0].message.content` string from the response, or an
-    empty string if the response shape was unexpected. Raises `urllib.error.URLError`
-    / `urllib.error.HTTPError` on network/HTTP failures — callers are expected
-    to treat those as "transcription unavailable" and move on.
-    """
-    content_parts: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
-    for b64 in image_b64_list:
-        content_parts.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/png;base64,{b64}"},
-            }
-        )
-    payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": content_parts}],
-        "temperature": 0,
-    }
-    body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
-        data=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-    try:
-        return data["choices"][0]["message"]["content"] or ""
-    except (KeyError, IndexError, TypeError):
-        return ""
-
-
-def _parse_vision_transcription_response(content: str) -> list[str]:
-    """Turn a vision-model response into a list of candidate signature names."""
-    if not content:
-        return []
-    out: list[str] = []
-    for raw_line in content.splitlines():
-        line = _clean_text(raw_line)
-        if not line:
-            continue
-        # Strip common list markers the model sometimes emits.
-        line = re.sub(r"^[\s\-\*\d\.\)\(]+", "", line).strip()
-        if not line:
-            continue
-        if line.upper() == "NONE":
-            continue
-        out.append(line)
-    return out
-
-
-def transcribe_handwritten_signatures_with_vision(
-    pdf_bytes: bytes,
-    *,
-    api_key: str,
-    model: str = DEFAULT_VISION_MODEL,
-    max_pages: int = DEFAULT_VISION_MAX_PAGES,
-    render_scale: float = 3.0,
-    timeout: int = DEFAULT_VISION_TIMEOUT,
-    http_poster: Any | None = None,
-) -> list[str]:
-    """Render the last pages of `pdf_bytes` and ask a vision LLM to transcribe
-    any handwritten signature(s), returning one candidate name string per line.
-
-    `http_poster` (optional) is injected for tests: a callable with the same
-    signature as `_post_openai_chat_completions` that returns the raw
-    message content string. When `None`, the real OpenAI API is called.
-    """
-    if not api_key:
-        return []
-    images = _render_pdf_tail_pages_to_png_b64(
-        pdf_bytes,
-        max_pages=max_pages,
-        render_scale=render_scale,
-    )
-    if not images:
-        return []
-    poster = http_poster or _post_openai_chat_completions
-    content = poster(
-        api_key=api_key,
-        model=model,
-        prompt=_VISION_TRANSCRIPTION_PROMPT,
-        image_b64_list=images,
-        timeout=timeout,
-    )
-    return _parse_vision_transcription_response(content)
-
-
-def build_synthetic_initiator_snippet_from_names(names: list[str]) -> str:
-    """Shape a list of transcribed signatures into an `Inițiator,`-anchored
-    snippet so the existing `match_initiator_member_ids` matcher can resolve
-    them with the same surname-gate / per-line / token-subset rules used for
-    printed PDFs. Lines that are empty or just a party abbreviation are
-    dropped.
-    """
-    kept: list[str] = []
-    for raw in names:
-        line = _clean_text(raw)
-        if not line:
-            continue
-        stripped_tokens = [
-            t
-            for t in re.split(r"\s+", line)
-            if t and _fold(t) not in _PARTY_TOKENS_FOLDED
-        ]
-        if not stripped_tokens:
-            continue
-        kept.append(" ".join(stripped_tokens))
-    if not kept:
-        return ""
-    body = "\n".join(kept)
-    return f"Inițiatori,\n{body}"
 
 
 _INITIATOR_HEADER_RE = re.compile(
@@ -3557,6 +3377,40 @@ def _record_law_initiator_error(
     )
 
 
+def _extract_and_match_law_initiators_from_pdf_bytes(
+    pdf_bytes: bytes,
+    *,
+    combined_member_rows: list[tuple[str, str, str]],
+    ocr_language: str,
+    ocr_max_pages: int,
+) -> tuple[str, str, list[str], str | None]:
+    text_part = extract_pdf_text_local(
+        pdf_bytes,
+        language=ocr_language,
+        max_pages=ocr_max_pages,
+    )
+    snippet, src = extract_initiators_section_with_source(text_part)
+    ids = match_initiator_member_ids(snippet, combined_member_rows)
+    fuzzy_id: str | None = None
+    if not ids and src != "none":
+        cleaned_full = _normalize_romanian_diacritics(_clean_text(text_part))
+        anchor_m, _ = _find_initiator_anchor(cleaned_full)
+        if anchor_m is not None:
+            window_start = anchor_m.start()
+            window = cleaned_full[window_start : window_start + 300]
+            fuzzy_hits = single_signature_fuzzy_match(
+                window,
+                combined_member_rows,
+            )
+            if fuzzy_hits:
+                ids = fuzzy_hits
+                fuzzy_id = fuzzy_hits[0]
+                src = src + "+fuzzy_single_signature"
+                if not snippet:
+                    snippet = f"[fuzzy fallback on signature window]\n{window}"
+    return snippet, src, ids, fuzzy_id
+
+
 def hydrate_law_initiators_for_records(
     conn: sqlite3.Connection,
     *,
@@ -3572,9 +3426,7 @@ def hydrate_law_initiators_for_records(
     progress_prefix: str = "",
     commit_each: bool = False,
     senator_member_rows: list[tuple[str, str, str]] | None = None,
-    vision_api_key: str | None = None,
-    vision_model: str = DEFAULT_VISION_MODEL,
-    vision_http_poster: Any | None = None,
+    law_initiator_pdf_dir: Path = DEFAULT_LAW_INITIATOR_PDF_DIR,
     per_fetch_sleep_seconds: float = 0.0,
     consecutive_failure_pause_after: int = 0,
     consecutive_failure_pause_seconds: float = 0.0,
@@ -3645,7 +3497,7 @@ def hydrate_law_initiators_for_records(
             if hydrated_law_ids is not None:
                 hydrated_law_ids.add(law_id)
             continue
-        motive_pdf_url: str | None = None
+        motive_pdf_url: str | None = str(row[1]) if row[1] else None
         source_url = _normalize_law_source_url(record.source_url)
         if source_url != record.source_url and debug:
             print(
@@ -3655,196 +3507,111 @@ def hydrate_law_initiators_for_records(
             )
         transient_error_this_iter = False
         try:
-            print(
-                f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                f"{log_context} fetching law page",
-                flush=True,
-            )
-            law_html = fetcher.fetch(source_url)
-            if _hostname_is_senat_ro(source_url):
-                pdf_urls = list_senat_law_initiator_pdf_urls(law_html, source_url)
-            else:
-                single = parse_law_initiator_pdf_url(law_html, source_url)
-                pdf_urls = [single] if single else []
-            if not pdf_urls:
-                raise ValueError(
-                    "Law initiator PDF link not found "
-                    "(cdep.ro: Expunerea de motive; senat.ro: Expunerea de motive "
-                    "EM.PDF, or Forma inițiatorului as fallback)"
-                )
-            # Process each candidate PDF independently in priority order
-            # (on senat.ro: AD → EM → Forma). The preferred PDF is the short
-            # "adresă de înaintare" cover letter which contains only the
-            # formal initiator(s); EM often mixes in a full susținători
-            # table. As soon as a PDF produces a real initiator snippet we
-            # stop — we don't download or OCR the next one. If a PDF yields
-            # nothing (no anchor, source == "none") we move on to the next
-            # candidate. Concatenating all texts would let EM's supporter
-            # window leak into the AD anchor's post-match window, so we
-            # keep them strictly separated.
             combined_member_rows = list(member_rows) + list(senator_member_rows)
             total_bytes = 0
-            motive_pdf_url = pdf_urls[0]
             member_ids: list[str] = []
             initiators_text: str = ""
             initiators_source: str = "none"
             fuzzy_member_id: str | None = None
             tried_pdfs = 0
-            for pdf_index, pdf_url in enumerate(pdf_urls, start=1):
-                tried_pdfs += 1
-                label = (
-                    f"PDF {pdf_index}/{len(pdf_urls)}"
-                    if len(pdf_urls) > 1
-                    else "initiator source PDF"
-                )
+            pdf_urls_debug: list[str] = []
+            cache_path = _law_initiator_pdf_cache_path(
+                law_initiator_pdf_dir,
+                law_id=law_id,
+                identifier=record.identifier,
+            )
+
+            if cache_path.is_file():
+                pdf_bytes = cache_path.read_bytes()
+                total_bytes = len(pdf_bytes)
+                tried_pdfs = 1
+                pdf_urls_debug = [f"file:{cache_path}"]
                 print(
                     f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                    f"{log_context} downloading {label}",
+                    f"{log_context} using cached initiator PDF {cache_path}",
                     flush=True,
                 )
-                pdf_bytes = fetcher.fetch_bytes(pdf_url)
-                total_bytes += len(pdf_bytes)
                 print(
                     f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                    f"{log_context} OCR/text extraction on {label} started "
+                    f"{log_context} OCR/text extraction on cached PDF started "
                     f"({len(pdf_bytes)} bytes, last {ocr_max_pages} page(s))",
                     flush=True,
                 )
-                text_part = extract_pdf_text_local(
+                (
+                    initiators_text,
+                    initiators_source,
+                    member_ids,
+                    fuzzy_member_id,
+                ) = _extract_and_match_law_initiators_from_pdf_bytes(
                     pdf_bytes,
-                    language=ocr_language,
-                    max_pages=ocr_max_pages,
+                    combined_member_rows=combined_member_rows,
+                    ocr_language=ocr_language,
+                    ocr_max_pages=ocr_max_pages,
                 )
-                snippet, src = extract_initiators_section_with_source(text_part)
-                ids = match_initiator_member_ids(snippet, combined_member_rows)
-                fuzzy_id: str | None = None
-                if not ids and src != "none":
-                    # Fix 6: small-window fuzzy fallback for single-signature
-                    # EMs where OCR mangled the name enough to defeat the
-                    # printed-name extractors (e.g. "Cezar-Mihail" →
-                    # "Cezar-rmail"). Only kicks in when the normal path
-                    # matched nobody AND we did find an anchor, so we never
-                    # match against body prose.
-                    cleaned_full = _normalize_romanian_diacritics(_clean_text(text_part))
-                    anchor_m, _ = _find_initiator_anchor(cleaned_full)
-                    if anchor_m is not None:
-                        window_start = anchor_m.start()
-                        window = cleaned_full[window_start : window_start + 300]
-                        fuzzy_hits = single_signature_fuzzy_match(
-                            window,
-                            combined_member_rows,
-                        )
-                        if fuzzy_hits:
-                            ids = fuzzy_hits
-                            fuzzy_id = fuzzy_hits[0]
-                            src = src + "+fuzzy_single_signature"
-                            if not snippet:
-                                snippet = (
-                                    f"[fuzzy fallback on signature window]\n{window}"
-                                )
-                # Vision-LLM handwriting fallback (AD.PDF only).
-                #
-                # The senat "adresă de înaintare" cover letter does not name
-                # the initiator in its printed body — only as a handwritten
-                # signature. If text extraction yielded no anchor AND no
-                # names AND this is an AD.PDF AND an API key is configured,
-                # render the last page(s) and ask a multimodal model to
-                # transcribe the signature(s). Matching then flows through
-                # the existing `match_initiator_member_ids` gate via a
-                # synthetic "Inițiatori, <lines>" snippet so the normal
-                # surname-gate / per-line / token-subset rules still apply.
-                if (
-                    not snippet
-                    and src == "none"
-                    and not ids
-                    and vision_api_key
-                    and _is_senat_ad_pdf_url(pdf_url)
-                ):
+            else:
+                print(
+                    f"{prefix}Law initiators OCR {index}/{len(records)}: "
+                    f"{log_context} fetching law page",
+                    flush=True,
+                )
+                law_html = fetcher.fetch(source_url)
+                if _hostname_is_senat_ro(source_url):
+                    pdf_urls = list_senat_law_initiator_pdf_urls(law_html, source_url)
+                else:
+                    single = parse_law_initiator_pdf_url(law_html, source_url)
+                    pdf_urls = [single] if single else []
+                if not pdf_urls:
+                    raise ValueError(
+                        "Law initiator PDF link not found "
+                        "(cdep.ro: Expunerea de motive; senat.ro: Expunerea de motive "
+                        "EM.PDF, or Forma inițiatorului as fallback)"
+                    )
+                pdf_urls_debug = list(pdf_urls)
+                motive_pdf_url = pdf_urls[0]
+                for pdf_index, pdf_url in enumerate(pdf_urls, start=1):
+                    tried_pdfs += 1
+                    label = (
+                        f"PDF {pdf_index}/{len(pdf_urls)}"
+                        if len(pdf_urls) > 1
+                        else "initiator source PDF"
+                    )
                     print(
                         f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                        f"{log_context} AD.PDF has no printed initiator section; "
-                        f"invoking vision handwriting fallback (model={vision_model})",
+                        f"{log_context} downloading {label}",
                         flush=True,
                     )
-                    try:
-                        vision_names = transcribe_handwritten_signatures_with_vision(
-                            pdf_bytes,
-                            api_key=vision_api_key,
-                            model=vision_model,
-                            http_poster=vision_http_poster,
-                        )
-                    except (urllib.error.URLError, urllib.error.HTTPError) as exc:
-                        print(
-                            f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                            f"{log_context} vision fallback failed: {exc}",
-                            flush=True,
-                        )
-                        vision_names = []
-                    except Exception as exc:  # pragma: no cover - defensive
-                        print(
-                            f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                            f"{log_context} vision fallback error: {exc}",
-                            flush=True,
-                        )
-                        vision_names = []
-                    if vision_names:
-                        synthetic = build_synthetic_initiator_snippet_from_names(
-                            vision_names
-                        )
-                        vision_ids = match_initiator_member_ids(
-                            synthetic, combined_member_rows
-                        )
-                        print(
-                            f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                            f"{log_context} vision transcribed "
-                            f"{len(vision_names)} signature(s): "
-                            f"{'; '.join(vision_names)} -> matched "
-                            f"{len(vision_ids)} member(s)",
-                            flush=True,
-                        )
-                        if vision_ids:
-                            ids = vision_ids
-                            src = "ad_handwriting_vision"
-                            snippet = (
-                                "[handwriting transcribed by vision model "
-                                f"{vision_model}]\n{synthetic}"
-                            )
-                        elif synthetic:
-                            # Preserve transcription for debugging even when
-                            # it did not resolve to any known member.
-                            src = "ad_handwriting_vision_unmatched"
-                            snippet = (
-                                "[handwriting transcribed by vision model "
-                                f"{vision_model}, no member matched]\n{synthetic}"
-                            )
-                # Early-exit policy: if this PDF produced a real initiator
-                # snippet (src != "none"), trust it as the authoritative
-                # source and stop — regardless of whether the matcher
-                # resolved names to DB members. Rationale:
-                #   * AD.PDF (the preferred senat source) is a short,
-                #     legally formal cover letter; if it names initiators
-                #     then by definition those ARE the initiators. Even
-                #     if OCR mangled the names enough that match failed,
-                #     EM.PDF is not going to give a more correct answer
-                #     — it would only introduce a long susținători table
-                #     whose names might accidentally re-match.
-                #   * Downloading + OCRing the second PDF is the biggest
-                #     slice of per-law latency; skipping it when AD has
-                #     already produced a snippet is a pure win.
-                # When no PDF produces a snippet, we continue to the next
-                # candidate (e.g. AD was just "vă înaintăm spre dezbatere"
-                # without naming initiators → try EM).
-                if snippet or ids:
-                    member_ids = ids
-                    initiators_text = snippet
-                    initiators_source = src
-                    motive_pdf_url = pdf_url
-                    fuzzy_member_id = fuzzy_id
-                    break
+                    pdf_bytes = fetcher.fetch_bytes(pdf_url)
+                    _write_bytes_atomic(cache_path, pdf_bytes)
+                    total_bytes += len(pdf_bytes)
+                    print(
+                        f"{prefix}Law initiators OCR {index}/{len(records)}: "
+                        f"{log_context} cached {label} at {cache_path}",
+                        flush=True,
+                    )
+                    print(
+                        f"{prefix}Law initiators OCR {index}/{len(records)}: "
+                        f"{log_context} OCR/text extraction on {label} started "
+                        f"({len(pdf_bytes)} bytes, last {ocr_max_pages} page(s))",
+                        flush=True,
+                    )
+                    (
+                        initiators_text,
+                        initiators_source,
+                        member_ids,
+                        fuzzy_member_id,
+                    ) = _extract_and_match_law_initiators_from_pdf_bytes(
+                        pdf_bytes,
+                        combined_member_rows=combined_member_rows,
+                        ocr_language=ocr_language,
+                        ocr_max_pages=ocr_max_pages,
+                    )
+                    if initiators_text or member_ids:
+                        motive_pdf_url = pdf_url
+                        break
             print(
                 f"{prefix}Law initiators OCR {index}/{len(records)}: "
                 f"{log_context} OCR/text extraction finished "
-                f"({len(initiators_text)} chars from {tried_pdfs}/{len(pdf_urls)} "
+                f"({len(initiators_text)} chars from {tried_pdfs}/{max(1, len(pdf_urls_debug))} "
                 f"PDF(s), {total_bytes} bytes total)",
                 flush=True,
             )
@@ -3898,7 +3665,7 @@ def hydrate_law_initiators_for_records(
             if debug:
                 print(
                     "[law initiators debug] "
-                    f"law_id={law_id} pdf_urls={pdf_urls} "
+                    f"law_id={law_id} pdf_urls={pdf_urls_debug} "
                     f"source={initiators_source} matched={member_ids}"
                 )
         except Exception as exc:  # noqa: BLE001 - keep crawling other laws.
@@ -3991,10 +3758,12 @@ def load_law_records_for_initiator_hydration(
     *,
     member_ids: list[str],
     only_without_initiators: bool = True,
+    limit: int | None = None,
 ) -> list[ListingRecord]:
     if not member_ids:
         return []
     placeholders = ", ".join("?" for _ in member_ids)
+    limit_sql = "LIMIT ?" if limit is not None else ""
     missing_initiators_sql = (
         """
         AND NOT EXISTS (
@@ -4023,8 +3792,9 @@ def load_law_records_for_initiator_hydration(
         WHERE ml.member_id IN ({placeholders})
         {missing_initiators_sql}
         ORDER BY l.law_id
+        {limit_sql}
         """,
-        member_ids,
+        [*member_ids, limit] if limit is not None else member_ids,
     ).fetchall()
     records: list[ListingRecord] = []
     for row in rows:
@@ -4806,8 +4576,7 @@ def run_law_initiator_hydration_phase(
     ocr_language: str,
     ocr_pages: int,
     debug: bool,
-    vision_api_key: str | None = None,
-    vision_model: str = DEFAULT_VISION_MODEL,
+    law_limit: int | None = None,
     hydrate_retries: int | None = None,
     per_fetch_sleep_seconds: float = 0.5,
     consecutive_failure_pause_after: int = 10,
@@ -4819,23 +4588,20 @@ def run_law_initiator_hydration_phase(
         conn,
         member_ids=[member["member_id"] for member in selected],
         only_without_initiators=True,
+        limit=law_limit,
     )
     print(
         "Law initiator OCR hydration will process "
         f"{len(law_records)} stored law(s) with no dep_act_member_laws row "
-        f"where is_initiator=1 (scoped to selected deputati).",
+        f"where is_initiator=1 (scoped to selected deputati"
+        + (f", limited to {law_limit}" if law_limit is not None else "")
+        + ").",
         flush=True,
     )
     if not law_records:
         print("Law initiator OCR hydration complete: no stored laws to process.")
         return
     validate_law_initiator_ocr_dependencies()
-    if vision_api_key:
-        print(
-            "Law initiator OCR hydration: vision handwriting fallback is "
-            f"ENABLED for AD.PDF cover letters (model={vision_model}).",
-            flush=True,
-        )
     # Use a dedicated fetcher for hydration when a different retries count is
     # requested. Hard blocks (HTTP-level rate limits / TCP RSTs) otherwise
     # result in retries × N, which only amplifies load against an already
@@ -4874,8 +4640,6 @@ def run_law_initiator_hydration_phase(
         debug=debug,
         progress_prefix="[law OCR]",
         commit_each=True,
-        vision_api_key=vision_api_key,
-        vision_model=vision_model,
         per_fetch_sleep_seconds=per_fetch_sleep_seconds,
         consecutive_failure_pause_after=consecutive_failure_pause_after,
         consecutive_failure_pause_seconds=consecutive_failure_pause_seconds,
@@ -4909,10 +4673,8 @@ def crawl_deputy_activity(
     only_hydrate_law_initiators: bool = False,
     law_initiator_ocr_language: str = DEFAULT_OCR_LANGUAGE,
     law_initiator_ocr_pages: int = DEFAULT_LAW_INITIATOR_OCR_PAGES,
+    hydrate_law_limit: int | None = None,
     debug_law_initiators: bool = False,
-    law_initiator_vision_enabled: bool = True,
-    law_initiator_vision_model: str = DEFAULT_VISION_MODEL,
-    law_initiator_vision_api_key: str | None = None,
     hydrate_retries: int | None = 1,
     hydrate_sleep_seconds: float = 0.5,
     hydrate_failure_pause_after: int = 10,
@@ -4938,10 +4700,6 @@ def crawl_deputy_activity(
         ensure_activity_schema(conn)
         require_members_present(conn, selected)
         conn.commit()
-
-        vision_api_key_effective = (
-            law_initiator_vision_api_key if law_initiator_vision_enabled else None
-        )
 
         if only_export_activity:
             if dry_run:
@@ -4974,9 +4732,8 @@ def crawl_deputy_activity(
                     update_existing=update_existing,
                     ocr_language=law_initiator_ocr_language,
                     ocr_pages=law_initiator_ocr_pages,
+                    law_limit=hydrate_law_limit,
                     debug=debug_law_initiators,
-                    vision_api_key=vision_api_key_effective,
-                    vision_model=law_initiator_vision_model,
                     hydrate_retries=hydrate_retries,
                     per_fetch_sleep_seconds=hydrate_sleep_seconds,
                     consecutive_failure_pause_after=hydrate_failure_pause_after,
@@ -5056,9 +4813,8 @@ def crawl_deputy_activity(
                 update_existing=update_existing,
                 ocr_language=law_initiator_ocr_language,
                 ocr_pages=law_initiator_ocr_pages,
+                law_limit=hydrate_law_limit,
                 debug=debug_law_initiators,
-                vision_api_key=vision_api_key_effective,
-                vision_model=law_initiator_vision_model,
                 hydrate_retries=hydrate_retries,
                 per_fetch_sleep_seconds=hydrate_sleep_seconds,
                 consecutive_failure_pause_after=hydrate_failure_pause_after,
@@ -5144,27 +4900,18 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--hydrate-law-limit",
+        type=int,
+        default=None,
+        help=(
+            "Limit the number of stored laws processed during the law-initiator "
+            "hydration phase. Useful for local testing."
+        ),
+    )
+    parser.add_argument(
         "--debug-law-initiators",
         action="store_true",
         help="Print law initiator PDF/OCR diagnostics and matched deputy IDs.",
-    )
-    parser.add_argument(
-        "--disable-law-initiator-vision",
-        action="store_true",
-        help=(
-            "Disable the vision-LLM fallback used to transcribe handwritten "
-            "signatures on senat.ro 'adresă de înaintare' (AD.PDF) cover "
-            "letters. By default the fallback runs whenever the "
-            "OPENAI_API_KEY environment variable is set."
-        ),
-    )
-    parser.add_argument(
-        "--law-initiator-vision-model",
-        default=DEFAULT_VISION_MODEL,
-        help=(
-            "Multimodal OpenAI model used by the handwriting fallback "
-            f"(default: {DEFAULT_VISION_MODEL})."
-        ),
     )
     parser.add_argument(
         "--hydrate-sleep-seconds",
@@ -5271,10 +5018,6 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    import os
-
-    vision_api_key = os.environ.get("OPENAI_API_KEY") or None
-
     try:
         return crawl_deputy_activity(
             db_path=Path(args.db_path),
@@ -5295,10 +5038,8 @@ def main() -> int:
             only_hydrate_law_initiators=args.only_hydrate_law_initiators,
             law_initiator_ocr_language=args.law_initiator_ocr_language,
             law_initiator_ocr_pages=args.law_initiator_ocr_pages,
+            hydrate_law_limit=args.hydrate_law_limit,
             debug_law_initiators=args.debug_law_initiators,
-            law_initiator_vision_enabled=not args.disable_law_initiator_vision,
-            law_initiator_vision_model=args.law_initiator_vision_model,
-            law_initiator_vision_api_key=vision_api_key,
             hydrate_retries=args.hydrate_retries,
             hydrate_sleep_seconds=args.hydrate_sleep_seconds,
             hydrate_failure_pause_after=args.hydrate_failure_pause_after,
