@@ -1688,6 +1688,19 @@ def _law_initiator_pdf_cache_path(
     return pdf_dir / f"initiators_{cache_key}.pdf"
 
 
+def _listing_record_has_cached_law_initiator_pdf(
+    record: ListingRecord,
+    *,
+    law_initiator_pdf_dir: Path,
+) -> bool:
+    cache_path = _law_initiator_pdf_cache_path(
+        law_initiator_pdf_dir,
+        law_id=record.record_id,
+        identifier=record.identifier,
+    )
+    return cache_path.is_file()
+
+
 def _write_bytes_atomic(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -1792,6 +1805,19 @@ def _hostname_is_senat_ro(url: str) -> bool:
     return host == "senat.ro" or host.endswith(".senat.ro")
 
 
+def _canonicalize_senat_url(url: str) -> str:
+    """Normalize Senat URLs to the working `www.senat.ro` host."""
+    if not url:
+        return url
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except ValueError:
+        return url
+    if (parsed.hostname or "").casefold() != "senat.ro":
+        return url
+    return urllib.parse.urlunparse(parsed._replace(netloc="www.senat.ro"))
+
+
 def _senat_abs_url(base: str, href: str) -> str:
     """Join a senat fișă href to the base URL, normalizing backslash relatives.
 
@@ -1808,6 +1834,124 @@ def _senat_abs_url(base: str, href: str) -> str:
             normalized = "/legis/" + normalized
         return urllib.parse.urljoin(base, normalized)
     return urllib.parse.urljoin(base, raw)
+
+
+def _looks_like_senat_legislation_search_page(html_text: str) -> bool:
+    folded = _fold(html_text)
+    return (
+        "ctl00$b_center$lista$txtnri" in folded
+        and "ctl00$b_center$lista$ddani" in folded
+        and "rezultate cautare" in folded
+    )
+
+
+def _extract_html_form_hidden_fields(html_text: str) -> dict[str, str]:
+    hidden: dict[str, str] = {}
+    for match in re.finditer(
+        r"""<input[^>]+type=["']hidden["'][^>]+name=["']([^"']+)["'][^>]*value=["']([^"']*)["']""",
+        html_text,
+        flags=re.IGNORECASE,
+    ):
+        hidden[html.unescape(match.group(1))] = html.unescape(match.group(2))
+    return hidden
+
+
+def _extract_senat_search_form_action(html_text: str, source_url: str) -> str:
+    match = re.search(
+        r"""<form[^>]+action=["']([^"']+)["'][^>]+id=["']aspnetForm["']""",
+        html_text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return source_url
+    return urllib.parse.urljoin(source_url, html.unescape(match.group(1)))
+
+
+def _law_search_number_and_year(
+    source_url: str,
+    identifier: str | None,
+) -> tuple[str | None, str | None]:
+    raw_number = _query_value(source_url, ("nr_cls",))
+    raw_year = _query_value(source_url, ("an_cls",))
+    if raw_number and raw_year:
+        return raw_number, raw_year
+    if identifier:
+        match = re.search(r"\b([A-Z]{1,4}\s*[\-]?\s*\d{1,5})/(\d{4})\b", identifier, re.I)
+        if match:
+            number = re.sub(r"\s+", "", match.group(1))
+            year = match.group(2)
+            return number, year
+    return None, raw_year
+
+
+def _fetch_senat_search_results_html(
+    fetcher: Fetcher,
+    source_url: str,
+    *,
+    search_number: str,
+    search_year: str,
+) -> str:
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+    search_url = _canonicalize_senat_url(source_url)
+
+    def open_text(request: urllib.request.Request) -> str:
+        last_error: Exception | None = None
+        for attempt in range(fetcher.retries + 1):
+            if attempt:
+                time.sleep(min(fetcher.sleep_seconds * (attempt + 1), 5.0))
+            try:
+                with opener.open(request, timeout=fetcher.timeout) as response:
+                    body = response.read()
+                    charset = response.headers.get_content_charset() or "utf-8"
+                    return body.decode(charset, errors="replace")
+            except (urllib.error.URLError, TimeoutError, UnicodeDecodeError) as exc:
+                last_error = exc
+        assert last_error is not None
+        raise last_error
+
+    initial_request = urllib.request.Request(
+        search_url,
+        headers={
+            "User-Agent": fetcher.user_agent,
+            "Accept": "text/html,application/xhtml+xml",
+        },
+    )
+    initial_html = open_text(initial_request)
+    if not _looks_like_senat_legislation_search_page(initial_html):
+        return initial_html
+
+    payload = _extract_html_form_hidden_fields(initial_html)
+    payload["__EVENTTARGET"] = "ctl00$B_Center$Lista$btnCauta2"
+    payload["__EVENTARGUMENT"] = ""
+    payload["ctl00$B_Center$Lista$txtNri"] = search_number
+    payload["ctl00$B_Center$Lista$ddAni"] = search_year
+    payload.setdefault("ctl00$B_Center$Lista$ddStadiu", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddTipInitiativa", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddIni", "")
+    payload.setdefault("ctl00$B_Center$Lista$txtIns", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddPri", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddComisii", "")
+    payload.setdefault("ctl00$B_Center$Lista$txtTitlu", "")
+    payload.setdefault("ctl00$B_Center$Lista$txtOrgn", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddAni2", "")
+    payload.setdefault("ctl00$B_Center$Lista$ddAprobare", "")
+
+    action_url = _canonicalize_senat_url(
+        _extract_senat_search_form_action(initial_html, search_url)
+    )
+    body = urllib.parse.urlencode(payload).encode("utf-8")
+    search_request = urllib.request.Request(
+        action_url,
+        data=body,
+        headers={
+            "User-Agent": fetcher.user_agent,
+            "Accept": "text/html,application/xhtml+xml",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Referer": search_url,
+        },
+        method="POST",
+    )
+    return open_text(search_request)
 
 
 def parse_senat_expunere_motive_pdf_url(html_text: str, source_url: str) -> str | None:
@@ -3557,6 +3701,35 @@ def hydrate_law_initiators_for_records(
                 law_html = fetcher.fetch(source_url)
                 if _hostname_is_senat_ro(source_url):
                     pdf_urls = list_senat_law_initiator_pdf_urls(law_html, source_url)
+                    if not pdf_urls and _looks_like_senat_legislation_search_page(law_html):
+                        search_number, search_year = _law_search_number_and_year(
+                            source_url,
+                            record.identifier,
+                        )
+                        if search_number and search_year:
+                            print(
+                                f"{prefix}Law initiators OCR {index}/{len(records)}: "
+                                f"{log_context} direct Senat URL resolved to the search page; "
+                                f"submitting Senat search for {search_number}/{search_year}",
+                                flush=True,
+                            )
+                            law_html = _fetch_senat_search_results_html(
+                                fetcher,
+                                source_url,
+                                search_number=search_number,
+                                search_year=search_year,
+                            )
+                            pdf_urls = list_senat_law_initiator_pdf_urls(
+                                law_html,
+                                source_url,
+                            )
+                            if debug and pdf_urls:
+                                print(
+                                    "[law initiators debug] "
+                                    f"law_id={law_id} recovered_from_senat_search "
+                                    f"search_number={search_number} search_year={search_year} "
+                                    f"pdf_urls={pdf_urls}"
+                                )
                 else:
                     single = parse_law_initiator_pdf_url(law_html, source_url)
                     pdf_urls = [single] if single else []
@@ -3759,11 +3932,18 @@ def load_law_records_for_initiator_hydration(
     member_ids: list[str],
     only_without_initiators: bool = True,
     limit: int | None = None,
+    law_initiator_pdf_dir: Path | None = None,
+    prefer_without_cached_pdf_when_limited: bool = False,
 ) -> list[ListingRecord]:
     if not member_ids:
         return []
     placeholders = ", ".join("?" for _ in member_ids)
-    limit_sql = "LIMIT ?" if limit is not None else ""
+    apply_cache_aware_limit = (
+        limit is not None
+        and prefer_without_cached_pdf_when_limited
+        and law_initiator_pdf_dir is not None
+    )
+    limit_sql = "LIMIT ?" if limit is not None and not apply_cache_aware_limit else ""
     missing_initiators_sql = (
         """
         AND NOT EXISTS (
@@ -3776,6 +3956,7 @@ def load_law_records_for_initiator_hydration(
         if only_without_initiators
         else ""
     )
+    query_params = [*member_ids, limit] if limit_sql else list(member_ids)
     rows = conn.execute(
         f"""
         SELECT DISTINCT
@@ -3794,7 +3975,7 @@ def load_law_records_for_initiator_hydration(
         ORDER BY l.law_id
         {limit_sql}
         """,
-        [*member_ids, limit] if limit is not None else member_ids,
+        query_params,
     ).fetchall()
     records: list[ListingRecord] = []
     for row in rows:
@@ -3817,6 +3998,18 @@ def load_law_records_for_initiator_hydration(
                 columns=columns,
             )
         )
+    if apply_cache_aware_limit:
+        selected: list[ListingRecord] = []
+        for record in records:
+            if _listing_record_has_cached_law_initiator_pdf(
+                record,
+                law_initiator_pdf_dir=law_initiator_pdf_dir,
+            ):
+                continue
+            selected.append(record)
+            if len(selected) >= limit:
+                break
+        return selected
     return records
 
 
@@ -4582,6 +4775,7 @@ def run_law_initiator_hydration_phase(
     consecutive_failure_pause_after: int = 10,
     consecutive_failure_pause_seconds: float = 60.0,
     consecutive_failure_abort_after: int = 25,
+    law_initiator_pdf_dir: Path = DEFAULT_LAW_INITIATOR_PDF_DIR,
 ) -> None:
     print("Starting law initiator OCR hydration from stored dep_act_laws rows.")
     law_records = load_law_records_for_initiator_hydration(
@@ -4589,12 +4783,18 @@ def run_law_initiator_hydration_phase(
         member_ids=[member["member_id"] for member in selected],
         only_without_initiators=True,
         limit=law_limit,
+        law_initiator_pdf_dir=law_initiator_pdf_dir,
+        prefer_without_cached_pdf_when_limited=True,
     )
     print(
         "Law initiator OCR hydration will process "
         f"{len(law_records)} stored law(s) with no dep_act_member_laws row "
         f"where is_initiator=1 (scoped to selected deputati"
-        + (f", limited to {law_limit}" if law_limit is not None else "")
+        + (
+            f", limited to {law_limit} uncached law(s)"
+            if law_limit is not None
+            else ""
+        )
         + ").",
         flush=True,
     )
@@ -4640,6 +4840,7 @@ def run_law_initiator_hydration_phase(
         debug=debug,
         progress_prefix="[law OCR]",
         commit_each=True,
+        law_initiator_pdf_dir=law_initiator_pdf_dir,
         per_fetch_sleep_seconds=per_fetch_sleep_seconds,
         consecutive_failure_pause_after=consecutive_failure_pause_after,
         consecutive_failure_pause_seconds=consecutive_failure_pause_seconds,
@@ -4739,6 +4940,7 @@ def crawl_deputy_activity(
                     consecutive_failure_pause_after=hydrate_failure_pause_after,
                     consecutive_failure_pause_seconds=hydrate_failure_pause_seconds,
                     consecutive_failure_abort_after=hydrate_failure_abort_after,
+                    law_initiator_pdf_dir=DEFAULT_LAW_INITIATOR_PDF_DIR,
                 )
                 if export_activity:
                     export_activity_snapshots(
@@ -4820,6 +5022,7 @@ def crawl_deputy_activity(
                 consecutive_failure_pause_after=hydrate_failure_pause_after,
                 consecutive_failure_pause_seconds=hydrate_failure_pause_seconds,
                 consecutive_failure_abort_after=hydrate_failure_abort_after,
+                law_initiator_pdf_dir=DEFAULT_LAW_INITIATOR_PDF_DIR,
             )
 
         if export_activity and not dry_run:

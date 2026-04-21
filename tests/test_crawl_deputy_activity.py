@@ -15,8 +15,13 @@ from crawl_deputy_activity import (  # noqa: E402
     _fuzzy_member_matches_initiator_lines,
     _INITIATOR_BEFORE_SUSTINATORI_NOTE,
     _embedded_pdf_missing_initiator_name_signals,
+    _fetch_senat_search_results_html,
+    _canonicalize_senat_url,
+    _law_search_number_and_year,
     _is_transient_network_exception,
     _law_initiator_pdf_cache_path,
+    _write_bytes_atomic,
+    _looks_like_senat_legislation_search_page,
     _normalize_law_source_url,
     ensure_activity_schema,
     hydrate_law_initiators_for_records,
@@ -357,6 +362,122 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             ),
             "https://www.cdep.ro/proiecte/2025/100/60/1/em178.pdf",
         )
+
+    def test_law_search_number_and_year_prefers_source_url(self):
+        self.assertEqual(
+            _law_search_number_and_year(
+                "https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+                "L 257/2026",
+            ),
+            ("b135", "2026"),
+        )
+
+    def test_canonicalize_senat_url_promotes_www_host(self):
+        self.assertEqual(
+            _canonicalize_senat_url(
+                "https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026"
+            ),
+            "https://www.senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+        )
+        self.assertEqual(
+            _canonicalize_senat_url(
+                "https://www.senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026"
+            ),
+            "https://www.senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+        )
+
+    def test_looks_like_senat_legislation_search_page(self):
+        html = """
+        <html><body>
+          <input name="ctl00$B_Center$Lista$txtNri" />
+          <select name="ctl00$B_Center$Lista$ddAni"></select>
+          <h4>Rezultate Cautare</h4>
+        </body></html>
+        """
+        self.assertTrue(_looks_like_senat_legislation_search_page(html))
+        self.assertFalse(_looks_like_senat_legislation_search_page("<html>plain</html>"))
+
+    def test_fetch_senat_search_results_html_submits_search_postback(self):
+        initial_html = """
+        <html><body>
+          <form method="post" action="./lista.aspx?nr_cls=b135&amp;an_cls=2026" id="aspnetForm">
+            <input type="hidden" name="__VIEWSTATE" value="vs123" />
+            <input type="hidden" name="__VIEWSTATEGENERATOR" value="gen456" />
+            <input name="ctl00$B_Center$Lista$txtNri" />
+            <select name="ctl00$B_Center$Lista$ddAni"><option selected value="2026">2026</option></select>
+            <a id="ctl00_B_Center_Lista_btnCauta2" href="javascript:__doPostBack('ctl00$B_Center$Lista$btnCauta2','')">Caută</a>
+            <h4>Rezultate Cautare</h4>
+            <table><tr><td>Nu au fost găsite înregistrări.</td></tr></table>
+          </form>
+        </body></html>
+        """
+        results_html = """
+        <html><body>
+          <a href="/legis/PDF/2026/26L257EM.PDF?nocache=true">expunerea de motive</a>
+        </body></html>
+        """
+
+        class _Headers:
+            @staticmethod
+            def get_content_charset():
+                return "utf-8"
+
+        class _Response:
+            def __init__(self, body: str):
+                self._body = body.encode("utf-8")
+                self.headers = _Headers()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return self._body
+
+        class _FakeOpener:
+            def __init__(self):
+                self.requests = []
+
+            def open(self, request, timeout=30):
+                self.requests.append(request)
+                if len(self.requests) == 1:
+                    return _Response(initial_html)
+                return _Response(results_html)
+
+        fake_opener = _FakeOpener()
+        fetcher = MagicMock()
+        fetcher.retries = 0
+        fetcher.sleep_seconds = 0
+        fetcher.timeout = 30
+        fetcher.user_agent = "votez-test-agent"
+
+        with patch("crawl_deputy_activity.urllib.request.build_opener", return_value=fake_opener):
+            html = _fetch_senat_search_results_html(
+                fetcher,
+                "https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+                search_number="b135",
+                search_year="2026",
+            )
+
+        self.assertIn("26L257EM.PDF", html)
+        self.assertEqual(len(fake_opener.requests), 2)
+        post_request = fake_opener.requests[1]
+        self.assertEqual(post_request.get_method(), "POST")
+        self.assertEqual(
+            post_request.full_url,
+            "https://www.senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+        )
+        payload = post_request.data.decode("utf-8")
+        self.assertIn("__EVENTTARGET=ctl00%24B_Center%24Lista%24btnCauta2", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24txtNri=b135", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24ddAni=2026", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24ddStadiu=", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24ddTipInitiativa=", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24ddIni=", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24txtIns=", payload)
+        self.assertIn("ctl00%24B_Center%24Lista%24ddPri=", payload)
 
     def test_law_initiator_match_log_suffix_chamber_breakdown(self):
         text = "Inițiatori\nX\n"
@@ -1587,6 +1708,71 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                     ["law:test:limit:0", "law:test:limit:1"],
                 )
 
+    def test_load_law_records_for_initiator_hydration_limit_skips_cached_pdfs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                for idx in range(4):
+                    law_id = f"law:test:limit-cache:{idx}"
+                    identifier = f"PL-x {idx}/2026"
+                    conn.execute(
+                        """
+                        INSERT INTO dep_act_laws (
+                            law_id, source_url, identifier, title, details_text, columns_json
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            law_id,
+                            f"https://example.test/law/cache/{idx}",
+                            identifier,
+                            f"Title {idx}",
+                            "Details",
+                            "[]",
+                        ),
+                    )
+                    conn.execute(
+                        """
+                        INSERT INTO dep_act_member_laws (member_id, law_id)
+                        VALUES ('deputat_1', ?)
+                        """,
+                        (law_id,),
+                    )
+                _write_bytes_atomic(
+                    _law_initiator_pdf_cache_path(
+                        cache_dir,
+                        law_id="law:test:limit-cache:0",
+                        identifier="PL-x 0/2026",
+                    ),
+                    b"%PDF-1.4 cached 0",
+                )
+                _write_bytes_atomic(
+                    _law_initiator_pdf_cache_path(
+                        cache_dir,
+                        law_id="law:test:limit-cache:2",
+                        identifier="PL-x 2/2026",
+                    ),
+                    b"%PDF-1.4 cached 2",
+                )
+                conn.commit()
+
+                records = load_law_records_for_initiator_hydration(
+                    conn,
+                    member_ids=["deputat_1"],
+                    limit=2,
+                    law_initiator_pdf_dir=cache_dir,
+                    prefer_without_cached_pdf_when_limited=True,
+                )
+
+                self.assertEqual(len(records), 2)
+                self.assertEqual(
+                    [record.record_id for record in records],
+                    ["law:test:limit-cache:1", "law:test:limit-cache:3"],
+                )
+
     def test_store_political_declarations(self):
         with tempfile.TemporaryDirectory() as tmp:
             db_path = init_db(Path(tmp) / "state.sqlite")
@@ -2536,6 +2722,109 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             self.assertEqual(len(fetched_pdf_urls), 2)
             self.assertIn("AD", fetched_pdf_urls[0])
             self.assertIn("EM", fetched_pdf_urls[1])
+
+    def test_hydrate_law_initiators_uses_senat_search_when_source_url_is_search_page(self):
+        search_page_html = """
+        <html><body>
+          <form method="post" action="./lista.aspx?nr_cls=b135&amp;an_cls=2026" id="aspnetForm">
+            <input type="hidden" name="__VIEWSTATE" value="vs123" />
+            <input name="ctl00$B_Center$Lista$txtNri" />
+            <select name="ctl00$B_Center$Lista$ddAni"><option selected value="2026">2026</option></select>
+            <h4>Rezultate Cautare</h4>
+            <table><tr><td>Nu au fost găsite înregistrări.</td></tr></table>
+          </form>
+        </body></html>
+        """
+        search_results_html = """
+        <html><body><table>
+          <tr><td>adresa de înaintare a iniţiativei legislative pentru dezbatere</td>
+              <td><a href="/legis/PDF/2026/26L257AD.PDF?nocache=true">AD</a></td></tr>
+          <tr><td>Expunerea de motive</td>
+              <td><a href="/legis/PDF/2026/26L257EM.PDF?nocache=true">EM</a></td></tr>
+        </table></body></html>
+        """
+
+        fetcher = MagicMock()
+        fetcher.fetch.return_value = search_page_html
+        fetcher.fetch_bytes.return_value = b"%PDF-1.4 dummy"
+        fetcher.retries = 1
+        fetcher.sleep_seconds = 0
+        fetcher.timeout = 30
+        fetcher.user_agent = "votez-test-agent"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:b135_2026",
+                        "https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+                        "B135/2026",
+                        "T",
+                        "D",
+                        "[]",
+                    ),
+                )
+                conn.commit()
+
+            with patch(
+                "crawl_deputy_activity._fetch_senat_search_results_html",
+                return_value=search_results_html,
+            ) as mocked_search, patch(
+                "crawl_deputy_activity.extract_pdf_text_local",
+                return_value="Inițiatori:\nDeputat Test\nExpunerea de motive",
+            ):
+                with sqlite3.connect(db_path) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    hydrate_law_initiators_for_records(
+                        conn,
+                        records=[
+                            ListingRecord(
+                                record_id="law:b135_2026",
+                                source_url="https://senat.ro/legis/lista.aspx?nr_cls=b135&an_cls=2026",
+                                identifier="B135/2026",
+                                adopted_law_identifier=None,
+                                title="T",
+                                details_text="D",
+                                columns=[],
+                            )
+                        ],
+                        fetcher=fetcher,
+                        member_rows=[("deputat_1", "Deputat Test", "deputat test")],
+                        force=True,
+                        skip_if_initiator_linked=False,
+                        senator_member_rows=[],
+                        law_initiator_pdf_dir=cache_dir,
+                    )
+                    conn.commit()
+                    row = conn.execute(
+                        "SELECT motive_pdf_url FROM dep_act_laws WHERE law_id = ?",
+                        ("law:b135_2026",),
+                    ).fetchone()
+                    links = conn.execute(
+                        "SELECT member_id, is_initiator FROM dep_act_member_laws WHERE law_id = ?",
+                        ("law:b135_2026",),
+                    ).fetchall()
+
+            mocked_search.assert_called_once()
+            call_args = mocked_search.call_args.kwargs
+            self.assertEqual(call_args["search_number"], "b135")
+            self.assertEqual(call_args["search_year"], "2026")
+            self.assertIn("26L257AD", row[0] or "")
+            self.assertEqual(links, [("deputat_1", 1)])
+            fetcher.fetch.assert_called_once()
+            fetcher.fetch_bytes.assert_called_once_with(
+                "https://senat.ro/legis/PDF/2026/26L257AD.PDF?nocache=true"
+            )
 
     def test_is_transient_network_exception_covers_refused_and_timeout(self):
         """Connection-refused / timeout must not poison initiators_parse_error."""

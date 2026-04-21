@@ -530,9 +530,11 @@ Pass `--hydrate-law-initiators` to run a second phase after the normal crawl fin
 
 Before fetching anything, the hydrator looks for a cached initiator PDF in `outputs/pdfs/law_initiators/` named `initiators_<law_identifier>.pdf` (sanitized for filenames). If that file exists, extraction runs entirely locally and the law page/PDF are not fetched again. On a cache miss, the hydrator fetches the law page, picks the best initiator PDF candidate, downloads it into that cache folder, and then runs extraction from the cached local file.
 
+For some `senat.ro` laws, the stored `source_url` resolves to the generic legislation search page rather than directly to the act details. In that case the hydrator now submits the Senat search form using the stored law number/year, reuses the resulting act page HTML, and then continues with the normal `AD.PDF` / `EM.PDF` / `Forma inițiatorului` discovery logic.
+
 Pass `--only-hydrate-law-initiators` to skip the crawl phase and retry only stored laws that do not yet have any `is_initiator = 1` association in `dep_act_member_laws`. OCR progress logs include the `dep_act_laws.source_url` law page link for debugging no-match cases.
 
-Pass `--hydrate-law-limit N` to cap the hydration phase to the first `N` stored laws in `law_id` order after the normal member scoping/filtering. This is mainly useful for local smoke tests when you want to exercise the OCR/cache flow on a small subset without touching the whole backlog.
+Pass `--hydrate-law-limit N` to cap the hydration phase to the first `N` stored laws in `law_id` order after the normal member scoping/filtering. When a limit is set, the hydrator prefers laws that do not already have a cached PDF in `outputs/pdfs/law_initiators/`, so local smoke tests do not waste their limited slots re-downloading PDFs you already have.
 
 The crawler writes only its own tables: `dep_act_member_activity_crawl`, `dep_act_laws`, `dep_act_member_laws`, `dep_act_decision_projects`, `dep_act_member_decision_projects`, `dep_act_questions_interpellations`, `dep_act_motions`, `dep_act_member_motions`, and `dep_act_political_declarations`. It validates that targeted deputies already exist in `members`, but it never inserts or updates `members`, interventions, runs, outputs, or other pipeline tables.
 
