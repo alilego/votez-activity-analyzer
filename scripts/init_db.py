@@ -15,8 +15,124 @@ from pathlib import Path
 
 DEFAULT_DB_PATH = Path("state/state.sqlite")
 
+LEGACY_ACTIVITY_TABLE_RENAMES = (
+    ("member_activity_crawl", "dep_act_member_activity_crawl"),
+    ("laws", "dep_act_laws"),
+    ("member_laws", "dep_act_member_laws"),
+    ("decision_projects", "dep_act_decision_projects"),
+    ("member_decision_projects", "dep_act_member_decision_projects"),
+    ("questions_interpellations", "dep_act_questions_interpellations"),
+    ("motions", "dep_act_motions"),
+    ("member_motions", "dep_act_member_motions"),
+    ("political_declarations", "dep_act_political_declarations"),
+)
+
+ACTIVITY_JOIN_TABLE_FOREIGN_KEYS = (
+    (
+        "dep_act_member_laws",
+        {"members", "dep_act_laws"},
+        """
+        CREATE TABLE {table} (
+            member_id TEXT NOT NULL,
+            law_id TEXT NOT NULL,
+            is_initiator INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+            PRIMARY KEY (member_id, law_id)
+        )
+        """,
+        ("member_id", "law_id", "is_initiator", "created_at"),
+    ),
+    (
+        "dep_act_member_decision_projects",
+        {"members", "dep_act_decision_projects"},
+        """
+        CREATE TABLE {table} (
+            member_id TEXT NOT NULL,
+            decision_project_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (decision_project_id) REFERENCES dep_act_decision_projects(decision_project_id),
+            PRIMARY KEY (member_id, decision_project_id)
+        )
+        """,
+        ("member_id", "decision_project_id", "created_at"),
+    ),
+    (
+        "dep_act_member_motions",
+        {"members", "dep_act_motions"},
+        """
+        CREATE TABLE {table} (
+            member_id TEXT NOT NULL,
+            motion_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (motion_id) REFERENCES dep_act_motions(motion_id),
+            PRIMARY KEY (member_id, motion_id)
+        )
+        """,
+        ("member_id", "motion_id", "created_at"),
+    ),
+)
+
+
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    return (
+        conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table,),
+        ).fetchone()
+        is not None
+    )
+
+
+def _quote_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def _rename_legacy_activity_tables(conn: sqlite3.Connection) -> None:
+    for old_name, new_name in LEGACY_ACTIVITY_TABLE_RENAMES:
+        if not _table_exists(conn, old_name) or _table_exists(conn, new_name):
+            continue
+        conn.execute(f"ALTER TABLE {old_name} RENAME TO {new_name}")
+
+
+def _repair_activity_join_foreign_keys(conn: sqlite3.Connection) -> None:
+    for table, expected_targets, create_sql, columns in ACTIVITY_JOIN_TABLE_FOREIGN_KEYS:
+        if not _table_exists(conn, table):
+            continue
+        fk_targets = {
+            row[2]
+            for row in conn.execute(
+                f"PRAGMA foreign_key_list({_quote_identifier(table)})"
+            )
+        }
+        if fk_targets == expected_targets:
+            continue
+        temp_table = f"__rebuild_{table}"
+        quoted_temp = _quote_identifier(temp_table)
+        quoted_table = _quote_identifier(table)
+        existing_columns = {
+            row[1]
+            for row in conn.execute(f"PRAGMA table_info({quoted_table})")
+        }
+        copy_columns = [column for column in columns if column in existing_columns]
+        column_sql = ", ".join(_quote_identifier(column) for column in copy_columns)
+        conn.execute(f"DROP TABLE IF EXISTS {quoted_temp}")
+        conn.execute(create_sql.format(table=quoted_temp))
+        if copy_columns:
+            conn.execute(
+                f"INSERT INTO {quoted_temp} ({column_sql}) "
+                f"SELECT {column_sql} FROM {quoted_table}"
+            )
+        conn.execute(f"DROP TABLE {quoted_table}")
+        conn.execute(f"ALTER TABLE {quoted_temp} RENAME TO {quoted_table}")
+
 
 def _create_schema(conn: sqlite3.Connection) -> None:
+    _rename_legacy_activity_tables(conn)
+    _repair_activity_join_foreign_keys(conn)
     conn.executescript(
         """
         PRAGMA foreign_keys = ON;
@@ -76,6 +192,133 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             ON members(chamber, source_member_id);
         CREATE INDEX IF NOT EXISTS idx_members_normalized_name
             ON members(normalized_name);
+
+        CREATE TABLE IF NOT EXISTS dep_act_member_activity_crawl (
+            member_id TEXT PRIMARY KEY,
+            profile_url TEXT NOT NULL,
+            legislative_proposals_url TEXT,
+            legislative_proposals_count INTEGER,
+            promulgated_laws_count INTEGER,
+            decision_projects_url TEXT,
+            decision_projects_count INTEGER,
+            questions_url TEXT,
+            questions_count INTEGER,
+            motions_url TEXT,
+            motions_count INTEGER,
+            political_declarations_url TEXT,
+            political_declarations_count INTEGER,
+            legislative_proposals_stored INTEGER NOT NULL DEFAULT 0,
+            decision_projects_stored INTEGER NOT NULL DEFAULT 0,
+            questions_stored INTEGER NOT NULL DEFAULT 0,
+            motions_stored INTEGER NOT NULL DEFAULT 0,
+            political_declarations_stored INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
+            crawled_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_laws (
+            law_id TEXT PRIMARY KEY,
+            source_url TEXT NOT NULL UNIQUE,
+            identifier TEXT,
+            adopted_law_identifier TEXT,
+            motive_pdf_url TEXT,
+            initiators_text TEXT,
+            initiators_extracted_at TEXT,
+            initiators_parse_error TEXT,
+            initiators_source TEXT,
+            title TEXT NOT NULL,
+            details_text TEXT NOT NULL,
+            columns_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_member_laws (
+            member_id TEXT NOT NULL,
+            law_id TEXT NOT NULL,
+            is_initiator INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+            PRIMARY KEY (member_id, law_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_decision_projects (
+            decision_project_id TEXT PRIMARY KEY,
+            source_url TEXT NOT NULL UNIQUE,
+            identifier TEXT,
+            title TEXT NOT NULL,
+            details_text TEXT NOT NULL,
+            columns_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_member_decision_projects (
+            member_id TEXT NOT NULL,
+            decision_project_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (decision_project_id) REFERENCES dep_act_decision_projects(decision_project_id),
+            PRIMARY KEY (member_id, decision_project_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_questions_interpellations (
+            question_id TEXT PRIMARY KEY,
+            member_id TEXT NOT NULL,
+            source_url TEXT NOT NULL UNIQUE,
+            identifier TEXT,
+            recipient TEXT,
+            text TEXT NOT NULL,
+            columns_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_motions (
+            motion_id TEXT PRIMARY KEY,
+            source_url TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            details_text TEXT NOT NULL,
+            columns_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_member_motions (
+            member_id TEXT NOT NULL,
+            motion_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id),
+            FOREIGN KEY (motion_id) REFERENCES dep_act_motions(motion_id),
+            PRIMARY KEY (member_id, motion_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS dep_act_political_declarations (
+            political_declaration_id TEXT PRIMARY KEY,
+            member_id TEXT NOT NULL,
+            source_url TEXT NOT NULL UNIQUE,
+            text_url TEXT,
+            title TEXT NOT NULL,
+            full_text TEXT NOT NULL,
+            details_text TEXT NOT NULL,
+            columns_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES members(member_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_member_laws_law_id
+            ON dep_act_member_laws(law_id);
+        CREATE INDEX IF NOT EXISTS idx_member_decision_projects_project_id
+            ON dep_act_member_decision_projects(decision_project_id);
+        CREATE INDEX IF NOT EXISTS idx_member_motions_motion_id
+            ON dep_act_member_motions(motion_id);
+        CREATE INDEX IF NOT EXISTS idx_political_declarations_member_id
+            ON dep_act_political_declarations(member_id);
 
         CREATE TABLE IF NOT EXISTS interventions_raw (
             intervention_id TEXT PRIMARY KEY,
@@ -217,7 +460,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         INSERT INTO metadata(key, value)
-        VALUES('schema_version', '10')
+        VALUES('schema_version', '14')
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """
     )
@@ -229,11 +472,55 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         "ALTER TABLE intervention_analysis ADD COLUMN layer_a_json TEXT",
         "ALTER TABLE members ADD COLUMN bills_authored_total INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE members ADD COLUMN amendments_added_total INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_identifier TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN motive_pdf_url TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN initiators_text TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN initiators_extracted_at TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN initiators_parse_error TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN initiators_source TEXT",
+        "ALTER TABLE dep_act_member_laws ADD COLUMN is_initiator INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_url TEXT",
+        "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_count INTEGER",
+        "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_stored INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_id TEXT",
+        "ALTER TABLE dep_act_questions_interpellations ADD COLUMN identifier TEXT",
+        "ALTER TABLE dep_act_questions_interpellations ADD COLUMN recipient TEXT",
     ]:
         try:
             conn.execute(migration)
         except sqlite3.OperationalError:
             pass  # Column already exists.
+
+    try:
+        conn.execute(
+            """
+            UPDATE dep_act_questions_interpellations
+            SET member_id = (
+                SELECT member_id
+                FROM member_questions_interpellations mq
+                WHERE mq.question_id = dep_act_questions_interpellations.question_id
+                LIMIT 1
+            )
+            WHERE member_id IS NULL
+              AND EXISTS (
+                  SELECT 1
+                  FROM member_questions_interpellations mq
+                  WHERE mq.question_id = dep_act_questions_interpellations.question_id
+              )
+            """
+        )
+    except sqlite3.OperationalError:
+        pass
+    conn.execute("DROP TABLE IF EXISTS member_questions_interpellations")
+    try:
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_questions_interpellations_member_id
+                ON dep_act_questions_interpellations(member_id)
+            """
+        )
+    except sqlite3.OperationalError:
+        pass
 
     # Migrate old 'llm_v1' (no model suffix) to 'llm_v1:llama3.1:8b'.
     # topics_source format changed to 'llm_v1:{model}' to track which model produced each result.
