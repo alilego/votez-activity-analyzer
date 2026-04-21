@@ -536,6 +536,8 @@ Pass `--only-hydrate-law-initiators` to skip the crawl phase and retry only stor
 
 Pass `--hydrate-law-limit N` to cap the hydration phase to the first `N` stored laws in `law_id` order after the normal member scoping/filtering. When a limit is set, the hydrator prefers laws that do not already have a cached PDF in `outputs/pdfs/law_initiators/`, so local smoke tests do not waste their limited slots re-downloading PDFs you already have.
 
+At the end of every hydration phase, the script also logs how many `dep_act_laws` rows in the database still do not have a cached initiator PDF in `outputs/pdfs/law_initiators/`, so you can track the remaining local download backlog even when you run with a limit.
+
 The crawler writes only its own tables: `dep_act_member_activity_crawl`, `dep_act_laws`, `dep_act_member_laws`, `dep_act_decision_projects`, `dep_act_member_decision_projects`, `dep_act_questions_interpellations`, `dep_act_motions`, `dep_act_member_motions`, and `dep_act_political_declarations`. It validates that targeted deputies already exist in `members`, but it never inserts or updates `members`, interventions, runs, outputs, or other pipeline tables.
 
 Laws, decision projects, and motions can be associated with several deputies, so the entity tables are deduplicated and the `dep_act_member_*` tables store the many-to-many associations.

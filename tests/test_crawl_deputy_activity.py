@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import sqlite3
 import sys
 import tempfile
@@ -17,6 +19,7 @@ from crawl_deputy_activity import (  # noqa: E402
     _embedded_pdf_missing_initiator_name_signals,
     _fetch_senat_search_results_html,
     _canonicalize_senat_url,
+    count_law_initiator_pdf_cache_gaps,
     _law_search_number_and_year,
     _is_transient_network_exception,
     _law_initiator_pdf_cache_path,
@@ -46,6 +49,7 @@ from crawl_deputy_activity import (  # noqa: E402
     parse_question_detail_recipient,
     parse_listing_records,
     parse_profile_activity,
+    run_law_initiator_hydration_phase,
     single_signature_fuzzy_match,
     store_records,
     update_member_activity_crawl,
@@ -1771,6 +1775,110 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                 self.assertEqual(
                     [record.record_id for record in records],
                     ["law:test:limit-cache:1", "law:test:limit-cache:3"],
+                )
+
+    def test_count_law_initiator_pdf_cache_gaps_counts_missing_cached_pdfs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                for idx in range(3):
+                    law_id = f"law:test:cache-gap:{idx}"
+                    identifier = f"PL-x {idx}/2026"
+                    conn.execute(
+                        """
+                        INSERT INTO dep_act_laws (
+                            law_id, source_url, identifier, title, details_text, columns_json
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            law_id,
+                            f"https://example.test/law/gap/{idx}",
+                            identifier,
+                            f"Title {idx}",
+                            "Details",
+                            "[]",
+                        ),
+                    )
+                _write_bytes_atomic(
+                    _law_initiator_pdf_cache_path(
+                        cache_dir,
+                        law_id="law:test:cache-gap:1",
+                        identifier="PL-x 1/2026",
+                    ),
+                    b"%PDF-1.4 cached 1",
+                )
+                conn.commit()
+
+                missing, total = count_law_initiator_pdf_cache_gaps(
+                    conn,
+                    law_initiator_pdf_dir=cache_dir,
+                )
+
+                self.assertEqual((missing, total), (2, 3))
+
+    def test_run_law_initiator_hydration_phase_logs_remaining_cache_gaps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            db_path = init_db(tmp_path / "state.sqlite")
+            cache_dir = tmp_path / "outputs" / "pdfs" / "law_initiators"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                insert_test_member(conn)
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:test:phase:0",
+                        "https://example.test/law/phase/0",
+                        "PL-x 0/2026",
+                        "Title 0",
+                        "Details",
+                        "[]",
+                    ),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_member_laws (member_id, law_id, is_initiator)
+                    VALUES ('deputat_1', 'law:test:phase:0', 1)
+                    """
+                )
+                conn.commit()
+
+                buffer = io.StringIO()
+                with contextlib.redirect_stdout(buffer):
+                    run_law_initiator_hydration_phase(
+                        conn,
+                        selected=[
+                            {
+                                "member_id": "deputat_1",
+                                "source_member_id": "1",
+                                "name": "Deputat Test",
+                            }
+                        ],
+                        fetcher=MagicMock(),
+                        update_existing=False,
+                        ocr_language="ron",
+                        ocr_pages=10,
+                        debug=False,
+                        law_limit=1,
+                        law_initiator_pdf_dir=cache_dir,
+                    )
+
+                output = buffer.getvalue()
+                self.assertIn(
+                    "Law initiator OCR hydration complete: no stored laws to process.",
+                    output,
+                )
+                self.assertIn(
+                    "Law initiator OCR hydration cache status: 1/1 stored law(s) still do not have a local initiator PDF",
+                    output,
                 )
 
     def test_store_political_declarations(self):

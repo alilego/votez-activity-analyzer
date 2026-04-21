@@ -4013,6 +4013,38 @@ def load_law_records_for_initiator_hydration(
     return records
 
 
+def count_law_initiator_pdf_cache_gaps(
+    conn: sqlite3.Connection,
+    *,
+    law_initiator_pdf_dir: Path = DEFAULT_LAW_INITIATOR_PDF_DIR,
+) -> tuple[int, int]:
+    rows = conn.execute(
+        """
+        SELECT law_id, identifier
+        FROM dep_act_laws
+        ORDER BY law_id
+        """
+    ).fetchall()
+    total = len(rows)
+    missing = 0
+    for row in rows:
+        record = ListingRecord(
+            record_id=str(row[0]),
+            source_url="",
+            identifier=str(row[1]) if row[1] else None,
+            adopted_law_identifier=None,
+            title="",
+            details_text="",
+            columns=[],
+        )
+        if not _listing_record_has_cached_law_initiator_pdf(
+            record,
+            law_initiator_pdf_dir=law_initiator_pdf_dir,
+        ):
+            missing += 1
+    return missing, total
+
+
 def _insert_or_update_entity(
     conn: sqlite3.Connection,
     *,
@@ -4777,6 +4809,18 @@ def run_law_initiator_hydration_phase(
     consecutive_failure_abort_after: int = 25,
     law_initiator_pdf_dir: Path = DEFAULT_LAW_INITIATOR_PDF_DIR,
 ) -> None:
+    def print_cache_gap_summary() -> None:
+        missing_cache_count, total_laws = count_law_initiator_pdf_cache_gaps(
+            conn,
+            law_initiator_pdf_dir=law_initiator_pdf_dir,
+        )
+        print(
+            "Law initiator OCR hydration cache status: "
+            f"{missing_cache_count}/{total_laws} stored law(s) still do not have "
+            f"a local initiator PDF in {law_initiator_pdf_dir}.",
+            flush=True,
+        )
+
     print("Starting law initiator OCR hydration from stored dep_act_laws rows.")
     law_records = load_law_records_for_initiator_hydration(
         conn,
@@ -4800,6 +4844,7 @@ def run_law_initiator_hydration_phase(
     )
     if not law_records:
         print("Law initiator OCR hydration complete: no stored laws to process.")
+        print_cache_gap_summary()
         return
     validate_law_initiator_ocr_dependencies()
     # Use a dedicated fetcher for hydration when a different retries count is
@@ -4852,6 +4897,7 @@ def run_law_initiator_hydration_phase(
         f"matched_initiators={law_result.associated}.",
         flush=True,
     )
+    print_cache_gap_summary()
 
 
 def crawl_deputy_activity(
