@@ -46,7 +46,28 @@ export OPENAI_API_KEY=sk-...          # set your API key
 
 OpenAI runs default to Flex Processing (`service_tier=flex`) for lower-cost background-style workloads. To force standard processing instead, set `export OPENAI_SERVICE_TIER=auto`.
 
-### 3. Input data
+### 3. Stenogram scraper (optional — fetches stenograms from cdep.ro)
+
+The [votez-scraper](../votez-scraper) project scrapes parliamentary stenograms from cdep.ro and writes JSON files that this pipeline consumes. Clone it as a sibling directory:
+
+```bash
+# from the parent directory of votez-activity-analyzer
+git clone <votez-scraper-repo-url> votez-scraper
+cd votez-scraper
+pip3 install -r requirements.txt      # scrapy + lxml
+```
+
+The integrated `full_update.py` script (see [Two main flows](#two-main-flows)) expects the scraper at `../votez-scraper` by default. You can override this with `--scraper-dir`.
+
+If you already have stenogram JSON files, you can skip the scraper and place them directly under `input/stenograme/`.
+
+The script also deploys all results to `../votez-frontend/` by default:
+- Analysis outputs (members, parties, topics, productivity, activity) → `data/activity_analizer/`
+- Scraper registry files (deputies/senators by party, circumscription) → `lib/`
+
+The [votez-frontend](../votez-frontend) project should be cloned as a sibling directory. Override with `--frontend-dir` or skip with `--skip-deploy`.
+
+### 4. Input data
 
 Two kinds of input files are expected under `input/`:
 
@@ -60,7 +81,7 @@ input/
     └── ...
 ```
 
-Each `stenograma_*.json` must follow this minimal shape:
+Stenogram files are produced by [votez-scraper](#3-stenogram-scraper-optional--fetches-stenograms-from-cdepro) or can be provided manually. Each `stenograma_*.json` must follow this minimal shape:
 
 ```json
 {
@@ -77,7 +98,7 @@ Each `stenograma_*.json` must follow this minimal shape:
 
 Required fields: `source_url`, `session_id`, `stenograma_date` (`YYYY-MM-DD`), `speeches[].speaker`, `speeches[].text`. Optional: `initial_notes`, `speeches[].text2`, `speeches[].text3`. See [`input-data.md`](input-data.md) for the full contract including speaker-name cleaning rules.
 
-### 4. Tesseract OCR (optional — required for law initiator extraction)
+### 5. Tesseract OCR (optional — required for law initiator extraction)
 
 The deputy activity crawler can OCR `Expunerea de motive` PDFs to identify the deputies who actually authored/worked on a law initiative:
 
@@ -102,115 +123,222 @@ Pick the flow that matches your situation. Each one is self-contained — just c
 
 ### A. Fresh setup — from zero to full outputs
 
-Use this after cloning the repository (or after a full state reset). Processes every stenogram and crawls all deputy activity.
+Use this after cloning the repository (or after a full state reset). Scrapes all stenograms from cdep.ro, processes them, and crawls all deputy activity.
 
-**With local LLM** (Ollama — free, default):
+**Single command** — scrapes stenograms, syncs them, runs the full pipeline, and crawls deputy activity:
+
+With **local LLM** (Ollama — free, default):
+
+```bash
+ollama serve                          # in a separate terminal, keep running
+python3 scripts/full_update.py --update-existing-crawler
+```
+
+With **OpenAI API** (remote, paid):
+
+```bash
+python3 scripts/full_update.py \
+    --llm-provider openai \
+    --llm-model gpt-5-nano \
+    --update-existing-crawler
+```
+
+The script runs 6 steps in order: scrape from cdep.ro → sync to `input/` → analysis pipeline → productivity export → deputy activity crawler → deploy to `votez-frontend/`.
+
+**Skip individual steps / opt-in extras:**
+
+| Flag | Effect |
+|------|--------|
+| `--only-step {1..6}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=deploy) |
+| `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
+| `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
+| `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
+| `--skip-productivity` | Step 4 — don't re-export productivity metrics |
+| `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
+| `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
+| `--skip-deploy` | Step 6 — don't copy outputs to `votez-frontend/` |
+
+**Result:** everything lands in `outputs/`, `state/state.sqlite`, and `../votez-frontend/` (`data/activity_analizer/` + `lib/`). See [Where everything lands](#where-everything-lands) for the full layout.
+
+<details>
+<summary><b>Manual step-by-step alternative</b> (without full_update.py)</summary>
+
+With **local LLM** (Ollama — free, default):
 
 ```bash
 # 1. Start Ollama in a separate terminal (keep it running)
 ollama serve
 
-# 2. Main pipeline: baseline + LLM classification + export
-#    Creates the DB, processes ALL stenograms, exports to outputs/
+# 2. Scrape new stenograms (in the scraper project)
+cd ../votez-scraper && python3 main_stenograme.py --scrape && cd -
+
+# 3. Sync stenograms to input/
+cp -n ../votez-scraper/output/stenograme/stenograma_*.json input/stenograme/
+
+# 4. Main pipeline: baseline + LLM classification + export
 python3 scripts/run_pipeline.py --analyzer-mode llm
 
-# 3. Productivity metrics
+# 5. Productivity metrics
 python3 scripts/export_effectiveness.py
 
-# 4. Crawl deputy activity + OCR law initiators + export activity snapshots
+# 6. Crawl deputy activity + OCR law initiators + export activity snapshots
 python3 scripts/crawl_deputy_activity.py \
     --update-existing \
     --hydrate-law-initiators \
     --export-activity
+
+# 7. Deploy outputs to frontend
+rsync -a --delete --exclude='pdfs/' outputs/ ../votez-frontend/data/activity_analizer/
 ```
 
-**With OpenAI API** (remote, paid):
+With **OpenAI API** (remote, paid):
 
 ```bash
-# 1. Main pipeline: baseline + LLM classification + export
+# 1. Scrape new stenograms (in the scraper project)
+cd ../votez-scraper && python3 main_stenograme.py --scrape && cd -
+
+# 2. Sync stenograms to input/
+cp -n ../votez-scraper/output/stenograme/stenograma_*.json input/stenograme/
+
+# 3. Main pipeline: baseline + LLM classification + export
 python3 scripts/run_pipeline.py \
     --analyzer-mode llm \
     --llm-provider openai \
     --llm-model gpt-5-nano
 
-# 2. Productivity metrics
+# 4. Productivity metrics
 python3 scripts/export_effectiveness.py
 
-# 3. Crawl deputy activity + OCR law initiators + export activity snapshots
+# 5. Crawl deputy activity + OCR law initiators + export activity snapshots
 python3 scripts/crawl_deputy_activity.py \
     --update-existing \
     --hydrate-law-initiators \
     --export-activity
+
+# 6. Deploy outputs to frontend
+rsync -a --delete --exclude='pdfs/' outputs/ ../votez-frontend/data/activity_analizer/
 ```
 
-**Result:** everything lands in `outputs/` and `state/state.sqlite`. See [Where everything lands](#where-everything-lands) for the full layout.
+</details>
 
 ---
 
 ### B. Incremental update — only new data
 
-Use this when the repository is already set up and you want to incorporate new stenograms or refresh deputy activity data. Each step is safe to run repeatedly — already-processed data is automatically skipped.
+Use this when the repository is already set up and you want to fetch the latest stenograms and refresh everything. Each step is safe to run repeatedly — already-processed data is automatically skipped.
 
-**Add new stenograms** (if any) — drop them into `input/stenograme/`.
+**Single command** — scrapes only new stenograms (the scraper is incremental), syncs them, and processes only what's new:
 
-**With local LLM** (Ollama — free, default):
+With **local LLM** (Ollama — free, default):
 
 ```bash
-# 1. Make sure Ollama is running (skip if already started)
-ollama serve
-
-# 2. Pipeline: only processes new/changed stenograms
-#    - Stenograms already in the DB (same content hash) → skipped
-#    - Sessions with existing LLM topics → skipped
-#    - Interventions with existing LLM labels → skipped
-python3 scripts/run_pipeline.py --analyzer-mode llm
-
-# 3. Re-export productivity metrics (picks up any new data)
-python3 scripts/export_effectiveness.py
-
-# 4. Refresh deputy activity (only new crawler data + new law initiators)
-#    - Already-crawled deputy pages → skipped (pass --update-existing to refresh them)
-#    - Already-cached law PDFs → OCR runs locally, no re-download
-#    - Activity JSON export → fully rebuilt from current DB
-python3 scripts/crawl_deputy_activity.py \
-    --hydrate-law-initiators \
-    --export-activity
+ollama serve                          # in a separate terminal, keep running
+python3 scripts/full_update.py
 ```
 
-**With OpenAI API** (remote, paid):
+With **OpenAI API** (remote, paid):
 
 ```bash
-# 1. Pipeline: only processes new/changed stenograms
-python3 scripts/run_pipeline.py \
-    --analyzer-mode llm \
+python3 scripts/full_update.py \
     --llm-provider openai \
     --llm-model gpt-5-nano
+```
 
-# 2. Re-export productivity metrics (picks up any new data)
-python3 scripts/export_effectiveness.py
+**Skip individual steps / opt-in extras:**
 
-# 3. Refresh deputy activity (only new crawler data + new law initiators)
-python3 scripts/crawl_deputy_activity.py \
-    --hydrate-law-initiators \
-    --export-activity
+| Flag | Effect |
+|------|--------|
+| `--only-step {1..6}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=deploy) |
+| `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
+| `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
+| `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
+| `--skip-productivity` | Step 4 — don't re-export productivity metrics |
+| `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
+| `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
+| `--skip-deploy` | Step 6 — don't copy outputs to `votez-frontend/` |
+
+To restrict scraping to a specific time range:
+
+```bash
+python3 scripts/full_update.py --scrape-year 2026 --scrape-month 5
 ```
 
 **What gets skipped and why:**
 
 | Data | Tracked by | Skip condition |
 |------|-----------|----------------|
-| Stenogram files | `processed_stenograms` table (SHA-256 hash) | Same file content already processed |
+| Stenograms on cdep.ro | Scraper checks latest date in `output/stenograme/` | Only fetches days after the most recent existing stenogram |
+| Stenogram files (sync) | Byte-level file comparison | Identical files are not re-copied to `input/stenograme/` |
+| Stenogram files (pipeline) | `processed_stenograms` table (SHA-256 hash) | Same file content already processed |
 | Session topics | `session_topics.topics_source` | Any `llm_v1:*` source exists for that session |
 | Intervention labels | `intervention_analysis.relevance_source` | `llm_agent_v1` row exists for that intervention |
-| Deputy activity pages | `dep_act_member_activity_crawl` | Row exists (unless `--update-existing` is passed) |
+| Deputy activity pages | `dep_act_member_activity_crawl` | Row exists (unless `--update-existing-crawler` is passed) |
 | Law initiator PDFs | `outputs/pdfs/law_initiators/` cache | Cached PDF file exists on disk |
 
 **Tip:** To check what would be processed without making any changes:
 
 ```bash
-python3 scripts/run_pipeline.py --dry-run
-python3 scripts/crawl_deputy_activity.py --dry-run --limit 1
+python3 scripts/full_update.py --dry-run
 ```
+
+<details>
+<summary><b>Manual step-by-step alternative</b> (without full_update.py)</summary>
+
+With **local LLM** (Ollama — free, default):
+
+```bash
+# 1. Make sure Ollama is running (skip if already started)
+ollama serve
+
+# 2. Scrape only new stenograms (incremental — skips already-fetched dates)
+cd ../votez-scraper && python3 main_stenograme.py --scrape && cd -
+
+# 3. Sync new/changed files to input/
+cp -n ../votez-scraper/output/stenograme/stenograma_*.json input/stenograme/
+
+# 4. Pipeline: only processes new/changed stenograms
+python3 scripts/run_pipeline.py --analyzer-mode llm
+
+# 5. Re-export productivity metrics (picks up any new data)
+python3 scripts/export_effectiveness.py
+
+# 6. Refresh deputy activity (only new crawler data + new law initiators)
+python3 scripts/crawl_deputy_activity.py \
+    --hydrate-law-initiators \
+    --export-activity
+
+# 7. Deploy outputs to frontend
+rsync -a --delete --exclude='pdfs/' outputs/ ../votez-frontend/data/activity_analizer/
+```
+
+With **OpenAI API** (remote, paid):
+
+```bash
+# 1. Scrape only new stenograms
+cd ../votez-scraper && python3 main_stenograme.py --scrape && cd -
+
+# 2. Sync new/changed files to input/
+cp -n ../votez-scraper/output/stenograme/stenograma_*.json input/stenograme/
+
+# 3. Pipeline: only processes new/changed stenograms
+python3 scripts/run_pipeline.py \
+    --analyzer-mode llm \
+    --llm-provider openai \
+    --llm-model gpt-5-nano
+
+# 4. Re-export productivity metrics (picks up any new data)
+python3 scripts/export_effectiveness.py
+
+# 5. Refresh deputy activity (only new crawler data + new law initiators)
+python3 scripts/crawl_deputy_activity.py \
+    --hydrate-law-initiators \
+    --export-activity
+
+# 6. Deploy outputs to frontend
+rsync -a --delete --exclude='pdfs/' outputs/ ../votez-frontend/data/activity_analizer/
+```
+
+</details>
 
 ---
 
@@ -569,6 +697,7 @@ When using `--analyzer-cmd`, these env vars are injected:
 
 | Script | Purpose |
 |--------|---------|
+| `scripts/full_update.py` | End-to-end orchestrator — scrape stenograms + sync + pipeline + exports + crawler in one command |
 | `scripts/run_pipeline.py` | Main orchestrator — incremental, handles baseline + LLM + export |
 | `scripts/analyze_interventions.py` | Baseline classifier (keyword + RAG index build) |
 | `scripts/llm_session_topics.py` | LLM session topic extraction — runs before intervention classification |
