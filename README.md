@@ -3,30 +3,57 @@ AI-powered analysis of Romanian parliamentary activity — classifies interventi
 
 ---
 
-## Quick start
+## Prerequisites
 
-A five-minute path from a fresh clone to a fully populated `outputs/` folder. See the detailed sections further down for anything you want to understand deeper.
-
-### 1. Install
+### 1. Python 3.9+ and dependencies
 
 ```bash
 python3 --version                     # must be 3.9+
 pip3 install -r requirements.txt
-brew install tesseract                # optional — needed for law-initiator OCR
-brew install ollama                   # optional — needed if you want the free local LLM
-ollama pull qwen3:14b                 # one-time model download for the local LLM
 ```
 
-The Python dependencies cover the whole pipeline (pipeline + crawler + exports). `tesseract` and `ollama` are only required if you plan to run the law-initiator hydration or the local LLM classifier respectively. See [Prerequisites](#prerequisites) for details.
+Installs: `sentence-transformers`, `faiss-cpu`, `openai` (used as the HTTP client for both OpenAI and Ollama), plus PDF/OCR helper libraries used by the deputy activity crawler.
 
-### 2. Place the input data
+### 2. LLM provider — choose one (or both)
+
+| | Local LLM (Ollama) | OpenAI API |
+|---|---|---|
+| **Cost** | Free | ~$5–10 for a full run |
+| **Requires** | `ollama serve` running + GPU with ~10 GB VRAM | `OPENAI_API_KEY` env var |
+| **Default model** | `qwen3:14b` | `gpt-5-nano` |
+| **Flag** | `--llm-provider ollama` (default) | `--llm-provider openai` |
+
+**Option A — Local LLM (Ollama, free):**
+
+```bash
+brew install ollama
+ollama pull qwen3:14b                 # one-time model download (~9 GB)
+```
+
+> **Why `qwen3:14b`?** The pipeline requests a 32k runtime context for known large-context local models, so `qwen3:14b` can receive full-session prompts without requiring a separate wrapper model name.
+>
+> **Legacy model** (`llama3.1:8b-8k`) still works if already set up — pass
+> `--llm-model llama3.1:8b-8k` to use it. The pipeline will automatically fall back to
+> map-reduce for any model with `num_ctx < 32768`.
+>
+> **Optional wrappers for benchmarking:** the repo also includes `Modelfile-qwen2.5-14b-32k` and `Modelfile-qwen3-14b-32k` if you want explicit 32k Ollama aliases for repeatable local comparisons.
+
+**Option B — OpenAI API (remote, paid):**
+
+```bash
+export OPENAI_API_KEY=sk-...          # set your API key
+```
+
+OpenAI runs default to Flex Processing (`service_tier=flex`) for lower-cost background-style workloads. To force standard processing instead, set `export OPENAI_SERVICE_TIER=auto`.
+
+### 3. Input data
 
 Two kinds of input files are expected under `input/`:
 
 ```text
 input/
-├── toti_deputatii.json      # Chamber of Deputies registry (used by the crawler + speaker resolution)
-├── toti_senatorii.json      # Senate registry (same shape)
+├── toti_deputatii.json      # Chamber of Deputies registry (already in the repo)
+├── toti_senatorii.json      # Senate registry (already in the repo)
 └── stenograme/              # one JSON file per parliamentary session (add more over time)
     ├── stenograma_2025-02-03_1.json
     ├── stenograma_2025-02-03_2.json
@@ -50,7 +77,148 @@ Each `stenograma_*.json` must follow this minimal shape:
 
 Required fields: `source_url`, `session_id`, `stenograma_date` (`YYYY-MM-DD`), `speeches[].speaker`, `speeches[].text`. Optional: `initial_notes`, `speeches[].text2`, `speeches[].text3`. See [`input-data.md`](input-data.md) for the full contract including speaker-name cleaning rules.
 
-### 3. Run the recommended sequence
+### 4. Tesseract OCR (optional — required for law initiator extraction)
+
+The deputy activity crawler can OCR `Expunerea de motive` PDFs to identify the deputies who actually authored/worked on a law initiative:
+
+```bash
+brew install tesseract
+```
+
+For best Romanian OCR, install the Romanian language data too if your Tesseract package does not include it. The crawler defaults to `ron+eng` and falls back to `eng`.
+
+---
+
+## Two main flows
+
+Pick the flow that matches your situation. Each one is self-contained — just copy-paste the commands in order. Make sure you have completed the [Prerequisites](#prerequisites) above first.
+
+| Flow | When to use | What it does |
+|------|-------------|--------------|
+| [A. Fresh setup](#a-fresh-setup--from-zero-to-full-outputs) | First time, or after a `reset_state.py` | Processes all stenograms, crawls all deputy activity |
+| [B. Incremental update](#b-incremental-update--only-new-data) | Stenograms or deputy data have been added since the last run | Processes only new/changed files, skips already-analyzed data |
+
+---
+
+### A. Fresh setup — from zero to full outputs
+
+Use this after cloning the repository (or after a full state reset). Processes every stenogram and crawls all deputy activity.
+
+**With local LLM** (Ollama — free, default):
+
+```bash
+# 1. Start Ollama in a separate terminal (keep it running)
+ollama serve
+
+# 2. Main pipeline: baseline + LLM classification + export
+#    Creates the DB, processes ALL stenograms, exports to outputs/
+python3 scripts/run_pipeline.py --analyzer-mode llm
+
+# 3. Productivity metrics
+python3 scripts/export_effectiveness.py
+
+# 4. Crawl deputy activity + OCR law initiators + export activity snapshots
+python3 scripts/crawl_deputy_activity.py \
+    --update-existing \
+    --hydrate-law-initiators \
+    --export-activity
+```
+
+**With OpenAI API** (remote, paid):
+
+```bash
+# 1. Main pipeline: baseline + LLM classification + export
+python3 scripts/run_pipeline.py \
+    --analyzer-mode llm \
+    --llm-provider openai \
+    --llm-model gpt-5-nano
+
+# 2. Productivity metrics
+python3 scripts/export_effectiveness.py
+
+# 3. Crawl deputy activity + OCR law initiators + export activity snapshots
+python3 scripts/crawl_deputy_activity.py \
+    --update-existing \
+    --hydrate-law-initiators \
+    --export-activity
+```
+
+**Result:** everything lands in `outputs/` and `state/state.sqlite`. See [Where everything lands](#where-everything-lands) for the full layout.
+
+---
+
+### B. Incremental update — only new data
+
+Use this when the repository is already set up and you want to incorporate new stenograms or refresh deputy activity data. Each step is safe to run repeatedly — already-processed data is automatically skipped.
+
+**Add new stenograms** (if any) — drop them into `input/stenograme/`.
+
+**With local LLM** (Ollama — free, default):
+
+```bash
+# 1. Make sure Ollama is running (skip if already started)
+ollama serve
+
+# 2. Pipeline: only processes new/changed stenograms
+#    - Stenograms already in the DB (same content hash) → skipped
+#    - Sessions with existing LLM topics → skipped
+#    - Interventions with existing LLM labels → skipped
+python3 scripts/run_pipeline.py --analyzer-mode llm
+
+# 3. Re-export productivity metrics (picks up any new data)
+python3 scripts/export_effectiveness.py
+
+# 4. Refresh deputy activity (only new crawler data + new law initiators)
+#    - Already-crawled deputy pages → skipped (pass --update-existing to refresh them)
+#    - Already-cached law PDFs → OCR runs locally, no re-download
+#    - Activity JSON export → fully rebuilt from current DB
+python3 scripts/crawl_deputy_activity.py \
+    --hydrate-law-initiators \
+    --export-activity
+```
+
+**With OpenAI API** (remote, paid):
+
+```bash
+# 1. Pipeline: only processes new/changed stenograms
+python3 scripts/run_pipeline.py \
+    --analyzer-mode llm \
+    --llm-provider openai \
+    --llm-model gpt-5-nano
+
+# 2. Re-export productivity metrics (picks up any new data)
+python3 scripts/export_effectiveness.py
+
+# 3. Refresh deputy activity (only new crawler data + new law initiators)
+python3 scripts/crawl_deputy_activity.py \
+    --hydrate-law-initiators \
+    --export-activity
+```
+
+**What gets skipped and why:**
+
+| Data | Tracked by | Skip condition |
+|------|-----------|----------------|
+| Stenogram files | `processed_stenograms` table (SHA-256 hash) | Same file content already processed |
+| Session topics | `session_topics.topics_source` | Any `llm_v1:*` source exists for that session |
+| Intervention labels | `intervention_analysis.relevance_source` | `llm_agent_v1` row exists for that intervention |
+| Deputy activity pages | `dep_act_member_activity_crawl` | Row exists (unless `--update-existing` is passed) |
+| Law initiator PDFs | `outputs/pdfs/law_initiators/` cache | Cached PDF file exists on disk |
+
+**Tip:** To check what would be processed without making any changes:
+
+```bash
+python3 scripts/run_pipeline.py --dry-run
+python3 scripts/crawl_deputy_activity.py --dry-run --limit 1
+```
+
+---
+
+## Detailed guide
+
+This section explains what each pipeline step does, where outputs land, and how to iterate. For the copy-paste command flows, see [A. Fresh setup](#a-fresh-setup--from-zero-to-full-outputs) or [B. Incremental update](#b-incremental-update--only-new-data) above.
+
+### Processing steps
 
 **Step A — start Ollama (only if you're using the local LLM).** Keep it running in its own terminal:
 
@@ -61,10 +229,11 @@ ollama serve
 **Step B — run the main pipeline (topics + intervention classification + exports).** Only new/changed stenograms are processed, so this is safe to rerun after adding files:
 
 ```bash
+# Local LLM (default):
 python3 scripts/run_pipeline.py --analyzer-mode llm
-# or, for paid OpenAI classification:
-# export OPENAI_API_KEY=sk-...
-# python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-5-nano
+
+# OpenAI API:
+python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai --llm-model gpt-5-nano
 ```
 
 Writes to `outputs/members/`, `outputs/parties/`, `outputs/topics/`, `outputs/session_topics/`.
@@ -89,7 +258,7 @@ python3 scripts/crawl_deputy_activity.py \
 Writes to `state/state.sqlite` (crawler tables) and `outputs/activity/members/` + `outputs/activity/parties/`.
 The hydrator also caches the downloaded initiator PDFs under `outputs/pdfs/law_initiators/` so reruns can extract locally without re-fetching the same law PDFs.
 
-### 4. Where everything lands
+### Where everything lands
 
 ```text
 state/state.sqlite                      # unified DB — interventions, crawler data, runs
@@ -103,61 +272,11 @@ outputs/activity/parties/               # per-party aggregations (initiated laws
 outputs/pdfs/law_initiators/            # cached law-initiator PDFs reused by OCR hydration
 ```
 
-### 5. Iterating
+### Iterating
 
 - Adding new stenograms? Drop them into `input/stenograme/` and rerun Step B — processed stenograms are tracked in the DB and skipped automatically.
 - Tweaking the snapshot shape? `python3 scripts/crawl_deputy_activity.py --only-export-activity` rebuilds `outputs/activity/` from the current DB without recrawling.
 - First-time smoke test? `python3 scripts/run_pipeline.py --analyzer-mode llm --llm-sessions-limit 3 --llm-speech-limit 10` runs a tiny slice end-to-end.
-
----
-
-## Prerequisites
-
-### 1. Python 3.9+
-
-```bash
-python3 --version
-```
-
-### 2. Python dependencies
-
-```bash
-pip3 install -r requirements.txt
-```
-
-Installs: `sentence-transformers`, `faiss-cpu`, `openai` (used as the HTTP client for both OpenAI and Ollama), plus PDF/OCR helper libraries used by the deputy activity crawler.
-
-### 3. Tesseract OCR (optional — required for law initiator extraction)
-
-The deputy activity crawler can OCR `Expunerea de motive` PDFs to identify the deputies who actually authored/worked on a law initiative:
-
-```bash
-brew install tesseract
-```
-
-For best Romanian OCR, install the Romanian language data too if your Tesseract package does not include it. The crawler defaults to `ron+eng` and falls back to `eng`.
-
-### 4. Ollama (free local LLM — required for LLM mode)
-
-Download from [ollama.com](https://ollama.com) or via Homebrew:
-
-```bash
-brew install ollama
-```
-
-Pull the default local model used by the pipeline:
-
-```bash
-ollama pull qwen3:14b
-```
-
-> **Why `qwen3:14b`?** Step 3.1 upgrades the default local model from the old 7B baseline to a stronger 14B model. The pipeline now requests a 32k runtime context for known large-context local models, so `qwen3:14b` can still receive full-session prompts without requiring a separate wrapper model name.
->
-> **Legacy model** (`llama3.1:8b-8k`) still works if already set up — pass
-> `--llm-model llama3.1:8b-8k` to use it. The pipeline will automatically fall back to
-> map-reduce for any model with `num_ctx < 32768`.
->
-> **Optional wrappers for benchmarking:** the repo also includes `Modelfile-qwen2.5-14b-32k` and `Modelfile-qwen3-14b-32k` if you want explicit 32k Ollama aliases for repeatable local comparisons.
 
 ---
 
@@ -361,28 +480,6 @@ Force re-extraction of session topics (e.g. after switching models):
 python3 scripts/run_pipeline.py --analyzer-mode llm --reprocess-session-topics
 # or with a specific model:
 python3 scripts/run_pipeline.py --analyzer-mode llm --llm-model mistral --reprocess-session-topics
-```
-
----
-
-## LLM provider options
-
-| Provider | Flag | Cost | Requirement |
-|----------|------|------|-------------|
-| Ollama (default) | `--llm-provider ollama` | Free | `ollama serve` + model pulled |
-| OpenAI | `--llm-provider openai` | Paid (~$5–10 for full run) | `OPENAI_API_KEY` env var |
-
-Switch to OpenAI:
-
-```bash
-export OPENAI_API_KEY=sk-...
-python3 scripts/run_pipeline.py --analyzer-mode llm --llm-provider openai
-```
-
-OpenAI runs now default to Flex Processing (`service_tier=flex`) for lower-cost background-style workloads. To force standard processing instead, set:
-
-```bash
-export OPENAI_SERVICE_TIER=auto
 ```
 
 ---
