@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "build_date": "2026-04-10T14:31:52.205853",
-    "total_count": 133
+    "build_date": "2026-05-15T13:32:43.824280",
+    "total_count": 134
   },
   "members": [
     {
@@ -530,6 +530,13 @@
       "party_full_name": ""
     },
     {
+      "name": "OPREA Ştefan-Radu",
+      "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=bb84802b-1dff-4568-b5e7-91f5647073c5",
+      "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
+      "party": "PSD",
+      "party_full_name": "Partidul Social Democrat"
+    },
+    {
       "name": "OPRINOIU Aurel",
       "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=5954ccc9-0af9-409f-9b30-91c8b292d60d",
       "circumscriptie": "Circumscripţia electorală nr.31 Prahova",
@@ -792,8 +799,8 @@
       "name": "STOICIU Victoria",
       "profile_url": "https://www.senat.ro/FisaSenator.aspx?ParlamentarID=0317f068-49ad-4541-87d4-cc589aef437f",
       "circumscriptie": "Circumscripţia electorală nr.39 Vaslui",
-      "party": "PSD",
-      "party_full_name": "Partidul Social Democrat"
+      "party": "Neafiliaţi",
+      "party_full_name": ""
     },
     {
       "name": "STREINU CERCEL Adrian",

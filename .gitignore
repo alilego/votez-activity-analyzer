@@ -219,3 +219,6 @@ state/*
 
 # Generated frontend artifacts
 outputs/
+
+# Cached law-initiator PDFs downloaded during OCR hydration
+outputs/pdfs/law_initiators/
