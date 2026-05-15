@@ -149,14 +149,15 @@ The script runs 6 steps in order: scrape from cdep.ro → sync to `input/` → a
 
 | Flag | Effect |
 |------|--------|
-| `--only-step {1..6}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=deploy) |
+| `--only-step {1..7}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=export 7=deploy) |
 | `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
 | `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
 | `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
 | `--skip-productivity` | Step 4 — don't re-export productivity metrics |
 | `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
 | `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
-| `--skip-deploy` | Step 6 — don't copy outputs to `votez-frontend/` |
+| `--skip-export` | Step 6 — don't re-export JSON outputs from DB to `outputs/` |
+| `--skip-deploy` | Step 7 — don't copy outputs to `votez-frontend/` |
 
 **Result:** everything lands in `outputs/`, `state/state.sqlite`, and `../votez-frontend/` (`data/activity_analizer/` + `lib/`). See [Where everything lands](#where-everything-lands) for the full layout.
 
@@ -248,14 +249,15 @@ python3 scripts/full_update.py \
 
 | Flag | Effect |
 |------|--------|
-| `--only-step {1..6}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=deploy) |
+| `--only-step {1..7}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=export 7=deploy) |
 | `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
 | `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
 | `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
 | `--skip-productivity` | Step 4 — don't re-export productivity metrics |
 | `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
 | `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
-| `--skip-deploy` | Step 6 — don't copy outputs to `votez-frontend/` |
+| `--skip-export` | Step 6 — don't re-export JSON outputs from DB to `outputs/` |
+| `--skip-deploy` | Step 7 — don't copy outputs to `votez-frontend/` |
 
 To restrict scraping to a specific time range:
 

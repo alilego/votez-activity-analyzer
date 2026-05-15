@@ -10,7 +10,8 @@ data directory.
 Usage:
     python3 scripts/full_update.py
     python3 scripts/full_update.py --llm-provider openai --llm-model gpt-5-nano
-    python3 scripts/full_update.py --only-step 6        # deploy to frontend only
+    python3 scripts/full_update.py --only-step 6        # re-export JSON outputs only
+    python3 scripts/full_update.py --only-step 7        # deploy to frontend only
     python3 scripts/full_update.py --skip-scrape
     python3 scripts/full_update.py --skip-crawler
 """
@@ -157,7 +158,26 @@ def run_crawler(update_existing: bool, hydrate_law_initiators: bool) -> bool:
     return proc.returncode == 0
 
 
-# ── Step 6: Deploy to frontend ──────────────────────────────
+# ── Step 6: Export JSON outputs from DB ─────────────────────
+
+def run_export_outputs() -> bool:
+    """Re-export all analysis outputs from DB to outputs/ (no reprocessing)."""
+    ok = True
+    # Members, parties, topics, session_topics
+    proc = subprocess.run([sys.executable, str(SCRIPT_DIR / "export_outputs.py")])
+    if proc.returncode != 0:
+        ok = False
+    # Activity snapshots (deputy + party activity JSONs)
+    proc = subprocess.run([
+        sys.executable, str(SCRIPT_DIR / "crawl_deputy_activity.py"),
+        "--only-export-activity",
+    ])
+    if proc.returncode != 0:
+        ok = False
+    return ok
+
+
+# ── Step 7: Deploy to frontend ──────────────────────────────
 
 def _copy_if_changed(src: Path, dst: Path) -> bool:
     """Copy src to dst if dst is missing or differs. Returns True if copied."""
@@ -276,12 +296,13 @@ def main() -> int:
     skip_group.add_argument("--skip-pipeline", action="store_true", help="Skip the analysis pipeline.")
     skip_group.add_argument("--skip-productivity", action="store_true", help="Skip the productivity export.")
     skip_group.add_argument("--skip-crawler", action="store_true", help="Skip the deputy activity crawler.")
+    skip_group.add_argument("--skip-export", action="store_true", help="Skip exporting JSON outputs from DB.")
     skip_group.add_argument("--skip-deploy", action="store_true", help="Skip deploying outputs to the frontend.")
     skip_group.add_argument(
-        "--only-step", type=int, choices=range(1, 7), metavar="{1..6}",
+        "--only-step", type=int, choices=range(1, 8), metavar="{1..7}",
         help=(
             "Run only this step and skip all others. "
-            "1=scrape  2=sync  3=pipeline  4=productivity  5=crawler  6=deploy"
+            "1=scrape  2=sync  3=pipeline  4=productivity  5=crawler  6=export  7=deploy"
         ),
     )
 
@@ -292,18 +313,19 @@ def main() -> int:
         parser.error("--scrape-month requires --scrape-year")
 
     if args.only_step is not None:
-        args.skip_scrape      = args.only_step != 1
-        args.skip_sync        = args.only_step != 2
-        args.skip_pipeline    = args.only_step != 3
+        args.skip_scrape       = args.only_step != 1
+        args.skip_sync         = args.only_step != 2
+        args.skip_pipeline     = args.only_step != 3
         args.skip_productivity = args.only_step != 4
-        args.skip_crawler     = args.only_step != 5
-        args.skip_deploy      = args.only_step != 6
+        args.skip_crawler      = args.only_step != 5
+        args.skip_export       = args.only_step != 6
+        args.skip_deploy       = args.only_step != 7
 
     scraper_dir = Path(args.scraper_dir)
     frontend_dir = Path(args.frontend_dir)
     frontend_data_dir = frontend_dir / "data" / "activity_analizer"
     frontend_lib_dir = frontend_dir / "lib"
-    steps_total = 6
+    steps_total = 7
     failed = False
 
     # ── Step 1: Scrape ──────────────────────────────────────
@@ -362,9 +384,20 @@ def main() -> int:
     else:
         print(f"\nStep 5/{steps_total}  Crawler — skipped (--skip-crawler)")
 
-    # ── Step 6: Deploy to frontend ──────────────────────────
+    # ── Step 6: Export JSON outputs from DB ─────────────────
+    if not args.skip_export and not args.dry_run:
+        _header(f"Step 6/{steps_total}  Exporting JSON outputs from DB")
+        if not run_export_outputs():
+            print("\n  Export failed.")
+            failed = True
+    elif args.dry_run:
+        print(f"\nStep 6/{steps_total}  Export — skipped (dry-run)")
+    else:
+        print(f"\nStep 6/{steps_total}  Export — skipped (--skip-export)")
+
+    # ── Step 7: Deploy to frontend ──────────────────────────
     if not args.skip_deploy and not args.dry_run:
-        _header(f"Step 6/{steps_total}  Deploying to frontend")
+        _header(f"Step 7/{steps_total}  Deploying to frontend")
 
         print(f"  Analyzer outputs → {frontend_data_dir}")
         data_deployed = deploy_analyzer_outputs(DEFAULT_OUTPUTS_DIR, frontend_data_dir)
@@ -374,9 +407,9 @@ def main() -> int:
         lib_deployed = deploy_scraper_lib_files(scraper_dir, frontend_lib_dir)
         print(f"    Files copied (new/changed): {lib_deployed}")
     elif args.dry_run:
-        print(f"\nStep 6/{steps_total}  Deploy — skipped (dry-run)")
+        print(f"\nStep 7/{steps_total}  Deploy — skipped (dry-run)")
     else:
-        print(f"\nStep 6/{steps_total}  Deploy — skipped (--skip-deploy)")
+        print(f"\nStep 7/{steps_total}  Deploy — skipped (--skip-deploy)")
 
     # ── Summary ─────────────────────────────────────────────
     _header("Done")
