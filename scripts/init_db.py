@@ -195,6 +195,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE TABLE IF NOT EXISTS dep_act_member_activity_crawl (
             member_id TEXT PRIMARY KEY,
+            member_normalized_name TEXT,
             profile_url TEXT NOT NULL,
             legislative_proposals_url TEXT,
             legislative_proposals_count INTEGER,
@@ -223,6 +224,19 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             source_url TEXT NOT NULL UNIQUE,
             identifier TEXT,
             adopted_law_identifier TEXT,
+            law_status TEXT,
+            adopted_law_pdf_filename TEXT,
+            adopted_law_pdf_url TEXT,
+            adopted_law_text_json TEXT,
+            adopted_law_text_extracted_at TEXT,
+            adopted_law_parse_error TEXT,
+            adopted_law_factual_json TEXT,
+            adopted_law_interpretation_json TEXT,
+            adopted_law_analysis_json TEXT,
+            adopted_law_reader_summary TEXT,
+            adopted_law_analyzed_at TEXT,
+            adopted_law_analysis_source TEXT,
+            adopted_law_analysis_error TEXT,
             motive_pdf_url TEXT,
             initiators_text TEXT,
             initiators_extracted_at TEXT,
@@ -237,6 +251,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE TABLE IF NOT EXISTS dep_act_member_laws (
             member_id TEXT NOT NULL,
+            member_normalized_name TEXT,
             law_id TEXT NOT NULL,
             is_initiator INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -258,6 +273,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE TABLE IF NOT EXISTS dep_act_member_decision_projects (
             member_id TEXT NOT NULL,
+            member_normalized_name TEXT,
             decision_project_id TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (member_id) REFERENCES members(member_id),
@@ -268,6 +284,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS dep_act_questions_interpellations (
             question_id TEXT PRIMARY KEY,
             member_id TEXT NOT NULL,
+            member_normalized_name TEXT,
             source_url TEXT NOT NULL UNIQUE,
             identifier TEXT,
             recipient TEXT,
@@ -290,6 +307,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE TABLE IF NOT EXISTS dep_act_member_motions (
             member_id TEXT NOT NULL,
+            member_normalized_name TEXT,
             motion_id TEXT NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (member_id) REFERENCES members(member_id),
@@ -300,6 +318,7 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS dep_act_political_declarations (
             political_declaration_id TEXT PRIMARY KEY,
             member_id TEXT NOT NULL,
+            member_normalized_name TEXT,
             source_url TEXT NOT NULL UNIQUE,
             text_url TEXT,
             title TEXT NOT NULL,
@@ -473,18 +492,37 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         "ALTER TABLE members ADD COLUMN bills_authored_total INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE members ADD COLUMN amendments_added_total INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_identifier TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN law_status TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_pdf_filename TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_pdf_url TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_text_json TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_text_extracted_at TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_parse_error TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_json TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_reader_summary TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analyzed_at TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_source TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_error TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_factual_json TEXT",
+        "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_interpretation_json TEXT",
         "ALTER TABLE dep_act_laws ADD COLUMN motive_pdf_url TEXT",
         "ALTER TABLE dep_act_laws ADD COLUMN initiators_text TEXT",
         "ALTER TABLE dep_act_laws ADD COLUMN initiators_extracted_at TEXT",
         "ALTER TABLE dep_act_laws ADD COLUMN initiators_parse_error TEXT",
         "ALTER TABLE dep_act_laws ADD COLUMN initiators_source TEXT",
+        "ALTER TABLE dep_act_member_laws ADD COLUMN member_normalized_name TEXT",
         "ALTER TABLE dep_act_member_laws ADD COLUMN is_initiator INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_url TEXT",
+        "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN member_normalized_name TEXT",
         "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_count INTEGER",
         "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN political_declarations_stored INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_id TEXT",
+        "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_normalized_name TEXT",
         "ALTER TABLE dep_act_questions_interpellations ADD COLUMN identifier TEXT",
         "ALTER TABLE dep_act_questions_interpellations ADD COLUMN recipient TEXT",
+        "ALTER TABLE dep_act_member_decision_projects ADD COLUMN member_normalized_name TEXT",
+        "ALTER TABLE dep_act_member_motions ADD COLUMN member_normalized_name TEXT",
+        "ALTER TABLE dep_act_political_declarations ADD COLUMN member_normalized_name TEXT",
     ]:
         try:
             conn.execute(migration)

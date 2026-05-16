@@ -10,8 +10,8 @@ data directory.
 Usage:
     python3 scripts/full_update.py
     python3 scripts/full_update.py --llm-provider openai --llm-model gpt-5-nano
-    python3 scripts/full_update.py --only-step 6        # re-export JSON outputs only
-    python3 scripts/full_update.py --only-step 7        # deploy to frontend only
+    python3 scripts/full_update.py --only-step 7        # re-export JSON outputs only
+    python3 scripts/full_update.py --only-step 8        # deploy to frontend only
     python3 scripts/full_update.py --skip-scrape
     python3 scripts/full_update.py --skip-crawler
 """
@@ -31,6 +31,7 @@ DEFAULT_SCRAPER_DIR = REPO_ROOT.parent / "votez-scraper"
 DEFAULT_FRONTEND_DIR = REPO_ROOT.parent / "votez-frontend"
 DEFAULT_INPUT_DIR = REPO_ROOT / "input" / "stenograme"
 DEFAULT_OUTPUTS_DIR = REPO_ROOT / "outputs"
+DEFAULT_DB_PATH = REPO_ROOT / "state" / "state.sqlite"
 
 # outputs/ subdirectories to sync into votez-frontend/data/activity_analizer/
 FRONTEND_DATA_SUBDIRS = [
@@ -158,7 +159,45 @@ def run_crawler(update_existing: bool, hydrate_law_initiators: bool) -> bool:
     return proc.returncode == 0
 
 
-# ── Step 6: Export JSON outputs from DB ─────────────────────
+# ── Step 6: Adopted-law PDF/text enrichment ─────────────────
+
+def run_adopted_law_enrichment(args: argparse.Namespace) -> bool:
+    cmd = [sys.executable, str(SCRIPT_DIR / "hydrate_adopted_laws.py")]
+    if args.force_adopted_law_extract:
+        cmd.append("--force-extract")
+    if args.adopted_law_limit is not None:
+        cmd += ["--limit", str(args.adopted_law_limit)]
+    if args.adopted_law_extract_only:
+        cmd.append("--extract-only")
+    proc = subprocess.run(cmd)
+    hydrate_ok = proc.returncode == 0
+
+    if args.skip_adopted_law_analysis:
+        print("  Adopted-law impact analysis skipped (--skip-adopted-law-analysis).")
+        return hydrate_ok
+
+    # Always run analysis regardless of hydration exit code — partial failures
+    # (e.g. a 404 PDF) must not block analysis of laws that were already hydrated.
+    # analyze_adopted_laws.py skips rows that have no extracted text or are
+    # already analyzed, so running it when there is nothing to do is harmless.
+    analysis_cmd = [sys.executable, str(SCRIPT_DIR / "analyze_adopted_laws.py")]
+    provider = args.adopted_law_llm_provider
+    model = args.adopted_law_llm_model
+    if provider:
+        analysis_cmd += ["--provider", provider]
+    if model:
+        analysis_cmd += ["--model", model]
+    if args.force_adopted_law_analysis:
+        analysis_cmd.append("--force")
+    if args.adopted_law_limit is not None:
+        analysis_cmd += ["--limit", str(args.adopted_law_limit)]
+    proc = subprocess.run(analysis_cmd)
+    analysis_ok = proc.returncode == 0
+
+    return hydrate_ok and analysis_ok
+
+
+# ── Step 7: Export JSON outputs from DB ─────────────────────
 
 def run_export_outputs() -> bool:
     """Re-export all analysis outputs from DB to outputs/ (no reprocessing)."""
@@ -177,7 +216,7 @@ def run_export_outputs() -> bool:
     return ok
 
 
-# ── Step 7: Deploy to frontend ──────────────────────────────
+# ── Step 8: Deploy to frontend ──────────────────────────────
 
 def _copy_if_changed(src: Path, dst: Path) -> bool:
     """Copy src to dst if dst is missing or differs. Returns True if copied."""
@@ -208,6 +247,18 @@ def deploy_analyzer_outputs(outputs_dir: Path, frontend_data_dir: Path) -> int:
             if _copy_if_changed(src_file, dst_file):
                 copied += 1
     return copied
+
+
+def deploy_db(db_path: Path, frontend_data_dir: Path) -> bool:
+    """Copy state.sqlite to votez-frontend/data/state.sqlite.
+
+    Returns True if the file was copied (i.e. it changed or was absent).
+    """
+    if not db_path.exists():
+        print(f"  WARNING: DB not found at {db_path}, skipping.")
+        return False
+    dst = frontend_data_dir / db_path.name
+    return _copy_if_changed(db_path, dst)
 
 
 def deploy_scraper_lib_files(scraper_dir: Path, frontend_lib_dir: Path) -> int:
@@ -283,6 +334,45 @@ def main() -> int:
         ),
     )
 
+    adopted_law_group = parser.add_argument_group("adopted law enrichment options")
+    adopted_law_group.add_argument(
+        "--force-adopted-law-extract",
+        action="store_true",
+        help="Re-extract adopted-law PDF text even when dep_act_laws already has adopted_law_text_json.",
+    )
+    adopted_law_group.add_argument(
+        "--adopted-law-limit",
+        type=int,
+        default=None,
+        help="Process at most N adopted laws in the enrichment step.",
+    )
+    adopted_law_group.add_argument(
+        "--adopted-law-extract-only",
+        action="store_true",
+        help="Do not download adopted-law PDFs; only extract from cached outputs/pdfs/adopted_laws PDFs.",
+    )
+    adopted_law_group.add_argument(
+        "--skip-adopted-law-analysis",
+        action="store_true",
+        help="Hydrate adopted-law PDFs/text, but skip citizen-facing law impact analysis.",
+    )
+    adopted_law_group.add_argument(
+        "--force-adopted-law-analysis",
+        action="store_true",
+        help="Re-run citizen-facing adopted-law analysis even when analysis JSON already exists.",
+    )
+    adopted_law_group.add_argument(
+        "--adopted-law-llm-provider",
+        choices=["openai", "ollama"],
+        default=None,
+        help="LLM provider for adopted-law analysis (default: openai).",
+    )
+    adopted_law_group.add_argument(
+        "--adopted-law-llm-model",
+        default=None,
+        help="LLM model for adopted-law analysis (default: gpt-5-mini for OpenAI).",
+    )
+
     frontend_group = parser.add_argument_group("frontend deploy options")
     frontend_group.add_argument(
         "--frontend-dir",
@@ -296,13 +386,14 @@ def main() -> int:
     skip_group.add_argument("--skip-pipeline", action="store_true", help="Skip the analysis pipeline.")
     skip_group.add_argument("--skip-productivity", action="store_true", help="Skip the productivity export.")
     skip_group.add_argument("--skip-crawler", action="store_true", help="Skip the deputy activity crawler.")
+    skip_group.add_argument("--skip-adopted-law-enrichment", action="store_true", help="Skip adopted-law PDF/text enrichment.")
     skip_group.add_argument("--skip-export", action="store_true", help="Skip exporting JSON outputs from DB.")
     skip_group.add_argument("--skip-deploy", action="store_true", help="Skip deploying outputs to the frontend.")
     skip_group.add_argument(
-        "--only-step", type=int, choices=range(1, 8), metavar="{1..7}",
+        "--only-step", type=int, choices=range(1, 9), metavar="{1..8}",
         help=(
             "Run only this step and skip all others. "
-            "1=scrape  2=sync  3=pipeline  4=productivity  5=crawler  6=export  7=deploy"
+            "1=scrape  2=sync  3=pipeline  4=productivity  5=crawler  6=adopted-law-enrichment  7=export  8=deploy"
         ),
     )
 
@@ -318,14 +409,15 @@ def main() -> int:
         args.skip_pipeline     = args.only_step != 3
         args.skip_productivity = args.only_step != 4
         args.skip_crawler      = args.only_step != 5
-        args.skip_export       = args.only_step != 6
-        args.skip_deploy       = args.only_step != 7
+        args.skip_adopted_law_enrichment = args.only_step != 6
+        args.skip_export       = args.only_step != 7
+        args.skip_deploy       = args.only_step != 8
 
     scraper_dir = Path(args.scraper_dir)
     frontend_dir = Path(args.frontend_dir)
     frontend_data_dir = frontend_dir / "data" / "activity_analizer"
     frontend_lib_dir = frontend_dir / "lib"
-    steps_total = 7
+    steps_total = 8
     failed = False
 
     # ── Step 1: Scrape ──────────────────────────────────────
@@ -384,32 +476,47 @@ def main() -> int:
     else:
         print(f"\nStep 5/{steps_total}  Crawler — skipped (--skip-crawler)")
 
-    # ── Step 6: Export JSON outputs from DB ─────────────────
+    # ── Step 6: Adopted-law PDF/text enrichment ─────────────
+    if not args.skip_adopted_law_enrichment and not args.dry_run:
+        _header(f"Step 6/{steps_total}  Hydrating adopted-law PDFs and text")
+        if not run_adopted_law_enrichment(args):
+            print("\n  Adopted-law enrichment failed.")
+            failed = True
+    elif args.dry_run:
+        print(f"\nStep 6/{steps_total}  Adopted-law enrichment — skipped (dry-run)")
+    else:
+        print(f"\nStep 6/{steps_total}  Adopted-law enrichment — skipped (--skip-adopted-law-enrichment)")
+
+    # ── Step 7: Export JSON outputs from DB ─────────────────
     if not args.skip_export and not args.dry_run:
-        _header(f"Step 6/{steps_total}  Exporting JSON outputs from DB")
+        _header(f"Step 7/{steps_total}  Exporting JSON outputs from DB")
         if not run_export_outputs():
             print("\n  Export failed.")
             failed = True
     elif args.dry_run:
-        print(f"\nStep 6/{steps_total}  Export — skipped (dry-run)")
+        print(f"\nStep 7/{steps_total}  Export — skipped (dry-run)")
     else:
-        print(f"\nStep 6/{steps_total}  Export — skipped (--skip-export)")
+        print(f"\nStep 7/{steps_total}  Export — skipped (--skip-export)")
 
-    # ── Step 7: Deploy to frontend ──────────────────────────
+    # ── Step 8: Deploy to frontend ──────────────────────────
     if not args.skip_deploy and not args.dry_run:
-        _header(f"Step 7/{steps_total}  Deploying to frontend")
+        _header(f"Step 8/{steps_total}  Deploying to frontend")
 
         print(f"  Analyzer outputs → {frontend_data_dir}")
         data_deployed = deploy_analyzer_outputs(DEFAULT_OUTPUTS_DIR, frontend_data_dir)
         print(f"    Files copied (new/changed): {data_deployed}")
 
+        print(f"  Database          → {frontend_data_dir / 'state.sqlite'}")
+        db_copied = deploy_db(DEFAULT_DB_PATH, frontend_data_dir)
+        print(f"    Copied: {db_copied}")
+
         print(f"  Scraper registry  → {frontend_lib_dir}")
         lib_deployed = deploy_scraper_lib_files(scraper_dir, frontend_lib_dir)
         print(f"    Files copied (new/changed): {lib_deployed}")
     elif args.dry_run:
-        print(f"\nStep 7/{steps_total}  Deploy — skipped (dry-run)")
+        print(f"\nStep 8/{steps_total}  Deploy — skipped (dry-run)")
     else:
-        print(f"\nStep 7/{steps_total}  Deploy — skipped (--skip-deploy)")
+        print(f"\nStep 8/{steps_total}  Deploy — skipped (--skip-deploy)")
 
     # ── Summary ─────────────────────────────────────────────
     _header("Done")

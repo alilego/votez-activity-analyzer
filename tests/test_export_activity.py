@@ -265,11 +265,62 @@ class TestExportActivityAgainstFixtureDB(unittest.TestCase):
         self.assertEqual(result.members_written, 5)
         # AUR and PSD (Neafiliat member's party_id is NULL -> skipped)
         self.assertEqual(result.parties_written, 2)
+        self.assertEqual(result.adopted_laws_written, 0)
         members_dir = out_dir / "members"
         parties_dir = out_dir / "parties"
         self.assertTrue((members_dir / "activity_deputat_1_ana-pop.json").exists())
         self.assertTrue((parties_dir / "activity_aur.json").exists())
         self.assertTrue((parties_dir / "activity_psd.json").exists())
+
+    def test_adopted_law_details_are_exported_separately(self):
+        self.conn.execute(
+            """
+            UPDATE dep_act_laws
+            SET adopted_law_pdf_filename = ?,
+                adopted_law_pdf_url = ?,
+                adopted_law_text_json = ?,
+                adopted_law_text_extracted_at = ?,
+                adopted_law_analysis_json = ?,
+                adopted_law_reader_summary = ?,
+                adopted_law_analyzed_at = ?
+            WHERE law_id = ?
+            """,
+            (
+                "adopted_law_lege_1_2025.pdf",
+                "https://example.test/lege-1.pdf",
+                json.dumps({"schema_version": 1, "full_text": "Art. 1. Test"}),
+                "2026-01-01T00:00:00+00:00",
+                json.dumps({"law_id": "law:aur_init", "plain_language_title": "Lege test"}),
+                json.dumps({"schema_version": 1, "title": "Lege test"}),
+                "2026-01-02T00:00:00+00:00",
+                "law:aur_init",
+            ),
+        )
+        self.conn.commit()
+
+        out_dir = self.tmp_path / "out"
+        result = export_activity_snapshots(self.conn, output_dir=out_dir)
+        self.assertEqual(result.adopted_laws_written, 1)
+
+        member = json.loads(
+            (out_dir / "members" / "activity_deputat_1_ana-pop.json").read_text()
+        )
+        law = {item["law_id"]: item for item in member["laws"]}["law:aur_init"]
+        self.assertEqual(law["adopted_law_details_id"], "law:aur_init")
+        self.assertEqual(
+            law["adopted_law_details_path"],
+            "adopted_laws/adopted_law_lege-1-2025.json",
+        )
+        self.assertNotIn("adopted_law_text", law)
+        self.assertNotIn("adopted_law_pdf_url", law)
+
+        detail_path = out_dir / law["adopted_law_details_path"]
+        detail = json.loads(detail_path.read_text())
+        self.assertEqual(detail["adopted_law_details_id"], "law:aur_init")
+        self.assertEqual(detail["adopted_law_pdf_url"], "https://example.test/lege-1.pdf")
+        self.assertEqual(detail["adopted_law_text"]["full_text"], "Art. 1. Test")
+        self.assertEqual(detail["law_analysis"]["plain_language_title"], "Lege test")
+        self.assertEqual(detail["reader_summary"]["title"], "Lege test")
 
     def test_member_snapshot_rolls_up_initiators_and_supporters(self):
         out_dir = self.tmp_path / "out"

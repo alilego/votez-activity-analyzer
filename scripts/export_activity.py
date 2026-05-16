@@ -6,6 +6,7 @@ Writes two folders:
 
     outputs/activity/members/activity_<member_id>_<slug>.json
     outputs/activity/parties/activity_<party_slug>.json
+    outputs/activity/adopted_laws/adopted_law_<law_slug>.json
 
 Each member snapshot contains the member's identity plus four activity
 blocks (motions, questions & interpellations, political declarations,
@@ -36,6 +37,10 @@ Design notes
 * On each export we wipe the two output folders first. This keeps the
   snapshots idempotent: files for deleted members / parties never
   linger.
+* Full adopted-law text is intentionally not embedded in member/party
+  snapshots. Those snapshots carry a compact `adopted_law_details_id`
+  and `adopted_law_details_path`; the dedicated adopted-law JSON file
+  carries the PDF metadata and structured extracted text.
 """
 
 from __future__ import annotations
@@ -51,6 +56,7 @@ from typing import Any
 
 
 DEFAULT_ACTIVITY_OUTPUT_DIR = Path("outputs/activity")
+ADOPTED_LAW_DETAILS_SUBDIR = "adopted_laws"
 
 
 def _iso_now() -> str:
@@ -77,6 +83,20 @@ def _safe_columns(columns_json: str | None) -> list[Any]:
     if isinstance(value, list):
         return value
     return []
+
+
+def _safe_json_object(value: str | None) -> dict[str, Any] | None:
+    if not value:
+        return None
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _safe_reader_summary(value: str | None) -> dict[str, Any] | str | None:
+    return _safe_json_object(value) or value
 
 
 def _nonempty(value: Any) -> bool:
@@ -222,7 +242,8 @@ def _load_laws(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
         """
         SELECT law_id, source_url, identifier, title, details_text, columns_json,
                adopted_law_identifier, motive_pdf_url, initiators_text,
-               initiators_source
+               initiators_source, adopted_law_pdf_filename, adopted_law_pdf_url,
+               adopted_law_text_json, adopted_law_analysis_json
         FROM dep_act_laws
         """
     ).fetchall()
@@ -238,8 +259,22 @@ def _load_laws(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
         motive_pdf_url,
         initiators_text,
         initiators_source,
+        adopted_law_pdf_filename,
+        adopted_law_pdf_url,
+        adopted_law_text_json,
+        adopted_law_analysis_json,
     ) in rows:
-        out[law_id] = {
+        has_adopted_law_details = any(
+            _nonempty(value)
+            for value in (
+                adopted_law_pdf_filename,
+                adopted_law_pdf_url,
+                adopted_law_text_json,
+                adopted_law_analysis_json,
+            )
+        )
+        adopted_law_slug = _slugify_name(str(adopted_law_identifier or law_id))
+        entry = {
             "law_id": law_id,
             "source_url": source_url,
             "identifier": identifier,
@@ -251,6 +286,70 @@ def _load_laws(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
             "motive_pdf_url": motive_pdf_url,
             "initiators_text": initiators_text,
             "initiators_source": initiators_source,
+        }
+        if has_adopted_law_details:
+            entry["adopted_law_details_id"] = law_id
+            entry["adopted_law_details_path"] = (
+                f"{ADOPTED_LAW_DETAILS_SUBDIR}/adopted_law_{adopted_law_slug}.json"
+            )
+        out[law_id] = entry
+    return out
+
+
+def _load_adopted_law_details(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
+    rows = conn.execute(
+        """
+        SELECT law_id, source_url, identifier, title, adopted_law_identifier,
+               adopted_law_pdf_filename, adopted_law_pdf_url,
+               adopted_law_text_json, adopted_law_text_extracted_at,
+               adopted_law_analysis_json, adopted_law_reader_summary,
+               adopted_law_analyzed_at, adopted_law_analysis_source
+        FROM dep_act_laws
+        WHERE (
+              adopted_law_pdf_filename IS NOT NULL
+              OR adopted_law_pdf_url IS NOT NULL
+              OR adopted_law_text_json IS NOT NULL
+              OR adopted_law_analysis_json IS NOT NULL
+        )
+        ORDER BY law_id
+        """
+    ).fetchall()
+    out: dict[str, dict[str, Any]] = {}
+    for (
+        law_id,
+        source_url,
+        identifier,
+        title,
+        adopted_law_identifier,
+        adopted_law_pdf_filename,
+        adopted_law_pdf_url,
+        adopted_law_text_json,
+        adopted_law_text_extracted_at,
+        adopted_law_analysis_json,
+        adopted_law_reader_summary,
+        adopted_law_analyzed_at,
+        adopted_law_analysis_source,
+    ) in rows:
+        adopted_law_slug = _slugify_name(str(adopted_law_identifier or law_id))
+        out[law_id] = {
+            "generated_at": _iso_now(),
+            "adopted_law_details_id": law_id,
+            "law_id": law_id,
+            "source_url": source_url,
+            "identifier": identifier,
+            "title": title,
+            "adopted_law_identifier": adopted_law_identifier,
+            "adopted_law_pdf_filename": adopted_law_pdf_filename,
+            "adopted_law_pdf_url": adopted_law_pdf_url,
+            "adopted_law_text": _safe_json_object(adopted_law_text_json),
+            "adopted_law_text_extracted_at": adopted_law_text_extracted_at,
+            "law_analysis": _safe_json_object(adopted_law_analysis_json),
+            "reader_summary": _safe_reader_summary(adopted_law_reader_summary),
+            "law_analysis_analyzed_at": adopted_law_analyzed_at,
+            "law_analysis_source": adopted_law_analysis_source,
+            "adopted_law_details_path": (
+                f"{ADOPTED_LAW_DETAILS_SUBDIR}/adopted_law_{adopted_law_slug}.json"
+            ),
         }
     return out
 
@@ -715,19 +814,31 @@ def build_party_activity_snapshot(
 class ExportResult:
     """Lightweight container so the caller can report what was written."""
 
-    __slots__ = ("members_written", "parties_written", "output_dir")
+    __slots__ = (
+        "members_written",
+        "parties_written",
+        "adopted_laws_written",
+        "output_dir",
+    )
 
     def __init__(
-        self, members_written: int, parties_written: int, output_dir: Path
+        self,
+        members_written: int,
+        parties_written: int,
+        output_dir: Path,
+        adopted_laws_written: int = 0,
     ) -> None:
         self.members_written = members_written
         self.parties_written = parties_written
+        self.adopted_laws_written = adopted_laws_written
         self.output_dir = output_dir
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         return (
             f"ExportResult(members={self.members_written}, "
-            f"parties={self.parties_written}, dir={self.output_dir})"
+            f"parties={self.parties_written}, "
+            f"adopted_laws={self.adopted_laws_written}, "
+            f"dir={self.output_dir})"
         )
 
 
@@ -737,6 +848,14 @@ def _wipe_activity_dir(directory: Path) -> None:
         return
     for path in directory.iterdir():
         if path.is_file() and path.name.startswith("activity_") and path.suffix == ".json":
+            path.unlink()
+
+
+def _wipe_adopted_laws_dir(directory: Path) -> None:
+    if not directory.exists():
+        return
+    for path in directory.iterdir():
+        if path.is_file() and path.name.startswith("adopted_law_") and path.suffix == ".json":
             path.unlink()
 
 
@@ -762,6 +881,19 @@ def _write_party_file(
     return path
 
 
+def _write_adopted_law_file(
+    adopted_laws_dir: Path, detail: dict[str, Any]
+) -> Path:
+    slug = _slugify_name(
+        str(detail.get("adopted_law_identifier") or detail["law_id"])
+    )
+    path = adopted_laws_dir / f"adopted_law_{slug}.json"
+    path.write_text(
+        json.dumps(detail, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return path
+
+
 def export_activity_snapshots(
     conn: sqlite3.Connection,
     *,
@@ -775,10 +907,13 @@ def export_activity_snapshots(
     prefix = f"{progress_prefix} " if progress_prefix else ""
     members_dir = output_dir / "members"
     parties_dir = output_dir / "parties"
+    adopted_laws_dir = output_dir / ADOPTED_LAW_DETAILS_SUBDIR
     members_dir.mkdir(parents=True, exist_ok=True)
     parties_dir.mkdir(parents=True, exist_ok=True)
+    adopted_laws_dir.mkdir(parents=True, exist_ok=True)
     _wipe_activity_dir(members_dir)
     _wipe_activity_dir(parties_dir)
+    _wipe_adopted_laws_dir(adopted_laws_dir)
 
     members = _load_members_index(conn)
     motions = _load_motions(conn)
@@ -786,6 +921,7 @@ def export_activity_snapshots(
     decision_projects = _load_decision_projects(conn)
     member_projects, project_collaborators = _load_member_decision_projects(conn)
     laws = _load_laws(conn)
+    adopted_law_details = _load_adopted_law_details(conn)
     member_laws, law_memberships = _load_member_laws(conn)
     questions_by_member = _load_questions_by_member(conn)
     declarations_by_member = _load_declarations_by_member(conn)
@@ -794,6 +930,7 @@ def export_activity_snapshots(
         f"{prefix}Activity export: {len(members)} member(s), "
         f"{len(motions)} motion(s), {len(decision_projects)} decision "
         f"project(s), {len(laws)} law(s), "
+        f"{len(adopted_law_details)} adopted law detail file(s), "
         f"{sum(len(v) for v in questions_by_member.values())} question(s), "
         f"{sum(len(v) for v in declarations_by_member.values())} declaration(s).",
         flush=True,
@@ -836,10 +973,21 @@ def export_activity_snapshots(
         _write_party_file(parties_dir, party_id, snapshot)
         parties_written += 1
 
+    adopted_laws_written = 0
+    for detail in adopted_law_details.values():
+        _write_adopted_law_file(adopted_laws_dir, detail)
+        adopted_laws_written += 1
+
     print(
         f"{prefix}Activity export complete: wrote {members_written} "
         f"member file(s) to {members_dir} and {parties_written} "
-        f"party file(s) to {parties_dir}.",
+        f"party file(s) to {parties_dir}; wrote {adopted_laws_written} "
+        f"adopted law detail file(s) to {adopted_laws_dir}.",
         flush=True,
     )
-    return ExportResult(members_written, parties_written, output_dir)
+    return ExportResult(
+        members_written,
+        parties_written,
+        output_dir,
+        adopted_laws_written=adopted_laws_written,
+    )

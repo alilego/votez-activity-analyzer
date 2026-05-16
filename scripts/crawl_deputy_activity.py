@@ -104,7 +104,17 @@ CREATE TABLE IF NOT EXISTS dep_act_laws (
     source_url TEXT NOT NULL UNIQUE,
     identifier TEXT,
     adopted_law_identifier TEXT,
-    is_adopted INTEGER NOT NULL DEFAULT 0,
+    law_status TEXT,
+    adopted_law_pdf_filename TEXT,
+    adopted_law_pdf_url TEXT,
+    adopted_law_text_json TEXT,
+    adopted_law_text_extracted_at TEXT,
+    adopted_law_parse_error TEXT,
+    adopted_law_analysis_json TEXT,
+    adopted_law_reader_summary TEXT,
+    adopted_law_analyzed_at TEXT,
+    adopted_law_analysis_source TEXT,
+    adopted_law_analysis_error TEXT,
     motive_pdf_url TEXT,
     initiators_text TEXT,
     initiators_extracted_at TEXT,
@@ -236,9 +246,18 @@ ACTIVITY_MIGRATIONS = (
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_id TEXT",
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN identifier TEXT",
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN recipient TEXT",
-    # is_adopted — persisted boolean so consumers can filter without re-deriving
-    "ALTER TABLE dep_act_laws ADD COLUMN is_adopted INTEGER NOT NULL DEFAULT 0",
-    "UPDATE dep_act_laws SET is_adopted = CASE WHEN adopted_law_identifier IS NOT NULL AND trim(adopted_law_identifier) != '' THEN 1 ELSE 0 END",
+    # law_status — normalized stage text (e.g. "la comisii", "la senat", "adoptata")
+    "ALTER TABLE dep_act_laws ADD COLUMN law_status TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_pdf_filename TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_pdf_url TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_text_json TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_text_extracted_at TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_parse_error TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_json TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_reader_summary TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analyzed_at TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_source TEXT",
+    "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_error TEXT",
 )
 
 LEGACY_ACTIVITY_TABLE_RENAMES = (
@@ -705,6 +724,60 @@ def _extract_adopted_law_identifier(text: str) -> str | None:
     return f"Lege {match.group(1)}"
 
 
+# Maps folded (diacritic-stripped, lowercased) stage cell text → canonical status string.
+# The canonical strings use no diacritics so they are stable across source encoding changes.
+_LAW_STATUS_CANONICAL: dict[str, str] = {
+    "adoptat": "adoptata_in_parlament",
+    "adoptata": "adoptata_in_parlament",
+    "la comisii": "la comisii",
+    "retrimis la comisii": "retrimis la comisii",
+    "raport depus": "raport depus",
+    "la senat": "la senat",
+    "in lucru, la comisiile permanente ale senatului": "la senat",
+    "inregistrat la senat pt. dezbatere": "inregistrat la senat",
+    "inregistrat la senat pt. informare": "inregistrat la senat",
+    "in reexaminare la senat": "in reexaminare la senat",
+    "la promulgare": "la promulgare",
+    "procedura legislativa incetata": "procedura incetata",
+    "pe ordinea de zi": "pe ordinea de zi",
+    "retras de catre initiator": "retras",
+    "retrasa de catre initiator": "retras",
+    "respinsa definitiv": "respinsa",
+    "respins definitiv": "respinsa",
+    "aviz/ punct de vedere solicitat": "aviz solicitat",
+    "sesizare de neconstitutionalitate": "sesizare neconstitutionalitate",
+}
+
+# Folded prefixes that indicate the cell contains a law title rather than a stage value.
+# This happens when the "Stadiu" column is absent from the scraped table.
+_LAW_STATUS_TITLE_PREFIXES = ("propunere legislativa", "proiect de lege")
+
+_LAW_STATUS_LEGE_RE = re.compile(r"^lege\s+\d{1,5}/\d{4}$")
+
+
+def _normalize_law_status(raw_status: str | None, adopted_law_identifier: str | None) -> str | None:
+    """Return a canonical, diacritic-free status string for a law row.
+
+    Rows with a final adopted-law identifier return ``"adoptata"``. Rows whose
+    stage cell only says "adoptat/adoptata" return ``"adoptata_in_parlament"``
+    because they may still be pending promulgation/publication of the final law.
+    Rows whose last column appears to be a law title (no Stadiu column detected
+    during scraping) return ``None``.
+    """
+    if adopted_law_identifier:
+        return "adoptata"
+    if not raw_status or not raw_status.strip():
+        return None
+    folded = _fold(raw_status).strip()
+    # Discard rows where the "status" cell is actually a law title
+    if any(folded.startswith(p) for p in _LAW_STATUS_TITLE_PREFIXES):
+        return None
+    # Catch "Lege NNN/YYYY" that slipped through without adopted_law_identifier
+    if _LAW_STATUS_LEGE_RE.match(folded):
+        return "adoptata"
+    return _LAW_STATUS_CANONICAL.get(folded, raw_status.strip())
+
+
 def _is_law_metadata_title(value: str, identifier: str | None) -> bool:
     text = _clean_text(value)
     if not text:
@@ -787,7 +860,14 @@ def _extract_adopted_law_identifier_from_columns(
         candidate_indices = []
 
     for index in candidate_indices:
-        identifier = _extract_adopted_law_identifier(columns[index])
+        cell_text = _clean_text(columns[index])
+        identifier = _extract_adopted_law_identifier(cell_text)
+        # The stage/status cell should itself be the adopted-law identifier
+        # (for example "Lege 144/2025"). If we merely search inside a title
+        # such as "modificarea Legii nr.96/2006", we incorrectly mark a
+        # proposal about an existing law as already adopted.
+        if identifier and _fold(cell_text) != _fold(identifier):
+            identifier = None
         if identifier:
             return identifier, index
     return None, None
@@ -4147,7 +4227,10 @@ def _store_laws(
             values={
                 "identifier": record.identifier,
                 "adopted_law_identifier": record.adopted_law_identifier,
-                "is_adopted": 1 if record.adopted_law_identifier else 0,
+                "law_status": _normalize_law_status(
+                    record.columns[-1] if record.columns else None,
+                    record.adopted_law_identifier,
+                ),
                 "title": record.title,
                 "details_text": record.details_text,
                 "columns_json": json.dumps(record.columns, ensure_ascii=False),

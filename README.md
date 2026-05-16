@@ -131,10 +131,12 @@ With **local LLM** (Ollama — free, default):
 
 ```bash
 ollama serve                          # in a separate terminal, keep running
-python3 scripts/full_update.py --update-existing-crawler
+python3 scripts/full_update.py \
+    --update-existing-crawler \
+    --adopted-law-llm-provider ollama
 ```
 
-With **OpenAI API** (remote, paid):
+With **OpenAI API** (remote, paid). Adopted-law impact analysis defaults to OpenAI `gpt-5-mini` unless overridden:
 
 ```bash
 python3 scripts/full_update.py \
@@ -143,28 +145,36 @@ python3 scripts/full_update.py \
     --update-existing-crawler
 ```
 
-The script runs 6 steps in order: scrape from cdep.ro → sync to `input/` → analysis pipeline → productivity export → deputy activity crawler → deploy to `votez-frontend/`.
+The script runs 8 steps in order: scrape from cdep.ro → sync to `input/` → analysis pipeline → productivity export → deputy activity crawler → adopted-law PDF/text + impact analysis → JSON export → deploy to `votez-frontend/`.
 
 **Skip individual steps / opt-in extras:**
 
 | Flag | Effect |
 |------|--------|
-| `--only-step {1..7}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=export 7=deploy) |
+| `--only-step {1..8}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=adopted-law-enrichment 7=export 8=deploy) |
 | `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
 | `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
 | `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
 | `--skip-productivity` | Step 4 — don't re-export productivity metrics |
 | `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
 | `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
-| `--skip-export` | Step 6 — don't re-export JSON outputs from DB to `outputs/` |
-| `--skip-deploy` | Step 7 — don't copy outputs to `votez-frontend/` |
+| `--skip-adopted-law-enrichment` | Step 6 — skip adopted-law PDF/text extraction and citizen-facing impact analysis |
+| `--adopted-law-limit N` | Step 6 — process at most N adopted laws; useful for smoke tests |
+| `--adopted-law-extract-only` | Step 6 — don't download PDFs; only extract text from cached `outputs/pdfs/adopted_laws/` files |
+| `--force-adopted-law-extract` | Step 6 — re-extract text even when `adopted_law_text_json` already exists |
+| `--skip-adopted-law-analysis` | Step 6 — hydrate adopted-law PDFs/text but skip the LLM impact analysis |
+| `--force-adopted-law-analysis` | Step 6 — re-run impact analysis even when `adopted_law_analysis_json` already exists |
+| `--adopted-law-llm-provider {openai,ollama}` | Step 6 — provider for adopted-law impact analysis (default: `openai`) |
+| `--adopted-law-llm-model MODEL` | Step 6 — model for adopted-law impact analysis (default: `gpt-5-mini` for OpenAI) |
+| `--skip-export` | Step 7 — don't re-export JSON outputs from DB to `outputs/` |
+| `--skip-deploy` | Step 8 — don't copy outputs to `votez-frontend/` |
 
 **Result:** everything lands in `outputs/`, `state/state.sqlite`, and `../votez-frontend/` (`data/activity_analizer/` + `lib/`). See [Where everything lands](#where-everything-lands) for the full layout.
 
 <details>
 <summary><b>Manual step-by-step alternative</b> (without full_update.py)</summary>
 
-With **local LLM** (Ollama — free, default):
+With **local LLM** for both intervention analysis and adopted-law impact analysis:
 
 ```bash
 # 1. Start Ollama in a separate terminal (keep it running)
@@ -230,14 +240,14 @@ Use this when the repository is already set up and you want to fetch the latest 
 
 **Single command** — scrapes only new stenograms (the scraper is incremental), syncs them, and processes only what's new:
 
-With **local LLM** (Ollama — free, default):
+With **local LLM** for both intervention analysis and adopted-law impact analysis:
 
 ```bash
 ollama serve                          # in a separate terminal, keep running
-python3 scripts/full_update.py
+python3 scripts/full_update.py --adopted-law-llm-provider ollama
 ```
 
-With **OpenAI API** (remote, paid):
+With **OpenAI API** (remote, paid). Adopted-law impact analysis defaults to OpenAI `gpt-5-mini` unless overridden:
 
 ```bash
 python3 scripts/full_update.py \
@@ -249,15 +259,23 @@ python3 scripts/full_update.py \
 
 | Flag | Effect |
 |------|--------|
-| `--only-step {1..7}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=export 7=deploy) |
+| `--only-step {1..8}` | Run **only** this step, skip all others (1=scrape 2=sync 3=pipeline 4=productivity 5=crawler 6=adopted-law-enrichment 7=export 8=deploy) |
 | `--skip-scrape` | Step 1 — don't hit cdep.ro, just use existing scraper output |
 | `--skip-sync` | Step 2 — don't copy files from scraper to `input/` |
 | `--skip-pipeline` | Step 3 — don't run the analysis pipeline |
 | `--skip-productivity` | Step 4 — don't re-export productivity metrics |
 | `--skip-crawler` | Step 5 — skip the deputy activity crawl entirely |
 | `--hydrate-law-initiators` | Step 5 opt-in — after crawling, download each law's *Expunerea de motive* PDF, OCR it with Tesseract, and mark initiating deputies. Slow; omitted by default. |
-| `--skip-export` | Step 6 — don't re-export JSON outputs from DB to `outputs/` |
-| `--skip-deploy` | Step 7 — don't copy outputs to `votez-frontend/` |
+| `--skip-adopted-law-enrichment` | Step 6 — skip adopted-law PDF/text extraction and citizen-facing impact analysis |
+| `--adopted-law-limit N` | Step 6 — process at most N adopted laws; useful for smoke tests |
+| `--adopted-law-extract-only` | Step 6 — don't download PDFs; only extract text from cached `outputs/pdfs/adopted_laws/` files |
+| `--force-adopted-law-extract` | Step 6 — re-extract text even when `adopted_law_text_json` already exists |
+| `--skip-adopted-law-analysis` | Step 6 — hydrate adopted-law PDFs/text but skip the LLM impact analysis |
+| `--force-adopted-law-analysis` | Step 6 — re-run impact analysis even when `adopted_law_analysis_json` already exists |
+| `--adopted-law-llm-provider {openai,ollama}` | Step 6 — provider for adopted-law impact analysis (default: `openai`) |
+| `--adopted-law-llm-model MODEL` | Step 6 — model for adopted-law impact analysis (default: `gpt-5-mini` for OpenAI) |
+| `--skip-export` | Step 7 — don't re-export JSON outputs from DB to `outputs/` |
+| `--skip-deploy` | Step 8 — don't copy outputs to `votez-frontend/` |
 
 To restrict scraping to a specific time range:
 
@@ -276,6 +294,9 @@ python3 scripts/full_update.py --scrape-year 2026 --scrape-month 5
 | Intervention labels | `intervention_analysis.relevance_source` | `llm_agent_v1` row exists for that intervention |
 | Deputy activity pages | `dep_act_member_activity_crawl` | Row exists (unless `--update-existing-crawler` is passed) |
 | Law initiator PDFs | `outputs/pdfs/law_initiators/` cache | Cached PDF file exists on disk |
+| Adopted-law PDFs | `outputs/pdfs/adopted_laws/` cache | Cached PDF file exists on disk |
+| Adopted-law text | `dep_act_laws.adopted_law_text_json` | Non-empty text JSON exists unless `--force-adopted-law-extract` is passed |
+| Adopted-law impact analysis | `dep_act_laws.adopted_law_analysis_json` | Non-empty analysis JSON exists unless `--force-adopted-law-analysis` is passed |
 
 **Tip:** To check what would be processed without making any changes:
 
@@ -399,7 +420,9 @@ outputs/topics/                         # per-topic roll-ups
 outputs/productivity/                   # word/letter productivity metrics (members + parties + total)
 outputs/activity/members/               # per-member crawler activity snapshots (motions, Q&I, laws, ...)
 outputs/activity/parties/               # per-party aggregations (initiated laws, majority support, ...)
+outputs/activity/adopted_laws/          # one JSON per adopted law with extracted text + impact analysis
 outputs/pdfs/law_initiators/            # cached law-initiator PDFs reused by OCR hydration
+outputs/pdfs/adopted_laws/              # cached adopted-law "Forma adoptată" PDFs
 ```
 
 ### Iterating
@@ -701,6 +724,8 @@ When using `--analyzer-cmd`, these env vars are injected:
 |--------|---------|
 | `scripts/full_update.py` | End-to-end orchestrator — scrape stenograms + sync + pipeline + exports + crawler in one command |
 | `scripts/run_pipeline.py` | Main orchestrator — incremental, handles baseline + LLM + export |
+| `scripts/hydrate_adopted_laws.py` | Download adopted-law "Forma adoptată" PDFs, cache them, and extract structured law text into `dep_act_laws` |
+| `scripts/analyze_adopted_laws.py` | Three-stage LLM pipeline that turns extracted adopted-law text into citizen-friendly impact analysis and reader summary JSON |
 | `scripts/analyze_interventions.py` | Baseline classifier (keyword + RAG index build) |
 | `scripts/llm_session_topics.py` | LLM session topic extraction — runs before intervention classification |
 | `scripts/llm_agent.py` | LLM intervention classification — the main intelligence layer |
@@ -772,6 +797,52 @@ Laws, decision projects, and motions can be associated with several deputies, so
 
 ---
 
+## Adopted-law text and impact analysis
+
+Step 6 of `scripts/full_update.py` enriches adopted laws in two phases:
+
+1. `scripts/hydrate_adopted_laws.py` reads `dep_act_laws` rows with a final `adopted_law_identifier` or `law_status='adoptata_in_parlament'`, reuses or downloads the adopted-law "Forma adoptată" PDF into `outputs/pdfs/adopted_laws/`, extracts the PDF text, and stores structured text in `dep_act_laws.adopted_law_text_json`. `law_status='adoptata'` is reserved for rows that already have a final law identifier such as `Lege 233/2025`; chamber/parliament adoption before final publication is stored separately as `adoptata_in_parlament`.
+2. `scripts/analyze_adopted_laws.py` reads that extracted text and runs a three-stage LLM pipeline:
+   - factual extraction: affected legal acts, obligations, rights, penalties/costs, institutions, dates, target groups;
+   - citizen interpretation: plain-language title, summary, affected groups, practical impact, labels and scores;
+   - critic/validation: removes or flags unsupported claims and writes the final validated analysis.
+
+The analysis deliberately uses the extracted law text as the primary source of truth, not just the title. Existing analyses are skipped by default: a row is re-analyzed only when `adopted_law_analysis_json` is empty, unless you pass `--force-adopted-law-analysis`.
+
+Useful commands:
+
+```bash
+# Small end-to-end smoke test for adopted laws: PDF/text hydration + LLM analysis
+python3 scripts/full_update.py --only-step 6 --adopted-law-limit 3
+
+# Analyze only, assuming adopted-law text is already extracted
+python3 scripts/analyze_adopted_laws.py --limit 3
+
+# Force-refresh existing analyses
+python3 scripts/analyze_adopted_laws.py --limit 3 --force
+
+# Use a local model instead of the default OpenAI gpt-5-mini
+python3 scripts/analyze_adopted_laws.py --provider ollama --model qwen3:14b --limit 3
+```
+
+Stored DB fields on `dep_act_laws` include:
+
+- `adopted_law_pdf_filename`, `adopted_law_pdf_url`
+- `adopted_law_text_json`, `adopted_law_text_extracted_at`, `adopted_law_parse_error`
+- `adopted_law_analysis_json`
+- `adopted_law_reader_summary` — JSON object optimized for frontend cards
+- `adopted_law_analyzed_at`, `adopted_law_analysis_source`, `adopted_law_analysis_error`
+
+After export (step 7), each adopted law gets a dedicated file:
+
+```text
+outputs/activity/adopted_laws/adopted_law_<law_slug>.json
+```
+
+Member and party activity JSONs do not embed full law text or analysis. They only include `adopted_law_details_id` and `adopted_law_details_path`, so the frontend can load the detail file when needed.
+
+---
+
 ## Activity export from crawler DB
 
 Pass `--export-activity` to the crawler to serialize the crawler DB into per-member and per-party JSON snapshots. The export runs at the end of the crawl and/or law-initiator hydration phase. Use `--only-export-activity` to skip crawling and OCR entirely and just rebuild the snapshots from the current DB — useful when iterating on the snapshot shape or after a fresh hydration run.
@@ -795,6 +866,7 @@ Output layout (written under `outputs/activity/` by default):
 ```text
 outputs/activity/members/activity_{member_id}_{name_slug}.json
 outputs/activity/parties/activity_{party_slug}.json
+outputs/activity/adopted_laws/adopted_law_{law_slug}.json
 ```
 
 Each **member** file contains the member's identity (`member_id`, `name`, `chamber`, `party_id`, `party_name`, `profile_url`) plus five activity blocks:
@@ -805,6 +877,11 @@ Each **member** file contains the member's identity (`member_id`, `name`, `chamb
 - `decision_projects[]` — each project, enriched with `collaborating_parties: [{party_id, party_name, members_count, members: [{member_id, name}]}]` grouping every collaborator by party.
 - `laws[]` — every law the member is linked to via `dep_act_member_laws`. Each entry adds `is_initiator` (for this member), `is_adopted` (from `adopted_law_identifier`), `initiator_parties` (members with `is_initiator=1` grouped by party), and `supporter_parties` (**all** linked members grouped by party — initiators are a subset).
 
+For adopted laws with detail data, law entries also include compact references:
+
+- `adopted_law_details_id` — currently the same as `law_id`;
+- `adopted_law_details_path` — relative path such as `adopted_laws/adopted_law_lege-34-2025.json`.
+
 Each **party** file aggregates its members:
 
 - `members_count` and `majority_threshold = min(10, ceil(members_count / 2))`.
@@ -812,6 +889,8 @@ Each **party** file aggregates its members:
 - `laws_majority_supported_only[]` — the party had **no** initiator on this law, but ≥ `majority_threshold` of its members appear as supporters. No overlap with `laws_initiated`.
 - `questions_and_interpellations[]` — all Q&I from every party member, each tagged with `asked_by: {member_id, name}`.
 - `motions_majority_supported[]` — motions where ≥ `majority_threshold` of the party's members are supporters, including `all_supporting_parties` counts.
+
+Each **adopted-law detail** file contains the cached PDF metadata, extracted law text JSON, full `law_analysis`, and frontend-friendly `reader_summary` JSON.
 
 Each export run **wipes** all `activity_*.json` files in the two target folders before writing new ones, so deleted members/parties never linger. Other files in those folders are preserved.
 
@@ -836,7 +915,7 @@ Notes:
 | `unmatched_speakers` | Speakers that could not be resolved |
 | `run_outputs` | Run summary stats |
 | `dep_act_member_activity_crawl` | Last CDEP crawl status, profile counts, source links, and stored counts per deputy |
-| `dep_act_laws` | Deduplicated legislative proposal/law records from deputy activity pages, including adopted law identifiers such as `Lege 233/2025`, `Expunerea de motive` PDF URLs, OCR initiator text, and initiator parse errors |
+| `dep_act_laws` | Deduplicated legislative proposal/law records from deputy activity pages, including adopted law identifiers such as `Lege 233/2025`, cached adopted-law PDF metadata/text, citizen-facing adopted-law analysis JSON, `Expunerea de motive` PDF URLs, OCR initiator text, and parse errors |
 | `dep_act_member_laws` | Deputy-to-law associations, including `is_initiator` when the deputy is matched in the OCR-parsed `Iniţiatori` section |
 | `dep_act_decision_projects` | Deduplicated CDEP decision project records |
 | `dep_act_member_decision_projects` | Deputy-to-decision-project associations |

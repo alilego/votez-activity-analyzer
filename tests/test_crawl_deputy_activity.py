@@ -26,6 +26,7 @@ from crawl_deputy_activity import (  # noqa: E402
     _write_bytes_atomic,
     _looks_like_senat_legislation_search_page,
     _normalize_law_source_url,
+    _normalize_law_status,
     ensure_activity_schema,
     hydrate_law_initiators_for_records,
     ListingRecord,
@@ -286,6 +287,16 @@ class TestDeputyActivityCrawler(unittest.TestCase):
         self.assertIsNone(records[0].adopted_law_identifier)
         self.assertIn("Legea 227/2015 Codul Fiscal", records[0].details_text)
         self.assertNotIn("la comisii", records[0].details_text)
+
+    def test_normalize_law_status_distinguishes_final_law_from_parliament_adoption(self):
+        self.assertEqual(
+            _normalize_law_status("adoptata", None),
+            "adoptata_in_parlament",
+        )
+        self.assertEqual(
+            _normalize_law_status("adoptata", "Lege 233/2025"),
+            "adoptata",
+        )
 
     def test_parse_motive_pdf_url(self):
         html = """
