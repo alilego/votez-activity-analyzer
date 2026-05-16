@@ -421,6 +421,7 @@ outputs/productivity/                   # word/letter productivity metrics (memb
 outputs/activity/members/               # per-member crawler activity snapshots (motions, Q&I, laws, ...)
 outputs/activity/parties/               # per-party aggregations (initiated laws, majority support, ...)
 outputs/activity/adopted_laws/          # one JSON per adopted law with extracted text + impact analysis
+outputs/html/electronic_votes/          # cached CDEP electronic vote listing pages
 outputs/pdfs/law_initiators/            # cached law-initiator PDFs reused by OCR hydration
 outputs/pdfs/adopted_laws/              # cached adopted-law "Forma adoptată" PDFs
 ```
@@ -760,7 +761,7 @@ For a faster iteration loop, work on a small subset first with `--limit` or `--m
 python3 scripts/crawl_deputy_activity.py
 ```
 
-The crawler reads `input/toti_deputatii.json`, visits each deputy `profile_url`, follows the CDEP activity links for `Propuneri legislative iniţiate`, `Proiecte de hotarâre iniţiate`, `Întrebari şi interpelări`, `Moţiuni`, and `Declaraţii politice depuse în scris`, then writes the parsed records to `state/state.sqlite`.
+The crawler reads `input/toti_deputatii.json`, visits each deputy `profile_url`, follows the CDEP activity links for `Propuneri legislative iniţiate`, `Proiecte de hotarâre iniţiate`, `Votul electronic`, `Întrebari şi interpelări`, `Moţiuni`, and `Declaraţii politice depuse în scris`, then writes the parsed records to `state/state.sqlite`.
 
 Useful flags:
 
@@ -779,6 +780,8 @@ python3 scripts/crawl_deputy_activity.py --dry-run --limit 1
 
 For every processed deputy, the script logs the profile count, stored record count, association count, and source URL for each activity type. By default, it inserts only new crawler data: existing rows in crawler-owned tables are left unchanged, while new member associations are still added. Pass `--update-existing` when you want parsed CDEP pages to refresh existing crawler rows.
 
+Electronic law votes are stored in `dep_act_laws_votes` with `member_normalized_name`, `law_id`, `vote_date`, `vote_type`, and normalized vote value (`YES`, `NO`, `NO_VOTE`, `ABSTAIN`). The crawler resolves each vote to `dep_act_laws` using the law link or identifier from the CDEP vote row. Vote pages are cached under `outputs/html/electronic_votes/`; page 1 is refreshed on each crawl, while older pages are reused from cache and skipped once the crawler reaches votes already recorded for that deputy.
+
 Pass `--hydrate-law-initiators` to run a second phase after the normal crawl finishes: the script reads stored laws from `dep_act_laws`, fetches each law's `Expunerea de motive` PDF through `source_url`, OCRs it locally with Tesseract, extracts the `Iniţiatori` section, and marks matching deputies in `dep_act_member_laws.is_initiator`. This is intentionally optional because scanned PDF OCR is slower than the normal crawl.
 
 Before fetching anything, the hydrator looks for a cached initiator PDF in `outputs/pdfs/law_initiators/` named `initiators_<law_identifier>.pdf` (sanitized for filenames). If that file exists, extraction runs entirely locally and the law page/PDF are not fetched again. On a cache miss, the hydrator fetches the law page, picks the best initiator PDF candidate, downloads it into that cache folder, and then runs extraction from the cached local file.
@@ -791,7 +794,7 @@ Pass `--hydrate-law-limit N` to cap the hydration phase to the first `N` stored 
 
 At the end of every hydration phase, the script also logs how many `dep_act_laws` rows in the database still do not have a cached initiator PDF in `outputs/pdfs/law_initiators/`, so you can track the remaining local download backlog even when you run with a limit.
 
-The crawler writes only its own tables: `dep_act_member_activity_crawl`, `dep_act_laws`, `dep_act_member_laws`, `dep_act_decision_projects`, `dep_act_member_decision_projects`, `dep_act_questions_interpellations`, `dep_act_motions`, `dep_act_member_motions`, and `dep_act_political_declarations`. It validates that targeted deputies already exist in `members`, but it never inserts or updates `members`, interventions, runs, outputs, or other pipeline tables.
+The crawler writes only its own tables: `dep_act_member_activity_crawl`, `dep_act_laws`, `dep_act_member_laws`, `dep_act_laws_votes`, `dep_act_decision_projects`, `dep_act_member_decision_projects`, `dep_act_questions_interpellations`, `dep_act_motions`, `dep_act_member_motions`, and `dep_act_political_declarations`. It validates that targeted deputies already exist in `members`, but it never inserts or updates `members`, interventions, runs, outputs, or other pipeline tables.
 
 Laws, decision projects, and motions can be associated with several deputies, so the entity tables are deduplicated and the `dep_act_member_*` tables store the many-to-many associations.
 
@@ -917,6 +920,7 @@ Notes:
 | `dep_act_member_activity_crawl` | Last CDEP crawl status, profile counts, source links, and stored counts per deputy |
 | `dep_act_laws` | Deduplicated legislative proposal/law records from deputy activity pages, including adopted law identifiers such as `Lege 233/2025`, cached adopted-law PDF metadata/text, citizen-facing adopted-law analysis JSON, `Expunerea de motive` PDF URLs, OCR initiator text, and parse errors |
 | `dep_act_member_laws` | Deputy-to-law associations, including `is_initiator` when the deputy is matched in the OCR-parsed `Iniţiatori` section |
+| `dep_act_laws_votes` | Per-deputy electronic votes on laws, keyed by `member_normalized_name`, `law_id`, `vote_date`, and `vote_type` |
 | `dep_act_decision_projects` | Deduplicated CDEP decision project records |
 | `dep_act_member_decision_projects` | Deputy-to-decision-project associations |
 | `dep_act_questions_interpellations` | CDEP question/interpellation records by deputy, including identifier, source link, and cleaned text |

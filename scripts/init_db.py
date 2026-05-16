@@ -260,6 +260,16 @@ def _create_schema(conn: sqlite3.Connection) -> None:
             PRIMARY KEY (member_id, law_id)
         );
 
+        CREATE TABLE IF NOT EXISTS dep_act_laws_votes (
+            member_normalized_name TEXT NOT NULL,
+            law_id TEXT NOT NULL,
+            vote_date TEXT NOT NULL,
+            vote_type TEXT NOT NULL,
+            vote TEXT NOT NULL,
+            FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+            PRIMARY KEY (member_normalized_name, law_id, vote_date, vote_type)
+        );
+
         CREATE TABLE IF NOT EXISTS dep_act_decision_projects (
             decision_project_id TEXT PRIMARY KEY,
             source_url TEXT NOT NULL UNIQUE,
@@ -332,6 +342,10 @@ def _create_schema(conn: sqlite3.Connection) -> None:
 
         CREATE INDEX IF NOT EXISTS idx_member_laws_law_id
             ON dep_act_member_laws(law_id);
+        CREATE INDEX IF NOT EXISTS idx_law_votes_law_id
+            ON dep_act_laws_votes(law_id);
+        CREATE INDEX IF NOT EXISTS idx_law_votes_member_date
+            ON dep_act_laws_votes(member_normalized_name, vote_date);
         CREATE INDEX IF NOT EXISTS idx_member_decision_projects_project_id
             ON dep_act_member_decision_projects(decision_project_id);
         CREATE INDEX IF NOT EXISTS idx_member_motions_motion_id
@@ -523,6 +537,19 @@ def _create_schema(conn: sqlite3.Connection) -> None:
         "ALTER TABLE dep_act_member_decision_projects ADD COLUMN member_normalized_name TEXT",
         "ALTER TABLE dep_act_member_motions ADD COLUMN member_normalized_name TEXT",
         "ALTER TABLE dep_act_political_declarations ADD COLUMN member_normalized_name TEXT",
+        """
+        CREATE TABLE IF NOT EXISTS dep_act_laws_votes (
+            member_normalized_name TEXT NOT NULL,
+            law_id TEXT NOT NULL,
+            vote_date TEXT NOT NULL,
+            vote_type TEXT NOT NULL,
+            vote TEXT NOT NULL,
+            FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+            PRIMARY KEY (member_normalized_name, law_id, vote_date, vote_type)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_law_votes_law_id ON dep_act_laws_votes(law_id)",
+        "CREATE INDEX IF NOT EXISTS idx_law_votes_member_date ON dep_act_laws_votes(member_normalized_name, vote_date)",
     ]:
         try:
             conn.execute(migration)

@@ -47,9 +47,11 @@ from crawl_deputy_activity import (  # noqa: E402
     parse_senat_forma_initiatorului_pdf_url,
     parse_political_declaration_detail,
     parse_political_declaration_text_page,
+    parse_electronic_vote_records,
     parse_question_detail_recipient,
     parse_listing_records,
     parse_profile_activity,
+    _store_law_votes,
     run_law_initiator_hydration_phase,
     single_signature_fuzzy_match,
     store_records,
@@ -115,6 +117,45 @@ class TestDeputyActivityCrawler(unittest.TestCase):
         self.assertEqual(
             activity["legislative_proposals"].url,
             "https://www.cdep.ro/pls/parlam/structura2015.mp?idm=1&pag=2",
+        )
+
+    def test_parse_profile_activity_discovers_electronic_vote_button(self):
+        html = """
+        <div class="buttons-container">
+          <a href="/ords/pls/steno/evot2015.mp?idm=295&amp;cam=2&amp;leg=2024&amp;pag=1&amp;idl=1">
+            Votul electronic
+          </a>
+        </div>
+        """
+        activity = parse_profile_activity(
+            html,
+            "https://www.cdep.ro/ords/pls/parlam/structura2015.mp?idm=295&cam=2&leg=2024",
+        )
+
+        self.assertEqual(
+            activity["electronic_votes"].url,
+            "https://www.cdep.ro/ords/pls/steno/evot2015.mp?idm=295&cam=2&leg=2024&pag=1&idl=1",
+        )
+
+    def test_parse_profile_activity_ignores_global_electronic_vote_nav(self):
+        html = """
+        <ul>
+          <li><a href="/ords/pls/steno/evot2015.data">Votul electronic</a></li>
+        </ul>
+        <div class="buttons-container">
+          <a href="/ords/pls/steno/evot2015.mp?idm=296&amp;cam=2&amp;leg=2024&amp;pag=1&amp;idl=1">
+            Votul electronic
+          </a>
+        </div>
+        """
+        activity = parse_profile_activity(
+            html,
+            "https://cdep.ro/ords/pls/parlam/structura2015.mp?idm=296&cam=2&leg=2024",
+        )
+
+        self.assertEqual(
+            activity["electronic_votes"].url,
+            "https://cdep.ro/ords/pls/steno/evot2015.mp?idm=296&cam=2&leg=2024&pag=1&idl=1",
         )
 
     def test_parse_profile_activity_current_motion_link(self):
@@ -297,6 +338,144 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             _normalize_law_status("adoptata", "Lege 233/2025"),
             "adoptata",
         )
+
+    def test_parse_electronic_vote_records_for_laws(self):
+        html = """
+        <table>
+          <tr>
+            <td>Nr.<br>Crt.</td><td>Data si ora</td><td>Id<br>vot</td>
+            <td>Vot pentru</td><td>Vot</td>
+          </tr>
+          <tr valign="top">
+            <td>1.</td>
+            <td><a href="/ords/pls/steno/evot2015.Nominal?idv=36966">13.05.2026 12:33</a></td>
+            <td>36966</td>
+            <td>
+              Vot final - Pl-x 56/2026 - Vot final adoptare<br>
+              <a href="/ords/pls/proiecte/upl_pck2015.proiect?idp=22666">PL 56/2026</a>
+            </td>
+            <td>Nu a votat</td>
+          </tr>
+          <tr valign="top">
+            <td>2.</td><td>13.05.2026 12:23</td><td>36967</td>
+            <td>PL-x 132/2024 - Amendament respins 1</td>
+            <td>Abtinere</td>
+          </tr>
+        </table>
+        """
+
+        records = parse_electronic_vote_records(
+            html,
+            "https://www.cdep.ro/ords/pls/steno/evot2015.mp?idm=295&pag=1",
+        )
+
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[0].law_identifier, "PL-x 56/2026")
+        self.assertEqual(records[0].vote_date, "2026-05-13 12:33")
+        self.assertEqual(records[0].vote_type, "final_adoption")
+        self.assertEqual(records[0].vote, "NO_VOTE")
+        self.assertEqual(
+            records[0].law_source_url,
+            "https://www.cdep.ro/ords/pls/proiecte/upl_pck2015.proiect?cam=2&idp=22666",
+        )
+        self.assertEqual(records[1].vote_type, "amendment")
+        self.assertEqual(records[1].vote, "ABSTAIN")
+
+    def test_store_law_votes_resolves_law_by_identifier(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = init_db(Path(tmp) / "state.sqlite")
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:cdep:22666",
+                        "https://www.cdep.ro/ords/pls/proiecte/upl_pck2015.proiect?cam=2&idp=22666",
+                        "PL-x 56/2026",
+                        "Test law",
+                        "Test law",
+                        "[]",
+                    ),
+                )
+                result = _store_law_votes(
+                    conn,
+                    member_normalized_name="serban george catalin",
+                    records=[
+                        parse_electronic_vote_records(
+                            """
+                            <table><tr>
+                              <td>1.</td><td>13.05.2026 12:33</td><td>36966</td>
+                              <td>Vot final - Pl-x 56/2026 - Vot final adoptare</td>
+                              <td>DA</td>
+                            </tr></table>
+                            """,
+                            "https://www.cdep.ro/ords/pls/steno/evot2015.mp?idm=295&pag=1",
+                        )[0]
+                    ],
+                )
+
+                self.assertEqual(result.seen, 1)
+                self.assertEqual(result.associated, 1)
+                row = conn.execute(
+                    """
+                    SELECT member_normalized_name, law_id, vote_date, vote_type, vote
+                    FROM dep_act_laws_votes
+                    """
+                ).fetchone()
+                self.assertEqual(
+                    row,
+                    (
+                        "serban george catalin",
+                        "law:cdep:22666",
+                        "2026-05-13 12:33",
+                        "final_adoption",
+                        "YES",
+                    ),
+                )
+
+    def test_store_law_votes_creates_missing_law_from_vote_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = init_db(Path(tmp) / "state.sqlite")
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                record = parse_electronic_vote_records(
+                    """
+                    <table><tr>
+                      <td>1.</td><td>13.05.2026 12:33</td><td>36966</td>
+                      <td>
+                        Vot final - Pl-x 56/2026 - Vot final adoptare<br>
+                        <a href="/ords/pls/proiecte/upl_pck2015.proiect?idp=22666">PL 56/2026</a>
+                      </td>
+                      <td>DA</td>
+                    </tr></table>
+                    """,
+                    "https://www.cdep.ro/ords/pls/steno/evot2015.mp?idm=295&pag=1",
+                )[0]
+
+                result = _store_law_votes(
+                    conn,
+                    member_normalized_name="serban george catalin",
+                    records=[record],
+                )
+
+                self.assertEqual(result.associated, 1)
+                law = conn.execute(
+                    "SELECT identifier, source_url FROM dep_act_laws"
+                ).fetchone()
+                self.assertEqual(law[0], "PL-x 56/2026")
+                self.assertEqual(
+                    law[1],
+                    "https://www.cdep.ro/ords/pls/proiecte/upl_pck2015.proiect?cam=2&idp=22666",
+                )
+                self.assertEqual(
+                    conn.execute("SELECT COUNT(*) FROM dep_act_laws_votes").fetchone()[0],
+                    1,
+                )
 
     def test_parse_motive_pdf_url(self):
         html = """

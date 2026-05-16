@@ -212,10 +212,8 @@ __marimo__/
 # Local input transcripts
 input/stenograme/*.json
 
-# Local analyzer state
-state/*
-!state/
-!state/state.sqlite
+# Local analyzer state (SQLite DB is machine-local; GitHub rejects >100MB files)
+state/
 
 # Generated frontend artifacts
 outputs/

@@ -49,6 +49,7 @@ from init_db import DEFAULT_DB_PATH
 
 DEFAULT_INPUT_PATH = Path("input/toti_deputatii.json")
 DEFAULT_LAW_INITIATOR_PDF_DIR = Path("outputs/pdfs/law_initiators")
+DEFAULT_ELECTRONIC_VOTE_HTML_DIR = Path("outputs/html/electronic_votes")
 
 # Inițiatori blocks are often on an early cover sheet but may appear on page 2+ of the PDF.
 DEFAULT_LAW_INITIATOR_OCR_PAGES = 10
@@ -58,6 +59,7 @@ DEFAULT_OCR_LANGUAGE = "ron+eng"
 ACTIVITY_LABELS = {
     "legislative_proposals": "Propuneri legislative initiate",
     "decision_projects": "Proiecte de hotarare initiate",
+    "electronic_votes": "Votul electronic",
     "questions": "Intrebari si interpelari",
     "motions": "Motiuni",
     "political_declarations": "Declaratii politice depuse in scris",
@@ -138,6 +140,16 @@ CREATE TABLE IF NOT EXISTS dep_act_member_laws (
     PRIMARY KEY (member_id, law_id)
 );
 
+CREATE TABLE IF NOT EXISTS dep_act_laws_votes (
+    member_normalized_name TEXT NOT NULL,
+    law_id TEXT NOT NULL,
+    vote_date TEXT NOT NULL,
+    vote_type TEXT NOT NULL,
+    vote TEXT NOT NULL,
+    FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+    PRIMARY KEY (member_normalized_name, law_id, vote_date, vote_type)
+);
+
 CREATE TABLE IF NOT EXISTS dep_act_decision_projects (
     decision_project_id TEXT PRIMARY KEY,
     source_url TEXT NOT NULL UNIQUE,
@@ -210,6 +222,10 @@ CREATE TABLE IF NOT EXISTS dep_act_political_declarations (
 
 CREATE INDEX IF NOT EXISTS idx_member_laws_law_id
     ON dep_act_member_laws(law_id);
+CREATE INDEX IF NOT EXISTS idx_law_votes_law_id
+    ON dep_act_laws_votes(law_id);
+CREATE INDEX IF NOT EXISTS idx_law_votes_member_date
+    ON dep_act_laws_votes(member_normalized_name, vote_date);
 CREATE INDEX IF NOT EXISTS idx_member_decision_projects_project_id
     ON dep_act_member_decision_projects(decision_project_id);
 CREATE INDEX IF NOT EXISTS idx_member_motions_motion_id
@@ -258,6 +274,19 @@ ACTIVITY_MIGRATIONS = (
     "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analyzed_at TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_source TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_analysis_error TEXT",
+    """
+    CREATE TABLE IF NOT EXISTS dep_act_laws_votes (
+        member_normalized_name TEXT NOT NULL,
+        law_id TEXT NOT NULL,
+        vote_date TEXT NOT NULL,
+        vote_type TEXT NOT NULL,
+        vote TEXT NOT NULL,
+        FOREIGN KEY (law_id) REFERENCES dep_act_laws(law_id),
+        PRIMARY KEY (member_normalized_name, law_id, vote_date, vote_type)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_law_votes_law_id ON dep_act_laws_votes(law_id)",
+    "CREATE INDEX IF NOT EXISTS idx_law_votes_member_date ON dep_act_laws_votes(member_normalized_name, vote_date)",
 )
 
 LEGACY_ACTIVITY_TABLE_RENAMES = (
@@ -373,6 +402,17 @@ class ListingRecord:
     columns: list[str]
     adopted_law_identifier: str | None = None
     recipient: str | None = None
+
+
+@dataclass
+class LawVoteRecord:
+    law_identifier: str
+    law_source_url: str | None
+    vote_date: str
+    vote_type: str
+    vote: str
+    vote_text: str
+    vote_id: str | None = None
 
 
 @dataclass
@@ -612,6 +652,28 @@ def _activity_label_key(value: str) -> str:
     return _fold(value).strip(" :-–—")
 
 
+def _is_member_electronic_votes_url(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    return parsed.path.endswith("evot2015.mp") and bool(query.get("idm"))
+
+
+def _electronic_votes_url_from_links(links: list[Link], base_url: str) -> str | None:
+    candidates: list[str] = []
+    for link in links:
+        href = (link.href or "").strip()
+        if not href or href.startswith("#"):
+            continue
+        if href.casefold().startswith(("javascript:", "mailto:")):
+            continue
+        url = urllib.parse.urljoin(base_url, href)
+        if _is_member_electronic_votes_url(url):
+            candidates.append(url)
+    return candidates[0] if candidates else None
+
+
 def parse_profile_activity(html_text: str, base_url: str) -> dict[str, ActivityLink]:
     rows = _parse_rows(html_text)
     out = {key: ActivityLink() for key in ACTIVITY_LABELS}
@@ -630,7 +692,11 @@ def parse_profile_activity(html_text: str, base_url: str) -> dict[str, ActivityL
                     links.extend(c.links)
                 if not links:
                     links = row.links
-                url = _first_http_link(links, base_url)
+                url = (
+                    _electronic_votes_url_from_links(links, base_url)
+                    if key == "electronic_votes"
+                    else _first_http_link(links, base_url)
+                )
                 if out[key].url and not url:
                     continue
                 out[key] = ActivityLink(
@@ -643,6 +709,32 @@ def parse_profile_activity(html_text: str, base_url: str) -> dict[str, ActivityL
                     ),
                     raw_text=value_text,
                 )
+
+    if not out["electronic_votes"].url:
+        for row in rows:
+            for link in row.links:
+                if _activity_label_key(link.text) != folded_labels["electronic_votes"]:
+                    continue
+                url = _electronic_votes_url_from_links([link], base_url)
+                if url:
+                    out["electronic_votes"] = ActivityLink(url=url, raw_text=link.text)
+                    return out
+        for match in re.finditer(
+            r"""<a\s+[^>]*href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a>""",
+            html_text,
+            flags=re.IGNORECASE | re.DOTALL,
+        ):
+            label = _activity_label_key(re.sub(r"<[^>]+>", " ", match.group(2)))
+            if label != folded_labels["electronic_votes"]:
+                continue
+            url = urllib.parse.urljoin(base_url, html.unescape(match.group(1)))
+            if not _is_member_electronic_votes_url(url):
+                continue
+            out["electronic_votes"] = ActivityLink(
+                url=url,
+                raw_text=_clean_text(re.sub(r"<[^>]+>", " ", match.group(2))),
+            )
+            break
     return out
 
 
@@ -676,6 +768,29 @@ def _standard_profile_activity_url(profile_url: str, activity_key: str) -> str |
     query.setdefault("par", [""])
     return urllib.parse.urlunparse(
         parsed._replace(query=urllib.parse.urlencode(query, doseq=True))
+    )
+
+
+def _standard_electronic_votes_url(profile_url: str) -> str | None:
+    parsed = urllib.parse.urlparse(profile_url)
+    if not parsed.path.endswith("structura2015.mp"):
+        return None
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    idm = query.get("idm", [""])[0]
+    if not idm:
+        return None
+    vote_query = {
+        "idm": [idm],
+        "cam": query.get("cam", ["2"]),
+        "leg": query.get("leg", ["2024"]),
+        "pag": ["1"],
+        "idl": query.get("idl", ["1"]),
+    }
+    return urllib.parse.urlunparse(
+        parsed._replace(
+            path=parsed.path.replace("parlam/structura2015.mp", "steno/evot2015.mp"),
+            query=urllib.parse.urlencode(vote_query, doseq=True),
+        )
     )
 
 
@@ -715,6 +830,105 @@ def _extract_identifier(kind: str, text: str) -> str | None:
         if match:
             return f"nr.{match.group(1)}"
     return None
+
+
+def _normalize_vote_date(value: str) -> str | None:
+    match = re.search(
+        r"\b(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?\b",
+        value or "",
+    )
+    if not match:
+        return None
+    day, month, year, hour, minute = match.groups()
+    if hour is None:
+        hour = "00"
+        minute = "00"
+    return f"{int(year):04d}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{int(minute):02d}"
+
+
+def _normalize_vote_value(value: str) -> str | None:
+    folded = _fold(value)
+    if folded in {"da", "pentru"}:
+        return "YES"
+    if folded in {"nu", "contra", "impotriva"}:
+        return "NO"
+    if "nu a votat" in folded:
+        return "NO_VOTE"
+    if "abtiner" in folded:
+        return "ABSTAIN"
+    return None
+
+
+def _classify_law_vote_type(text: str) -> str:
+    folded = _fold(text)
+    if "vot final" in folded and "adoptare" in folded:
+        return "final_adoption"
+    if "vot final" in folded and "respingere" in folded:
+        return "final_rejection"
+    if "amendament" in folded:
+        return "amendment"
+    if "vot final" in folded:
+        return "final_vote"
+    return "other"
+
+
+def _extract_law_identifier_from_vote_text(text: str) -> str | None:
+    identifier = _extract_identifier("laws", text)
+    if identifier:
+        return identifier
+    match = re.search(r"\bPL\s+(\d{1,5}/\d{4})\b", text, flags=re.IGNORECASE)
+    if match:
+        return f"PL-x {match.group(1)}"
+    return None
+
+
+def parse_electronic_vote_records(html_text: str, source_url: str) -> list[LawVoteRecord]:
+    records: list[LawVoteRecord] = []
+    for row in _parse_rows(html_text):
+        columns = [cell.text for cell in row.cells if cell.text]
+        if len(columns) < 5:
+            continue
+        vote_date = _normalize_vote_date(columns[1])
+        vote = _normalize_vote_value(columns[-1])
+        vote_text = columns[-2]
+        law_identifier = _extract_law_identifier_from_vote_text(vote_text)
+        if not vote_date or not vote or not law_identifier:
+            continue
+        law_source_url: str | None = None
+        for link in row.links:
+            href = (link.href or "").strip()
+            if "upl_pck2015.proiect" not in href.casefold():
+                continue
+            law_source_url = _normalize_law_source_url(
+                urllib.parse.urljoin(source_url, href)
+            )
+            break
+        vote_id = columns[2] if len(columns) > 2 and re.fullmatch(r"\d+", columns[2]) else None
+        records.append(
+            LawVoteRecord(
+                law_identifier=law_identifier,
+                law_source_url=law_source_url,
+                vote_date=vote_date,
+                vote_type=_classify_law_vote_type(vote_text),
+                vote=vote,
+                vote_text=vote_text,
+                vote_id=vote_id,
+            )
+        )
+    return records
+
+
+def list_electronic_vote_page_urls(html_text: str, source_url: str) -> list[str]:
+    urls = [source_url]
+    for row in _parse_rows(html_text):
+        for link in row.links:
+            href = (link.href or "").strip()
+            if "evot2015.mp" not in href.casefold():
+                continue
+            url = urllib.parse.urljoin(source_url, href)
+            if url not in urls:
+                urls.append(url)
+    return urls
 
 
 def _extract_adopted_law_identifier(text: str) -> str | None:
@@ -4149,6 +4363,196 @@ def count_law_initiator_pdf_cache_gaps(
     return missing, total
 
 
+def _electronic_vote_cache_path(cache_dir: Path, url: str) -> Path:
+    digest = hashlib.sha1(url.encode("utf-8")).hexdigest()[:20]
+    return cache_dir / f"votes_{digest}.html"
+
+
+def _fetch_electronic_vote_page(
+    fetcher: Fetcher,
+    url: str,
+    *,
+    cache_dir: Path,
+    force_refresh: bool = False,
+) -> str:
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = _electronic_vote_cache_path(cache_dir, url)
+    if cache_path.is_file() and not force_refresh:
+        return cache_path.read_text(encoding="utf-8")
+    html_text = fetcher.fetch(url)
+    cache_path.write_text(html_text, encoding="utf-8")
+    return html_text
+
+
+def _latest_member_law_vote_date(
+    conn: sqlite3.Connection,
+    member_normalized_name: str,
+) -> str | None:
+    row = conn.execute(
+        """
+        SELECT MAX(vote_date)
+        FROM dep_act_laws_votes
+        WHERE member_normalized_name = ?
+        """,
+        (member_normalized_name,),
+    ).fetchone()
+    return str(row[0]) if row and row[0] else None
+
+
+def _resolve_vote_law_id(
+    conn: sqlite3.Connection,
+    vote_record: LawVoteRecord,
+) -> str | None:
+    if vote_record.law_source_url:
+        row = conn.execute(
+            """
+            SELECT law_id
+            FROM dep_act_laws
+            WHERE source_url = ?
+            LIMIT 1
+            """,
+            (vote_record.law_source_url,),
+        ).fetchone()
+        if row:
+            return str(row[0])
+        law_id = _stable_record_id("laws", vote_record.law_source_url, vote_record.vote_text)
+        conn.execute(
+            """
+            INSERT INTO dep_act_laws (
+                law_id, source_url, identifier, title, details_text, columns_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(source_url) DO NOTHING
+            """,
+            (
+                law_id,
+                vote_record.law_source_url,
+                vote_record.law_identifier,
+                vote_record.vote_text,
+                vote_record.vote_text,
+                json.dumps([], ensure_ascii=False),
+            ),
+        )
+        row = conn.execute(
+            """
+            SELECT law_id
+            FROM dep_act_laws
+            WHERE source_url = ?
+            LIMIT 1
+            """,
+            (vote_record.law_source_url,),
+        ).fetchone()
+        if row:
+            return str(row[0])
+    row = conn.execute(
+        """
+        SELECT law_id
+        FROM dep_act_laws
+        WHERE identifier = ?
+        ORDER BY law_id
+        LIMIT 1
+        """,
+        (vote_record.law_identifier,),
+    ).fetchone()
+    return str(row[0]) if row else None
+
+
+def _store_law_votes(
+    conn: sqlite3.Connection,
+    *,
+    member_normalized_name: str,
+    records: list[LawVoteRecord],
+) -> StoreResult:
+    result = StoreResult(seen=len(records))
+    for record in records:
+        law_id = _resolve_vote_law_id(conn, record)
+        if not law_id:
+            continue
+        cursor = conn.execute(
+            """
+            INSERT INTO dep_act_laws_votes (
+                member_normalized_name, law_id, vote_date, vote_type, vote
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(member_normalized_name, law_id, vote_date, vote_type)
+            DO UPDATE SET vote = excluded.vote
+            """,
+            (
+                member_normalized_name,
+                law_id,
+                record.vote_date,
+                record.vote_type,
+                record.vote,
+            ),
+        )
+        result.stored += cursor.rowcount
+        result.associated += 1
+    return result
+
+
+def crawl_member_law_votes(
+    conn: sqlite3.Connection,
+    *,
+    member: dict[str, Any],
+    vote_url: str,
+    fetcher: Fetcher,
+    cache_dir: Path = DEFAULT_ELECTRONIC_VOTE_HTML_DIR,
+    dry_run: bool = False,
+) -> StoreResult:
+    member_normalized_name = str(member.get("normalized_name") or "")
+    if not member_normalized_name:
+        row = conn.execute(
+            "SELECT normalized_name FROM members WHERE member_id = ?",
+            (member["member_id"],),
+        ).fetchone()
+        member_normalized_name = str(row[0]) if row and row[0] else ""
+    if not member_normalized_name:
+        return StoreResult()
+
+    latest_vote_date = _latest_member_law_vote_date(conn, member_normalized_name)
+    first_html = _fetch_electronic_vote_page(
+        fetcher,
+        vote_url,
+        cache_dir=cache_dir,
+        force_refresh=True,
+    )
+    page_urls = list_electronic_vote_page_urls(first_html, vote_url)
+    all_new_records: list[LawVoteRecord] = []
+    for index, page_url in enumerate(page_urls):
+        html_text = (
+            first_html
+            if index == 0
+            else _fetch_electronic_vote_page(
+                fetcher,
+                page_url,
+                cache_dir=cache_dir,
+                force_refresh=False,
+            )
+        )
+        page_records = parse_electronic_vote_records(html_text, page_url)
+        if latest_vote_date:
+            fresh_records = [
+                record for record in page_records if record.vote_date > latest_vote_date
+            ]
+        else:
+            fresh_records = page_records
+        all_new_records.extend(fresh_records)
+        if latest_vote_date and len(fresh_records) < len(page_records):
+            break
+
+    if dry_run:
+        return StoreResult(
+            seen=len(all_new_records),
+            stored=len(all_new_records),
+            associated=len(all_new_records),
+        )
+    return _store_law_votes(
+        conn,
+        member_normalized_name=member_normalized_name,
+        records=all_new_records,
+    )
+
+
 def _insert_or_update_entity(
     conn: sqlite3.Connection,
     *,
@@ -4703,6 +5107,7 @@ def _print_member_log(
         ("Intrebari/interpelari", "questions", "questions"),
         ("Motiuni", "motions", "motions"),
         ("Declaratii politice scrise", "political_declarations", "political_declarations"),
+        ("Voturi electronice pe legi", "electronic_votes", "law_votes"),
     ]
     for label, activity_key, result_key in specs:
         link = activity.get(activity_key, ActivityLink())
@@ -4869,6 +5274,20 @@ def crawl_member(
                     records=records,
                     update_existing=update_existing,
                 )
+        vote_link = activity.get("electronic_votes", ActivityLink())
+        if not _is_member_electronic_votes_url(vote_link.url):
+            fallback_vote_url = _standard_electronic_votes_url(profile_url)
+            if fallback_vote_url:
+                vote_link = ActivityLink(url=fallback_vote_url)
+                activity["electronic_votes"] = vote_link
+        if vote_link.url:
+            results["law_votes"] = crawl_member_law_votes(
+                conn,
+                member=member,
+                vote_url=vote_link.url,
+                fetcher=fetcher,
+                dry_run=dry_run,
+            )
         if not dry_run:
             update_member_activity_crawl(
                 conn,

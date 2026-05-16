@@ -14,6 +14,9 @@ Usage:
     python3 scripts/full_update.py --only-step 8        # deploy to frontend only
     python3 scripts/full_update.py --skip-scrape
     python3 scripts/full_update.py --skip-crawler
+
+Step 7 writes ``outputs/laws_votes/laws_votes.json`` (laws + adoption vote aggregates)
+in addition to the usual ``export_outputs`` / activity snapshots.
 """
 
 from __future__ import annotations
@@ -41,6 +44,7 @@ FRONTEND_DATA_SUBDIRS = [
     "session_topics",
     "productivity",
     "activity",
+    "laws_votes",
 ]
 
 # Scraper registry files to sync into votez-frontend/lib/
@@ -211,6 +215,10 @@ def run_export_outputs() -> bool:
         sys.executable, str(SCRIPT_DIR / "crawl_deputy_activity.py"),
         "--only-export-activity",
     ])
+    if proc.returncode != 0:
+        ok = False
+    # Laws + aggregated adoption votes (outputs/laws_votes/laws_votes.json)
+    proc = subprocess.run([sys.executable, str(SCRIPT_DIR / "export_laws_votes.py")])
     if proc.returncode != 0:
         ok = False
     return ok
