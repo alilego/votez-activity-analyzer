@@ -75,6 +75,7 @@ VOID_TAGS = {"br", "hr", "img", "input", "link", "meta", "param"}
 ACTIVITY_SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS dep_act_member_activity_crawl (
     member_id TEXT PRIMARY KEY,
+    member_normalized_name TEXT,
     profile_url TEXT NOT NULL,
     legislative_proposals_url TEXT,
     legislative_proposals_count INTEGER,
@@ -103,6 +104,7 @@ CREATE TABLE IF NOT EXISTS dep_act_laws (
     source_url TEXT NOT NULL UNIQUE,
     identifier TEXT,
     adopted_law_identifier TEXT,
+    is_adopted INTEGER NOT NULL DEFAULT 0,
     motive_pdf_url TEXT,
     initiators_text TEXT,
     initiators_extracted_at TEXT,
@@ -117,6 +119,7 @@ CREATE TABLE IF NOT EXISTS dep_act_laws (
 
 CREATE TABLE IF NOT EXISTS dep_act_member_laws (
     member_id TEXT NOT NULL,
+    member_normalized_name TEXT,
     law_id TEXT NOT NULL,
     is_initiator INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -138,6 +141,7 @@ CREATE TABLE IF NOT EXISTS dep_act_decision_projects (
 
 CREATE TABLE IF NOT EXISTS dep_act_member_decision_projects (
     member_id TEXT NOT NULL,
+    member_normalized_name TEXT,
     decision_project_id TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (member_id) REFERENCES members(member_id),
@@ -148,6 +152,7 @@ CREATE TABLE IF NOT EXISTS dep_act_member_decision_projects (
 CREATE TABLE IF NOT EXISTS dep_act_questions_interpellations (
     question_id TEXT PRIMARY KEY,
     member_id TEXT NOT NULL,
+    member_normalized_name TEXT,
     source_url TEXT NOT NULL UNIQUE,
     identifier TEXT,
     recipient TEXT,
@@ -170,6 +175,7 @@ CREATE TABLE IF NOT EXISTS dep_act_motions (
 
 CREATE TABLE IF NOT EXISTS dep_act_member_motions (
     member_id TEXT NOT NULL,
+    member_normalized_name TEXT,
     motion_id TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (member_id) REFERENCES members(member_id),
@@ -180,6 +186,7 @@ CREATE TABLE IF NOT EXISTS dep_act_member_motions (
 CREATE TABLE IF NOT EXISTS dep_act_political_declarations (
     political_declaration_id TEXT PRIMARY KEY,
     member_id TEXT NOT NULL,
+    member_normalized_name TEXT,
     source_url TEXT NOT NULL UNIQUE,
     text_url TEXT,
     title TEXT NOT NULL,
@@ -202,6 +209,20 @@ CREATE INDEX IF NOT EXISTS idx_political_declarations_member_id
 """
 
 ACTIVITY_MIGRATIONS = (
+    # member_normalized_name — stable human-readable key for re-correlation after ID shifts
+    "ALTER TABLE dep_act_member_activity_crawl ADD COLUMN member_normalized_name TEXT",
+    "ALTER TABLE dep_act_member_laws ADD COLUMN member_normalized_name TEXT",
+    "ALTER TABLE dep_act_member_decision_projects ADD COLUMN member_normalized_name TEXT",
+    "ALTER TABLE dep_act_member_motions ADD COLUMN member_normalized_name TEXT",
+    "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_normalized_name TEXT",
+    "ALTER TABLE dep_act_political_declarations ADD COLUMN member_normalized_name TEXT",
+    # Backfill existing rows — safe to run repeatedly (no-op when already populated)
+    "UPDATE dep_act_member_activity_crawl SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_activity_crawl.member_id) WHERE member_normalized_name IS NULL",
+    "UPDATE dep_act_member_laws SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_laws.member_id) WHERE member_normalized_name IS NULL",
+    "UPDATE dep_act_member_decision_projects SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_decision_projects.member_id) WHERE member_normalized_name IS NULL",
+    "UPDATE dep_act_member_motions SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_motions.member_id) WHERE member_normalized_name IS NULL",
+    "UPDATE dep_act_questions_interpellations SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_questions_interpellations.member_id) WHERE member_normalized_name IS NULL",
+    "UPDATE dep_act_political_declarations SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_political_declarations.member_id) WHERE member_normalized_name IS NULL",
     "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_identifier TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN motive_pdf_url TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN initiators_text TEXT",
@@ -215,6 +236,9 @@ ACTIVITY_MIGRATIONS = (
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_id TEXT",
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN identifier TEXT",
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN recipient TEXT",
+    # is_adopted — persisted boolean so consumers can filter without re-deriving
+    "ALTER TABLE dep_act_laws ADD COLUMN is_adopted INTEGER NOT NULL DEFAULT 0",
+    "UPDATE dep_act_laws SET is_adopted = CASE WHEN adopted_law_identifier IS NOT NULL AND trim(adopted_law_identifier) != '' THEN 1 ELSE 0 END",
 )
 
 LEGACY_ACTIVITY_TABLE_RENAMES = (
@@ -4123,6 +4147,7 @@ def _store_laws(
             values={
                 "identifier": record.identifier,
                 "adopted_law_identifier": record.adopted_law_identifier,
+                "is_adopted": 1 if record.adopted_law_identifier else 0,
                 "title": record.title,
                 "details_text": record.details_text,
                 "columns_json": json.dumps(record.columns, ensure_ascii=False),
@@ -4133,11 +4158,11 @@ def _store_laws(
             result.stored += 1
         cursor = conn.execute(
             """
-            INSERT INTO dep_act_member_laws (member_id, law_id)
-            VALUES (?, ?)
+            INSERT INTO dep_act_member_laws (member_id, member_normalized_name, law_id)
+            VALUES (?, (SELECT normalized_name FROM members WHERE member_id = ?), ?)
             ON CONFLICT(member_id, law_id) DO NOTHING
             """,
-            (member_id, actual_id),
+            (member_id, member_id, actual_id),
         )
         result.associated += cursor.rowcount
     return result
@@ -4170,11 +4195,11 @@ def _store_decision_projects(
             result.stored += 1
         cursor = conn.execute(
             """
-            INSERT INTO dep_act_member_decision_projects (member_id, decision_project_id)
-            VALUES (?, ?)
+            INSERT INTO dep_act_member_decision_projects (member_id, member_normalized_name, decision_project_id)
+            VALUES (?, (SELECT normalized_name FROM members WHERE member_id = ?), ?)
             ON CONFLICT(member_id, decision_project_id) DO NOTHING
             """,
-            (member_id, actual_id),
+            (member_id, member_id, actual_id),
         )
         result.associated += cursor.rowcount
     return result
@@ -4264,6 +4289,10 @@ def _store_questions(
     update_existing: bool = False,
 ) -> StoreResult:
     result = StoreResult(seen=len(records))
+    _norm_row = conn.execute(
+        "SELECT normalized_name FROM members WHERE member_id = ?", (member_id,)
+    ).fetchone()
+    member_normalized_name = _norm_row[0] if _norm_row else None
     for record in records:
         _, changed = _insert_or_update_entity(
             conn,
@@ -4273,6 +4302,7 @@ def _store_questions(
             source_url=record.source_url,
             values={
                 "member_id": member_id,
+                "member_normalized_name": member_normalized_name,
                 "identifier": record.identifier,
                 "recipient": record.recipient,
                 "text": record.details_text,
@@ -4311,11 +4341,11 @@ def _store_motions(
             result.stored += 1
         cursor = conn.execute(
             """
-            INSERT INTO dep_act_member_motions (member_id, motion_id)
-            VALUES (?, ?)
+            INSERT INTO dep_act_member_motions (member_id, member_normalized_name, motion_id)
+            VALUES (?, (SELECT normalized_name FROM members WHERE member_id = ?), ?)
             ON CONFLICT(member_id, motion_id) DO NOTHING
             """,
-            (member_id, actual_id),
+            (member_id, member_id, actual_id),
         )
         result.associated += cursor.rowcount
     return result
@@ -4369,6 +4399,10 @@ def _store_political_declarations(
     update_existing: bool = False,
 ) -> StoreResult:
     result = StoreResult(seen=len(records))
+    _norm_row = conn.execute(
+        "SELECT normalized_name FROM members WHERE member_id = ?", (member_id,)
+    ).fetchone()
+    member_normalized_name = _norm_row[0] if _norm_row else None
     if update_existing:
         record_ids = [record.declaration_id for record in records]
         if record_ids:
@@ -4395,6 +4429,7 @@ def _store_political_declarations(
             source_url=record.source_url,
             values={
                 "member_id": record.member_id,
+                "member_normalized_name": member_normalized_name,
                 "text_url": record.text_url,
                 "title": record.title,
                 "full_text": record.full_text,
@@ -4469,7 +4504,11 @@ def update_member_activity_crawl(
     questions = activity.get("questions", ActivityLink())
     motions = activity.get("motions", ActivityLink())
     political_declarations = activity.get("political_declarations", ActivityLink())
+    _norm_row = conn.execute(
+        "SELECT normalized_name FROM members WHERE member_id = ?", (member_id,)
+    ).fetchone()
     columns = {
+        "member_normalized_name": _norm_row[0] if _norm_row else None,
         "profile_url": profile_url,
         "legislative_proposals_url": laws.url,
         "legislative_proposals_count": laws.count,
