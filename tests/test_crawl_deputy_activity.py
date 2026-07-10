@@ -26,6 +26,7 @@ from crawl_deputy_activity import (  # noqa: E402
     _write_bytes_atomic,
     _looks_like_senat_legislation_search_page,
     _normalize_law_source_url,
+    _normalize_fetch_url,
     _normalize_law_status,
     ensure_activity_schema,
     hydrate_law_initiators_for_records,
@@ -339,6 +340,24 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             "adoptata",
         )
 
+    def test_normalize_fetch_url_removes_cdep_default_port(self):
+        self.assertEqual(
+            _normalize_fetch_url(
+                "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=331&cam=2"
+            ),
+            "https://www.cdep.ro/ords/pls/parlam/structura2015.mp?idm=331&cam=2",
+        )
+        self.assertEqual(
+            _normalize_fetch_url(
+                "https://cdep.ro/ords/pls/parlam/structura2015.mp?idm=331&cam=2"
+            ),
+            "https://www.cdep.ro/ords/pls/parlam/structura2015.mp?idm=331&cam=2",
+        )
+        self.assertEqual(
+            _normalize_fetch_url("https://www.senat.ro:443/example"),
+            "https://www.senat.ro:443/example",
+        )
+
     def test_parse_electronic_vote_records_for_laws(self):
         html = """
         <table>
@@ -475,6 +494,57 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                 self.assertEqual(
                     conn.execute("SELECT COUNT(*) FROM dep_act_laws_votes").fetchone()[0],
                     1,
+                )
+
+    def test_store_law_votes_reuses_existing_law_id_when_source_host_changes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = init_db(Path(tmp) / "state.sqlite")
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("PRAGMA foreign_keys = ON;")
+                conn.execute(
+                    """
+                    INSERT INTO dep_act_laws (
+                        law_id, source_url, identifier, title, details_text, columns_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        "law:cdep:22666",
+                        "https://cdep.ro/ords/pls/proiecte/upl_pck2015.proiect?cam=2&idp=22666",
+                        "PL-x 56/2026",
+                        "Old host law",
+                        "Old host law",
+                        "[]",
+                    ),
+                )
+                record = parse_electronic_vote_records(
+                    """
+                    <table><tr>
+                      <td>1.</td><td>13.05.2026 12:33</td><td>36966</td>
+                      <td>
+                        Vot final - Pl-x 56/2026 - Vot final adoptare<br>
+                        <a href="/ords/pls/proiecte/upl_pck2015.proiect?idp=22666">PL 56/2026</a>
+                      </td>
+                      <td>DA</td>
+                    </tr></table>
+                    """,
+                    "https://www.cdep.ro/ords/pls/steno/evot2015.mp?idm=295&pag=1",
+                )[0]
+
+                result = _store_law_votes(
+                    conn,
+                    member_normalized_name="serban george catalin",
+                    records=[record],
+                )
+
+                self.assertEqual(result.associated, 1)
+                self.assertEqual(
+                    conn.execute("SELECT COUNT(*) FROM dep_act_laws").fetchone()[0],
+                    1,
+                )
+                self.assertEqual(
+                    conn.execute("SELECT law_id FROM dep_act_laws_votes").fetchone()[0],
+                    "law:cdep:22666",
                 )
 
     def test_parse_motive_pdf_url(self):

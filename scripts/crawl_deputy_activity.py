@@ -1987,6 +1987,33 @@ def _normalize_law_source_url(url: str) -> str:
     return urllib.parse.urlunparse(parsed._replace(query=new_query))
 
 
+def _normalize_fetch_url(url: str) -> str:
+    """
+    Make CDEP URLs friendly to Python's urllib.
+
+    CDEP currently redirects `https://cdep.ro/...` to
+    `https://www.cdep.ro:443/...`; urllib then receives HTTP 500 from that
+    explicit default-port URL, while `https://www.cdep.ro/...` succeeds.
+    """
+    if not url:
+        return url
+    try:
+        parsed = urllib.parse.urlparse(url)
+        port = parsed.port
+    except ValueError:
+        return url
+    host = (parsed.hostname or "").casefold()
+    if host not in {"cdep.ro", "www.cdep.ro"}:
+        return url
+    if parsed.scheme.casefold() != "https":
+        return url
+
+    netloc = "www.cdep.ro" if host == "cdep.ro" else parsed.hostname or "www.cdep.ro"
+    if port is not None and port != 443:
+        netloc = f"{netloc}:{port}"
+    return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
+
+
 def _safe_filename_component(value: str | None) -> str:
     text = unicodedata.normalize("NFKD", value or "")
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
@@ -2047,6 +2074,7 @@ class Fetcher:
         self.sleep_seconds = sleep_seconds
 
     def fetch(self, url: str) -> str:
+        url = _normalize_fetch_url(url)
         last_error: Exception | None = None
         for attempt in range(self.retries + 1):
             if attempt:
@@ -2069,6 +2097,7 @@ class Fetcher:
         raise last_error
 
     def fetch_bytes(self, url: str) -> bytes:
+        url = _normalize_fetch_url(url)
         last_error: Exception | None = None
         for attempt in range(self.retries + 1):
             if attempt:
@@ -4404,25 +4433,26 @@ def _resolve_vote_law_id(
     vote_record: LawVoteRecord,
 ) -> str | None:
     if vote_record.law_source_url:
+        law_id = _stable_record_id("laws", vote_record.law_source_url, vote_record.vote_text)
         row = conn.execute(
             """
             SELECT law_id
             FROM dep_act_laws
-            WHERE source_url = ?
+            WHERE law_id = ? OR source_url = ?
+            ORDER BY CASE WHEN law_id = ? THEN 0 ELSE 1 END
             LIMIT 1
             """,
-            (vote_record.law_source_url,),
+            (law_id, vote_record.law_source_url, law_id),
         ).fetchone()
         if row:
             return str(row[0])
-        law_id = _stable_record_id("laws", vote_record.law_source_url, vote_record.vote_text)
         conn.execute(
             """
             INSERT INTO dep_act_laws (
                 law_id, source_url, identifier, title, details_text, columns_json
             )
             VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(source_url) DO NOTHING
+            ON CONFLICT DO NOTHING
             """,
             (
                 law_id,
@@ -4437,10 +4467,11 @@ def _resolve_vote_law_id(
             """
             SELECT law_id
             FROM dep_act_laws
-            WHERE source_url = ?
+            WHERE law_id = ? OR source_url = ?
+            ORDER BY CASE WHEN law_id = ? THEN 0 ELSE 1 END
             LIMIT 1
             """,
-            (vote_record.law_source_url,),
+            (law_id, vote_record.law_source_url, law_id),
         ).fetchone()
         if row:
             return str(row[0])
