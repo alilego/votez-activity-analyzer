@@ -47,6 +47,18 @@ FRONTEND_DATA_SUBDIRS = [
     "laws_votes",
 ]
 
+# outputs/ files to sync directly into votez-frontend/data/activity_analizer/
+FRONTEND_DATA_FILES = [
+    "adopted_law_reader_summaries.json",
+    "analysis_intervals.json",
+]
+
+# outputs/ files to sync directly into votez-frontend/data/
+FRONTEND_ROOT_DATA_FILES = [
+    "evolutia_partidelor_camera_deputatilor.json",
+    "evolutia_partidelor_senat.json",
+]
+
 # Scraper registry files to sync into votez-frontend/lib/
 SCRAPER_LIB_FILES = [
     "toti_deputatii.json",
@@ -221,6 +233,10 @@ def run_export_outputs() -> bool:
     proc = subprocess.run([sys.executable, str(SCRIPT_DIR / "export_laws_votes.py")])
     if proc.returncode != 0:
         ok = False
+    # Frontend aggregate files imported outside the standard analyzer subdirs.
+    proc = subprocess.run([sys.executable, str(SCRIPT_DIR / "export_frontend_auxiliary.py")])
+    if proc.returncode != 0:
+        ok = False
     return ok
 
 
@@ -254,6 +270,30 @@ def deploy_analyzer_outputs(outputs_dir: Path, frontend_data_dir: Path) -> int:
             dst_file = frontend_data_dir / rel_path
             if _copy_if_changed(src_file, dst_file):
                 copied += 1
+    return copied
+
+
+def deploy_analyzer_output_files(outputs_dir: Path, frontend_data_dir: Path) -> int:
+    """Copy top-level analyzer JSON outputs to votez-frontend/data/activity_analizer/."""
+    copied = 0
+    for filename in FRONTEND_DATA_FILES:
+        src_file = outputs_dir / filename
+        if not src_file.exists():
+            continue
+        if _copy_if_changed(src_file, frontend_data_dir / filename):
+            copied += 1
+    return copied
+
+
+def deploy_frontend_root_data_files(outputs_dir: Path, frontend_root_data_dir: Path) -> int:
+    """Copy top-level frontend JSON outputs to votez-frontend/data/."""
+    copied = 0
+    for filename in FRONTEND_ROOT_DATA_FILES:
+        src_file = outputs_dir / filename
+        if not src_file.exists():
+            continue
+        if _copy_if_changed(src_file, frontend_root_data_dir / filename):
+            copied += 1
     return copied
 
 
@@ -513,6 +553,14 @@ def main() -> int:
         print(f"  Analyzer outputs → {frontend_data_dir}")
         data_deployed = deploy_analyzer_outputs(DEFAULT_OUTPUTS_DIR, frontend_data_dir)
         print(f"    Files copied (new/changed): {data_deployed}")
+
+        print(f"  Analyzer aggregate files → {frontend_data_dir}")
+        aggregate_deployed = deploy_analyzer_output_files(DEFAULT_OUTPUTS_DIR, frontend_data_dir)
+        print(f"    Files copied (new/changed): {aggregate_deployed}")
+
+        print(f"  Frontend root data files → {frontend_dir / 'data'}")
+        root_data_deployed = deploy_frontend_root_data_files(DEFAULT_OUTPUTS_DIR, frontend_dir / "data")
+        print(f"    Files copied (new/changed): {root_data_deployed}")
 
         print(f"  Database          → {frontend_data_dir / 'state.sqlite'}")
         db_copied = deploy_db(DEFAULT_DB_PATH, frontend_data_dir)
