@@ -24,8 +24,9 @@ Each party snapshot aggregates its members' activity:
 
 Design notes
 ------------
-* The DB has no `parties` table — `members.party_id` doubles as the
-  party's display label (e.g. "PSD", "AUR"). We emit both `party_id`
+* Motion groups come from the official signing-time list. Other activity
+  groups use the current `members.party_id`. The DB has no `parties` table;
+  each party ID doubles as its display label (e.g. "PSD", "AUR"). We emit both `party_id`
   and `party_name` with the same value so the JSON shape is forward
   compatible if a mapping is introduced later.
 * "Supports" a law means any row in `dep_act_member_laws`. "Initiates"
@@ -53,6 +54,7 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from motion_signatures import ensure_schema as ensure_motion_schema
 
 
 DEFAULT_ACTIVITY_OUTPUT_DIR = Path("outputs/activity")
@@ -163,6 +165,7 @@ def _party_majority_threshold(total_members: int) -> int:
 
 
 def _load_motions(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
+    ensure_motion_schema(conn)
     rows = conn.execute(
         """
         SELECT motion_id, source_url, title, details_text, columns_json
@@ -178,15 +181,23 @@ def _load_motions(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
             "details_text": details_text,
             "columns": _safe_columns(columns_json),
         }
+        source = conn.execute('SELECT registered_on,report_json FROM dep_act_motion_sources WHERE motion_id=?', (motion_id,)).fetchone()
+        out[motion_id]['support_basis'] = 'official_signatures'
+        out[motion_id]['signature_coverage'] = json.loads(source[1]) if source else {'coverage': 'unverified', 'unresolved': 'Official signatory source unavailable'}
+        out[motion_id]['registered_on'] = source[0] if source else None
+        out[motion_id]['signatories'] = [dict(member_id=mid, signing_party_id=party, source_name=name)
+            for mid,party,name in conn.execute('SELECT member_id,signing_party_id,source_name FROM dep_act_motion_signatures WHERE motion_id=? AND member_id IS NOT NULL AND unresolved_reason IS NULL ORDER BY member_id',(motion_id,))]
     return out
 
 
 def _load_member_motions(
     conn: sqlite3.Connection,
 ) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
-    rows = conn.execute(
-        "SELECT member_id, motion_id FROM dep_act_member_motions"
-    ).fetchall()
+    ensure_motion_schema(conn)
+    rows = conn.execute("""SELECT s.member_id,s.motion_id
+        FROM dep_act_motion_signatures s JOIN members m USING(member_id)
+        WHERE s.unresolved_reason IS NULL AND s.chamber='deputat'
+          AND m.member_id='deputat_' || s.profile_key""").fetchall()
     by_member: dict[str, list[str]] = {}
     by_motion: dict[str, list[str]] = {}
     for member_id, motion_id in rows:
@@ -524,17 +535,10 @@ def _party_member_counts(
     ]
 
 
-def _motion_supporter_count_for_party(
-    supporter_ids: list[str],
-    members: dict[str, dict[str, Any]],
-    party_id: str,
-) -> int:
-    """How many members of `party_id` appear in `supporter_ids`."""
-    return sum(
-        1
-        for mid in supporter_ids
-        if members.get(mid, {}).get("party_id") == party_id
-    )
+def _motion_members(motion, members):
+    """A signature's party is the publisher's signing-time group, never today's."""
+    return {sig['member_id']: dict(members[sig['member_id']], party_id=sig['signing_party_id'])
+            for sig in motion.get('signatories', []) if sig['member_id'] in members}
 
 
 # ---------------------------------------------------------------------------
@@ -555,10 +559,12 @@ def _build_member_motions_block(
         if motion is None:
             continue
         supporters = motion_supporters.get(motion_id, [])
+        signing_members = _motion_members(motion, members)
         co_support = _party_member_counts(
-            supporters, members, exclude_member_id=member_id
+            supporters, signing_members, exclude_member_id=member_id
         )
         entry = dict(motion)
+        entry['signing_party_id'] = signing_members.get(member_id, {}).get('party_id')
         entry["co_supporting_parties"] = co_support
         out.append(entry)
     return out
@@ -733,7 +739,6 @@ def _build_party_questions_block(
 
 def _build_party_motions_block(
     party_id: str,
-    party_member_ids: set[str],
     majority_threshold: int,
     motions: dict[str, dict[str, Any]],
     motion_supporters: dict[str, list[str]],
@@ -742,18 +747,19 @@ def _build_party_motions_block(
     out: list[dict[str, Any]] = []
     for motion_id in sorted(motion_supporters.keys()):
         supporters = motion_supporters[motion_id]
-        party_supporters = [mid for mid in supporters if mid in party_member_ids]
-        if not majority_threshold or len(party_supporters) < majority_threshold:
-            continue
         motion = motions.get(motion_id)
         if motion is None:
+            continue
+        signing_members = _motion_members(motion, members)
+        party_supporters = [mid for mid in supporters if signing_members.get(mid, {}).get('party_id') == party_id]
+        if not majority_threshold or len(party_supporters) < majority_threshold:
             continue
         entry = dict(motion)
         entry["party_supporters_count"] = len(party_supporters)
         entry["party_supporters"] = [
-            _member_stub(members[mid]) for mid in sorted(party_supporters)
+            _member_stub(signing_members[mid]) for mid in sorted(party_supporters)
         ]
-        entry["all_supporting_parties"] = _party_member_counts(supporters, members)
+        entry["all_supporting_parties"] = _party_member_counts(supporters, signing_members)
         out.append(entry)
     return out
 
@@ -786,9 +792,10 @@ def build_party_activity_snapshot(
         "members_count": total,
         "majority_threshold": threshold,
         "majority_rule": (
-            "min(10, ceil(members_count / 2)); a law/motion is included "
-            "when the count of party members who (non-initiator) supported "
-            "it is >= this threshold."
+            "min(10, ceil(current members_count / 2)); laws count current-party "
+            "non-initiator supporters. Motions count verified deputy signatures "
+            "in official signing-time groups. This display threshold describes "
+            "neither an individual vote nor a historical parliamentary majority."
         ),
         "laws_initiated": laws_initiated,
         "laws_majority_supported_only": laws_majority_supported,
@@ -797,7 +804,6 @@ def build_party_activity_snapshot(
         ),
         "motions_majority_supported": _build_party_motions_block(
             party_id,
-            party_member_ids,
             threshold,
             motions,
             motion_supporters,
@@ -959,6 +965,7 @@ def export_activity_snapshots(
     parties_written = 0
     party_ids = sorted(
         {info.get("party_id") for info in members.values() if info.get("party_id")}
+        | {s['signing_party_id'] for motion in motions.values() for s in motion.get('signatories', [])}
     )
     for party_id in party_ids:
         snapshot = build_party_activity_snapshot(

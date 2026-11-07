@@ -10,6 +10,7 @@ import json
 import re
 import unicodedata
 from pathlib import Path
+from validate_motion_exports import validate_motion_exports
 
 
 def _load_json(path: Path):
@@ -219,6 +220,7 @@ def validate_outputs(output_dir: Path) -> list[str]:
         prev_count = count
         prev_topic = topic
 
+    errors.extend(validate_motion_exports(output_dir))
     return errors
 
 

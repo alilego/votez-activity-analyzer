@@ -105,6 +105,10 @@ def _link_member_motion(conn: sqlite3.Connection, *, member_id: str, motion_id: 
         "INSERT INTO dep_act_member_motions (member_id, motion_id) VALUES (?, ?)",
         (member_id, motion_id),
     )
+    name, party = conn.execute('SELECT name,party_id FROM members WHERE member_id=?',(member_id,)).fetchone()
+    conn.execute("INSERT INTO dep_act_motion_signatures VALUES(?,?,?,?,?,'deputat',?,NULL)",
+        (motion_id,member_id.removeprefix('deputat_'),member_id,name,party,'https://example.test/'+member_id))
+
 
 
 def _insert_project(conn: sqlite3.Connection, *, project_id: str, title: str) -> None:

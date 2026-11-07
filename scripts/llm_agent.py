@@ -101,6 +101,8 @@ from model_profiles import (
 from mcp_server import MCPServer
 from openai_runtime import create_chat_completion, resolve_openai_service_tier
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -126,11 +128,13 @@ _LLM_USAGE = {
     "estimated_completion_tokens": 0,
     "calls_with_actual_usage": 0,
 }
+_LLM_USAGE_LOCK = Lock()
 
 
 def _reset_usage_stats() -> None:
-    for key in _LLM_USAGE:
-        _LLM_USAGE[key] = 0
+    with _LLM_USAGE_LOCK:
+        for key in _LLM_USAGE:
+            _LLM_USAGE[key] = 0
 
 
 def _estimate_tokens_from_text(text: str) -> int:
@@ -175,14 +179,15 @@ def _record_llm_usage(
     est_prompt = _estimate_tokens_from_text(system_prompt) + _estimate_tokens_from_text(user_prompt)
     est_completion = _estimate_tokens_from_text(output_text)
 
-    _LLM_USAGE["calls"] += 1
-    _LLM_USAGE["estimated_prompt_tokens"] += est_prompt
-    _LLM_USAGE["estimated_completion_tokens"] += est_completion
+    with _LLM_USAGE_LOCK:
+        _LLM_USAGE["calls"] += 1
+        _LLM_USAGE["estimated_prompt_tokens"] += est_prompt
+        _LLM_USAGE["estimated_completion_tokens"] += est_completion
 
-    if prompt_tokens is not None and completion_tokens is not None:
-        _LLM_USAGE["calls_with_actual_usage"] += 1
-        _LLM_USAGE["prompt_tokens"] += prompt_tokens
-        _LLM_USAGE["completion_tokens"] += completion_tokens
+        if prompt_tokens is not None and completion_tokens is not None:
+            _LLM_USAGE["calls_with_actual_usage"] += 1
+            _LLM_USAGE["prompt_tokens"] += prompt_tokens
+            _LLM_USAGE["completion_tokens"] += completion_tokens
 
     if LOG_TOKEN_USAGE_PER_CALL:
         label = call_label or "call"
@@ -735,6 +740,8 @@ def _call_llm(
 
     if not isinstance(results, list):
         raise ValueError(f"LLM did not return a list: {results!r}")
+    if any(not isinstance(item, dict) for item in results):
+        raise ValueError("LLM result items must be JSON objects, not strings or other values")
     if return_raw:
         return raw_content, results
     return results
@@ -1619,6 +1626,7 @@ def _recheck_single_speech(
     config: dict,
     parent_call_label: str,
     context_speeches: list[dict] | None = None,
+    validation_feedback: str = "",
 ) -> dict | None:
     """Reclassify one speech when initial output looks misaligned/ungrounded."""
     last_exc: Exception | None = None
@@ -1633,6 +1641,12 @@ def _recheck_single_speech(
                 call_label=f"{parent_call_label}_recheck_{sp['speech_index']}",
                 context_speeches=context_speeches,
                 build_prompts_only=False,
+                system_prompt=(
+                    INTERVENTION_SYSTEM_PROMPT
+                    + "\n\nThe previous response failed validation: " + validation_feedback
+                    + ". Correct the invalid field. constructiveness_label must be exactly "
+                    + "constructive, neutral, or non_constructive; partial is only valid for rubric fields."
+                ) if validation_feedback else None,
             )
             if not raw_results:
                 return None
@@ -1919,12 +1933,20 @@ def classify_session_interventions_one_pass(
                 payload = _validate_one(raw_for_validation, config, session_topics)
             except ValueError as exc:
                 print(f"    Validation error for {iid}: {exc}")
-                errors += 1
-                error_log.append({
-                    "intervention_id": iid,
-                    "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
-                })
-                continue
+                payload = _recheck_single_speech(
+                    client=client, provider=provider, session=session,
+                    session_topics=session_topics, sp=sp_for_llm, config=config,
+                    parent_call_label=f"{call_label}_validation",
+                    context_speeches=prev_context, validation_feedback=str(exc),
+                )
+                if payload is None:
+                    errors += 1
+                    error_log.append({
+                        "intervention_id": iid,
+                        "error": {"code": "LLM_RESPONSE_INVALID", "message": str(exc)},
+                    })
+                    continue
+                print(f"      Recovered {iid} after validation retry.")
 
         if payload.get("_needs_recheck"):
             print(f"      Rechecking speech_index={sp['speech_index']} (ungrounded result)...")
@@ -2225,6 +2247,7 @@ def run_agent(
     provider: str = DEFAULT_PROVIDER,
     pipeline_architecture: str = DEFAULT_PIPELINE_ARCHITECTURE,
     build_prompts_only: bool = False,
+    workers: int = 1,
 ) -> dict:
     """
     Classify all given interventions grouped by session.
@@ -2233,8 +2256,11 @@ def run_agent(
     When ``build_prompts_only=True`` prompts are built and saved but no LLM
     calls are made and nothing is stored to the DB.
     """
+    if workers < 1:
+        raise ValueError("workers must be at least 1")
     _reset_usage_stats()
-    client = _build_client(provider, model)
+    parallel = workers > 1 and not build_prompts_only
+    client = None if parallel else _build_client(provider, model)
     resolved_pipeline_architecture = resolve_pipeline_architecture(provider, model, pipeline_architecture)
 
     # Group intervention_ids by session_id (preserving order within each session).
@@ -2259,6 +2285,61 @@ def run_agent(
     classified = 0
     errors = 0
     error_log: list[dict] = []
+
+    if parallel:
+        print(f"Classifying {len(sessions)} separate sessions with {workers} workers.")
+
+        def classify_group(item):
+            s_idx, (session_id, s_iids) = item
+            # Each task owns its SQLite connection and API client. Sessions
+            # have disjoint target IDs; context and validation stay unchanged.
+            worker_client = _build_client(provider, model)
+            try:
+                with MCPServer(db_path=db_path, run_id=run_id) as worker_server:
+                    config_result = worker_server.call("get_run_config", {})
+                    if not config_result["ok"]:
+                        raise RuntimeError(f"get_run_config failed: {config_result}")
+                    print(f"\n[Session {s_idx}/{len(sessions)}] session_id={session_id}  ({len(s_iids)} interventions)")
+                    return classify_session_interventions(
+                        server=worker_server, session_id=session_id,
+                        intervention_ids=s_iids, client=worker_client,
+                        provider=provider, config=config_result["config"], db_path=db_path,
+                        build_prompts_only=False,
+                        pipeline_architecture=resolved_pipeline_architecture,
+                    )
+            finally:
+                close = getattr(worker_client, "close", None)
+                if close:
+                    close()
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(classify_group, item): item[1][0]
+                       for item in enumerate(sessions.items(), 1)}
+            try:
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                    except Exception as exc:
+                        session_id = futures[future]
+                        print(f"Session worker failed: session_id={session_id}: {type(exc).__name__}: {exc}", flush=True)
+                        errors += 1
+                        error_log.append({"session_id": session_id, "error": {
+                            "code": "SESSION_WORKER_ERROR", "message": f"{type(exc).__name__}: {exc}",
+                        }})
+                        # Completed rows are already committed. Finish other
+                        # sessions; the next resume selects this one's missing IDs.
+                        continue
+                    classified += result["classified"]
+                    errors += result["errors"]
+                    error_log.extend(result["error_log"])
+            except BaseException:
+                for future in futures:
+                    future.cancel()
+                raise
+        return {
+            "total": total, "classified": classified, "errors": errors,
+            "error_log": error_log, "usage": _usage_summary_payload(),
+        }
 
     with MCPServer(db_path=db_path, run_id=run_id) as server:
         config_result = server.call("get_run_config", {})
@@ -2628,7 +2709,15 @@ def main() -> int:
             "'one_pass' = legacy single prompt."
         ),
     )
+    parser.add_argument(
+        "--workers", type=int, default=os.environ.get("VOTEZ_LLM_WORKERS"),
+        help="Classify separate sessions with isolated clients/connections (default: 4 for OpenAI, 1 for Ollama; env: VOTEZ_LLM_WORKERS).",
+    )
     args = parser.parse_args()
+    if args.workers is None:
+        args.workers = 4 if args.provider == "openai" else 1
+    if args.workers < 1:
+        parser.error("--workers must be at least 1")
 
     if not args.run_id:
         print("ERROR: --run-id or VOTEZ_RUN_ID required.")
@@ -2694,6 +2783,7 @@ def main() -> int:
         provider=args.provider,
         pipeline_architecture=resolved_pipeline_architecture,
         build_prompts_only=args.build_prompts,
+        workers=args.workers,
     )
 
     if args.build_prompts:
@@ -2728,7 +2818,8 @@ def main() -> int:
     if summary["error_log"]:
         print("Errors:")
         for entry in summary["error_log"]:
-            print(f"  {entry['intervention_id']}: {entry['error']}")
+            target = entry.get("intervention_id") or f"session {entry.get('session_id', 'unknown')}"
+            print(f"  {target}: {entry['error']}")
 
     return 0 if summary["errors"] == 0 else 1
 

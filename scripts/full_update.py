@@ -162,7 +162,7 @@ def run_productivity_export() -> bool:
     return proc.returncode == 0
 
 
-def run_crawler(update_existing: bool, hydrate_law_initiators: bool) -> bool:
+def run_crawler(update_existing: bool, hydrate_law_initiators: bool, hydrate_new_laws_only: bool = False, preserve_existing_details: bool = False, new_laws_baseline: Path | None = None) -> bool:
     cmd = [
         sys.executable, str(SCRIPT_DIR / "crawl_deputy_activity.py"),
         "--export-activity",
@@ -171,6 +171,12 @@ def run_crawler(update_existing: bool, hydrate_law_initiators: bool) -> bool:
         cmd.append("--update-existing")
     if hydrate_law_initiators:
         cmd.append("--hydrate-law-initiators")
+    if hydrate_new_laws_only:
+        cmd.append("--hydrate-new-laws-only")
+    if preserve_existing_details:
+        cmd.append("--preserve-existing-details")
+    if new_laws_baseline is not None:
+        cmd += ["--new-laws-baseline", str(new_laws_baseline)]
     proc = subprocess.run(cmd)
     return proc.returncode == 0
 
@@ -270,6 +276,22 @@ def deploy_analyzer_outputs(outputs_dir: Path, frontend_data_dir: Path) -> int:
             dst_file = frontend_data_dir / rel_path
             if _copy_if_changed(src_file, dst_file):
                 copied += 1
+    # These three directories are owned by the generators. Identity migrations
+    # change filenames; copying alone would leave obsolete people selectable.
+    pruned = 0
+    for relative, pattern in (("members", "interventions_*.json"),
+                              ("productivity/members", "productivity_*.json"),
+                              ("activity/members", "activity_*.json")):
+        source = outputs_dir / relative
+        destination = frontend_data_dir / relative
+        if not source.is_dir():
+            continue
+        for obsolete in destination.glob(pattern):
+            if not (source / obsolete.name).exists():
+                obsolete.unlink()
+                pruned += 1
+    if pruned:
+        print(f"  Removed {pruned} obsolete generated member files.")
     return copied
 
 
@@ -381,6 +403,16 @@ def main() -> int:
             "Slow — skipped by default."
         ),
     )
+    crawler_group.add_argument(
+        "--hydrate-new-laws-only", action="store_true",
+        help="Restrict initiator OCR to laws newly discovered during this activity crawl.",
+    )
+    crawler_group.add_argument("--new-laws-baseline", type=Path,
+                               help="Save/reuse a law-ID baseline when resuming the same refresh.")
+    crawler_group.add_argument(
+        "--preserve-existing-details", action="store_true",
+        help="Reuse completed activity details and exact local declaration text instead of fetching them again.",
+    )
 
     adopted_law_group = parser.add_argument_group("adopted law enrichment options")
     adopted_law_group.add_argument(
@@ -450,6 +482,10 @@ def main() -> int:
 
     if args.scrape_month is not None and args.scrape_year is None:
         parser.error("--scrape-month requires --scrape-year")
+    if args.hydrate_new_laws_only and not args.hydrate_law_initiators:
+        parser.error("--hydrate-new-laws-only requires --hydrate-law-initiators")
+    if args.new_laws_baseline is not None and not args.hydrate_new_laws_only:
+        parser.error("--new-laws-baseline requires --hydrate-new-laws-only")
 
     if args.only_step is not None:
         args.skip_scrape       = args.only_step != 1
@@ -472,8 +508,9 @@ def main() -> int:
     if not args.skip_scrape:
         _header(f"Step 1/{steps_total}  Scraping from cdep.ro (deputies/senators + stenograms)")
         if not run_scraper(scraper_dir, args.scrape_year, args.scrape_month):
-            print("\n  Scraping failed. Continuing with existing data.\n")
-            failed = True
+            print("\n  Scraping failed. Stopping before analyzing or deploying stale data.")
+            print("  Fix the scraper and rerun, or use --skip-scrape to use existing data explicitly.")
+            return 1
     else:
         print(f"\nStep 1/{steps_total}  Scraping — skipped (--skip-scrape)")
 
@@ -518,7 +555,7 @@ def main() -> int:
     if not args.skip_crawler:
         hydrate_note = " + OCR law initiators" if args.hydrate_law_initiators else ""
         _header(f"Step 5/{steps_total}  Crawling deputy activity{hydrate_note} + exporting snapshots")
-        if not run_crawler(args.update_existing_crawler, args.hydrate_law_initiators):
+        if not run_crawler(args.update_existing_crawler, args.hydrate_law_initiators, args.hydrate_new_laws_only, args.preserve_existing_details, args.new_laws_baseline):
             print("\n  Crawler failed.")
             failed = True
     else:
@@ -548,6 +585,14 @@ def main() -> int:
 
     # ── Step 8: Deploy to frontend ──────────────────────────
     if not args.skip_deploy and not args.dry_run:
+        if failed:
+            print("\n  Earlier update steps failed. Frontend files were not modified; repair and resume the failed steps before deployment.")
+            return 1
+        _header(f"Step 8/{steps_total}  Validating outputs before frontend deployment")
+        validation = subprocess.run([sys.executable, str(SCRIPT_DIR / "validate_outputs.py")])
+        if validation.returncode != 0:
+            print("\n  Output validation failed. Frontend files were not modified.")
+            return 1
         _header(f"Step 8/{steps_total}  Deploying to frontend")
 
         print(f"  Analyzer outputs → {frontend_data_dir}")

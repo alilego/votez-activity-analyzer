@@ -1,2648 +1,2979 @@
 {
   "metadata": {
-    "build_date": "2026-07-09T21:40:20.519350",
-    "total_count": 330
+    "build_date": "2026-11-07T00:02:29.429125",
+    "total_count": 330,
+    "identity_scheme": "cdep_{leg}_{cam}_{idm}; listing_position is display order only"
   },
   "members": [
     {
-      "id": "1",
+      "id": "cdep_2024_2_1",
       "name": "Adomnicăi Mirela Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=1&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "1"
     },
     {
-      "id": "2",
+      "id": "cdep_2024_2_3",
       "name": "Albu Dumitriţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=3&cam=2&leg=2024",
       "circumscriptie": "43 / DIASPORA",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "2"
     },
     {
-      "id": "3",
+      "id": "cdep_2024_2_4",
       "name": "Alecsandru Marius-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=4&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "3"
     },
     {
-      "id": "4",
+      "id": "cdep_2024_2_5",
       "name": "Alecu Robert",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=5&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "4"
     },
     {
-      "id": "5",
+      "id": "cdep_2024_2_6",
       "name": "Amet Varol",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=6&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "5"
     },
     {
-      "id": "6",
+      "id": "cdep_2024_2_7",
       "name": "Andrei Alexandru-Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=7&cam=2&leg=2024",
       "circumscriptie": "19 / GIURGIU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "6"
     },
     {
-      "id": "7",
+      "id": "cdep_2024_2_8",
       "name": "Andrei Cosmin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=8&cam=2&leg=2024",
       "circumscriptie": "38 / TULCEA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "7"
     },
     {
-      "id": "8",
+      "id": "cdep_2024_2_9",
       "name": "Andronache Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=9&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "8"
     },
     {
-      "id": "9",
+      "id": "cdep_2024_2_10",
       "name": "Andruşcă Lucian-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=10&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "9"
     },
     {
-      "id": "10",
+      "id": "cdep_2024_2_12",
       "name": "Atanasiu Corina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=12&cam=2&leg=2024",
       "circumscriptie": "41 / VRANCEA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "10"
     },
     {
-      "id": "11",
+      "id": "cdep_2024_2_13",
       "name": "Avrămescu Ştefăniţă-Alin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=13&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "11"
     },
     {
-      "id": "12",
+      "id": "cdep_2024_2_14",
       "name": "Baciu Romică-Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=14&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "12"
     },
     {
-      "id": "13",
+      "id": "cdep_2024_2_336",
+      "name": "Badea Mihai-Alexandru",
+      "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=336&cam=2&leg=2024",
+      "circumscriptie": "42 / BUCUREŞTI",
+      "party": "USR",
+      "date_start": "23.09.2026",
+      "listing_position": "13"
+    },
+    {
+      "id": "cdep_2024_2_15",
       "name": "Badea Nelu-Valentin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=15&cam=2&leg=2024",
       "circumscriptie": "36 / TELEORMAN",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "14"
     },
     {
-      "id": "14",
+      "id": "cdep_2024_2_16",
       "name": "Badiu Georgel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=16&cam=2&leg=2024",
       "circumscriptie": "41 / VRANCEA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "15"
     },
     {
-      "id": "15",
+      "id": "cdep_2024_2_17",
       "name": "Balan Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=17&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "16"
     },
     {
-      "id": "16",
+      "id": "cdep_2024_2_18",
       "name": "Bara Nicolae-Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=18&cam=2&leg=2024",
       "circumscriptie": "1 / ALBA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "17"
     },
     {
-      "id": "17",
+      "id": "cdep_2024_2_19",
       "name": "Barbu Florin-Ionuţ",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=19&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "18"
     },
     {
-      "id": "18",
+      "id": "cdep_2024_2_20",
       "name": "Barstan Tiberiu-Claudiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=20&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "19"
     },
     {
-      "id": "19",
+      "id": "cdep_2024_2_21",
       "name": "Baş Ana-Marcela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=21&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "20"
     },
     {
-      "id": "20",
+      "id": "cdep_2024_2_22",
       "name": "Băişanu Ştefan-Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=22&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "21"
     },
     {
-      "id": "21",
+      "id": "cdep_2024_2_23",
       "name": "Becali George",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=23&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "22"
     },
     {
-      "id": "22",
+      "id": "cdep_2024_2_24",
       "name": "Bejinariu Eugen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=24&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "23"
     },
     {
-      "id": "23",
+      "id": "cdep_2024_2_25",
       "name": "Bende Sándor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=25&cam=2&leg=2024",
       "circumscriptie": "21 / HARGHITA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "24"
     },
     {
-      "id": "24",
+      "id": "cdep_2024_2_26",
       "name": "Berescu Monica-Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=26&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "25"
     },
     {
-      "id": "25",
+      "id": "cdep_2024_2_27",
       "name": "Biro Daniel-Răzvan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=27&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "26"
     },
     {
-      "id": "26",
+      "id": "cdep_2024_2_28",
       "name": "Biró Rozália-Ibolya",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=28&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "27"
     },
     {
-      "id": "27",
+      "id": "cdep_2024_2_29",
       "name": "Blaga Daniel-Codruţ",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=29&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "28"
     },
     {
-      "id": "28",
+      "id": "cdep_2024_2_30",
       "name": "Bode Lucian Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=30&cam=2&leg=2024",
       "circumscriptie": "33 / SĂLAJ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "29"
     },
     {
-      "id": "29",
+      "id": "cdep_2024_2_31",
       "name": "Bogdan Ionel-Ovidiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=31&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "30"
     },
     {
-      "id": "30",
+      "id": "cdep_2024_2_32",
       "name": "Bogdănel Lucian-Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=32&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "31"
     },
     {
-      "id": "31",
+      "id": "cdep_2024_2_33",
       "name": "Bordian Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=33&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "32"
     },
     {
-      "id": "32",
+      "id": "cdep_2024_2_34",
       "name": "Borş George-Mădălin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=34&cam=2&leg=2024",
       "circumscriptie": "36 / TELEORMAN",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "33"
     },
     {
-      "id": "33",
+      "id": "cdep_2024_2_35",
       "name": "Boşutar Tiberiu-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=35&cam=2&leg=2024",
       "circumscriptie": "6 / BISTRIŢA-NĂSĂUD",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "34"
     },
     {
-      "id": "34",
+      "id": "cdep_2024_2_36",
       "name": "Botez Mihai-Cătălin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=36&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "35"
     },
     {
-      "id": "35",
+      "id": "cdep_2024_2_37",
       "name": "Bouda Ştefan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=37&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "36"
     },
     {
-      "id": "36",
+      "id": "cdep_2024_2_38",
       "name": "Bruynseels Ramona-Ioana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=38&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "37"
     },
     {
-      "id": "37",
+      "id": "cdep_2024_2_39",
       "name": "Bucur Ariana-Oana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=39&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "38"
     },
     {
-      "id": "38",
+      "id": "cdep_2024_2_40",
       "name": "Bucura-Oprescu Simona",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=40&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "39"
     },
     {
-      "id": "39",
+      "id": "cdep_2024_2_41",
       "name": "Budacă Vasile",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=41&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "40"
     },
     {
-      "id": "40",
+      "id": "cdep_2024_2_42",
       "name": "Budăi Marius-Constantin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=42&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "41"
     },
     {
-      "id": "41",
+      "id": "cdep_2024_2_43",
       "name": "Buican Cristian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=43&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "42"
     },
     {
-      "id": "42",
+      "id": "cdep_2024_2_44",
       "name": "Bulai Iulian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=44&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "43"
     },
     {
-      "id": "43",
+      "id": "cdep_2024_2_45",
       "name": "Bulearcă Marius-Felix",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=45&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "44"
     },
     {
-      "id": "44",
+      "id": "cdep_2024_2_46",
       "name": "Burduja Sebastian-Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=46&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "45"
     },
     {
-      "id": "45",
+      "id": "cdep_2024_2_47",
       "name": "Butură Cristina-Irina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=47&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "46"
     },
     {
-      "id": "46",
+      "id": "cdep_2024_2_48",
       "name": "Buzoianu Diana-Anda",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=48&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "47"
     },
     {
-      "id": "47",
+      "id": "cdep_2024_2_49",
       "name": "Cadar Răzvan-Olimpiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=49&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "48"
     },
     {
-      "id": "48",
+      "id": "cdep_2024_2_50",
       "name": "Caragaţă Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=50&cam=2&leg=2024",
       "circumscriptie": "23 / IALOMIŢA",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "49"
     },
     {
-      "id": "49",
+      "id": "cdep_2024_2_51",
       "name": "Câciu Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=51&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "50"
     },
     {
-      "id": "50",
+      "id": "cdep_2024_2_52",
       "name": "Cernit Maria",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=52&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "51"
     },
     {
-      "id": "51",
+      "id": "cdep_2024_2_53",
       "name": "Chilat Crina-Fiorela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=53&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "52"
     },
     {
-      "id": "52",
+      "id": "cdep_2024_2_54",
       "name": "Chirilă Virgil Alin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=54&cam=2&leg=2024",
       "circumscriptie": "27 / MEHEDINŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "53"
     },
     {
-      "id": "53",
+      "id": "cdep_2024_2_55",
       "name": "Chiriţă Răzvan-Mirel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=55&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "54"
     },
     {
-      "id": "54",
+      "id": "cdep_2024_2_56",
       "name": "Ciobanu Adrian-Virgil",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=56&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "55"
     },
     {
-      "id": "55",
+      "id": "cdep_2024_2_57",
       "name": "Ciobotaru Dragoş-Fănică",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=57&cam=2&leg=2024",
       "circumscriptie": "41 / VRANCEA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "56"
     },
     {
-      "id": "56",
+      "id": "cdep_2024_2_58",
       "name": "Ciocan Doiniţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=58&cam=2&leg=2024",
       "circumscriptie": "9 / BRĂILA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "57"
     },
     {
-      "id": "57",
+      "id": "cdep_2024_2_60",
       "name": "Ciornei Daniel-Cătălin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=60&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "58"
     },
     {
-      "id": "58",
+      "id": "cdep_2024_2_61",
       "name": "Ciortea Răzvan-Iulian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=61&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "59"
     },
     {
-      "id": "59",
+      "id": "cdep_2024_2_62",
       "name": "Ciubuc Ciprian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=62&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "60"
     },
     {
-      "id": "60",
+      "id": "cdep_2024_2_63",
       "name": "Ciucă Liviu-Bogdan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=63&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "61"
     },
     {
-      "id": "61",
+      "id": "cdep_2024_2_64",
       "name": "Ciunt Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=64&cam=2&leg=2024",
       "circumscriptie": "33 / SĂLAJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "62"
     },
     {
-      "id": "62",
+      "id": "cdep_2024_2_65",
       "name": "Cîmpan Cristian-Emanuel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=65&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "63"
     },
     {
-      "id": "63",
+      "id": "cdep_2024_2_66",
       "name": "Cîmpean Ovidiu-Vasile",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=66&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "64"
     },
     {
-      "id": "64",
+      "id": "cdep_2024_2_67",
       "name": "Cîmpianu Andreea-Petronela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=67&cam=2&leg=2024",
       "circumscriptie": "43 / DIASPORA",
-      "party": "SOS RO",
-      "date_start": ""
+      "party": "PNL",
+      "date_start": "",
+      "listing_position": "65"
     },
     {
-      "id": "65",
+      "id": "cdep_2024_2_68",
       "name": "Cîrligea Florin-Eugen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=68&cam=2&leg=2024",
       "circumscriptie": "9 / BRĂILA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "66"
     },
     {
-      "id": "66",
+      "id": "cdep_2024_2_69",
       "name": "Cîrligeanu Ariadna-Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=69&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "67"
     },
     {
-      "id": "67",
+      "id": "cdep_2024_2_70",
       "name": "Coarnă Dumitru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=70&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "68"
     },
     {
-      "id": "68",
+      "id": "cdep_2024_2_71",
       "name": "Cojocaru Petru-Bogdan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=71&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "69"
     },
     {
-      "id": "69",
+      "id": "cdep_2024_2_72",
       "name": "Coleşa Ilie-Alin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=72&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "70"
     },
     {
-      "id": "70",
+      "id": "cdep_2024_2_73",
       "name": "Coliban Allen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=73&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "71"
     },
     {
-      "id": "71",
+      "id": "cdep_2024_2_74",
       "name": "Coman Dragoş-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=74&cam=2&leg=2024",
       "circumscriptie": "12 / CĂLĂRAŞI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "72"
     },
     {
-      "id": "72",
+      "id": "cdep_2024_2_75",
       "name": "Constantinescu Andra-Claudia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=75&cam=2&leg=2024",
       "circumscriptie": "9 / BRĂILA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "73"
     },
     {
-      "id": "73",
+      "id": "cdep_2024_2_76",
       "name": "Constantinescu Sergiu-Mircea",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=76&cam=2&leg=2024",
       "circumscriptie": "38 / TULCEA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "74"
     },
     {
-      "id": "74",
+      "id": "cdep_2024_2_77",
       "name": "Corcheş Codruţa-Maria",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=77&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "75"
     },
     {
-      "id": "75",
+      "id": "cdep_2024_2_78",
       "name": "Corendea Cosmin-Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=78&cam=2&leg=2024",
       "circumscriptie": "19 / GIURGIU",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "76"
     },
     {
-      "id": "76",
+      "id": "cdep_2024_2_116",
+      "name": "Cotea Aurora-Adela",
+      "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=116&cam=2&leg=2024",
+      "circumscriptie": "17 / DOLJ",
+      "party": "PSD",
+      "date_start": "",
+      "listing_position": "77"
+    },
+    {
+      "id": "cdep_2024_2_79",
       "name": "Cotinescu Ilie-Aurelian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=79&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "78"
     },
     {
-      "id": "77",
+      "id": "cdep_2024_2_80",
       "name": "Cotîrleţ Paul-Claudiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=80&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "79"
     },
     {
-      "id": "78",
+      "id": "cdep_2024_2_81",
       "name": "Cozma Adrian-Felician",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=81&cam=2&leg=2024",
       "circumscriptie": "32 / SATU-MARE",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "80"
     },
     {
-      "id": "79",
+      "id": "cdep_2024_2_82",
       "name": "Cristian Brian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=82&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "81"
     },
     {
-      "id": "80",
+      "id": "cdep_2024_2_83",
       "name": "Crîstici Ognean",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=83&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "82"
     },
     {
-      "id": "81",
+      "id": "cdep_2024_2_84",
       "name": "Cruşoveanu Marian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=84&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "83"
     },
     {
-      "id": "82",
+      "id": "cdep_2024_2_85",
       "name": "Csép Éva-Andrea",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=85&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "84"
     },
     {
-      "id": "83",
+      "id": "cdep_2024_2_86",
       "name": "Csillag Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=86&cam=2&leg=2024",
       "circumscriptie": "6 / BISTRIŢA-NĂSĂUD",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "85"
     },
     {
-      "id": "84",
+      "id": "cdep_2024_2_87",
       "name": "Csoma Botond",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=87&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "86"
     },
     {
-      "id": "85",
+      "id": "cdep_2024_2_88",
       "name": "Culeafă Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=88&cam=2&leg=2024",
       "circumscriptie": "27 / MEHEDINŢI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "87"
     },
     {
-      "id": "86",
+      "id": "cdep_2024_2_89",
       "name": "Dascălu Cristina-Emanuela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=89&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "88"
     },
     {
-      "id": "87",
+      "id": "cdep_2024_2_90",
       "name": "Dimitriu Alexandru-Paul",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=90&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "89"
     },
     {
-      "id": "88",
+      "id": "cdep_2024_2_91",
       "name": "Doboş Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=91&cam=2&leg=2024",
       "circumscriptie": "38 / TULCEA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "90"
     },
     {
-      "id": "89",
+      "id": "cdep_2024_2_92",
       "name": "Dobre Ciprian-Minodor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=92&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "91"
     },
     {
-      "id": "90",
+      "id": "cdep_2024_2_93",
       "name": "Dolineaschi Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=93&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "92"
     },
     {
-      "id": "91",
+      "id": "cdep_2024_2_94",
       "name": "Drăgoescu Cezar-Mihail",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=94&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "93"
     },
     {
-      "id": "92",
+      "id": "cdep_2024_2_95",
       "name": "Drinceanu Vlad-Florentin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=95&cam=2&leg=2024",
       "circumscriptie": "36 / TELEORMAN",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "94"
     },
     {
-      "id": "93",
+      "id": "cdep_2024_2_96",
       "name": "Drulă Cătălin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=96&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "95"
     },
     {
-      "id": "94",
+      "id": "cdep_2024_2_97",
       "name": "Dunava Costel Neculai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=97&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "96"
     },
     {
-      "id": "95",
+      "id": "cdep_2024_2_98",
       "name": "Echert Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=98&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "97"
     },
     {
-      "id": "96",
+      "id": "cdep_2024_2_99",
       "name": "Enache Diana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=99&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "98"
     },
     {
-      "id": "97",
+      "id": "cdep_2024_2_100",
       "name": "Enache Mihai-Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=100&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "99"
     },
     {
-      "id": "98",
+      "id": "cdep_2024_2_101",
       "name": "Enachi Raisa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=101&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
-      "party": "UPR",
-      "date_start": ""
+      "party": "Neafiliaţi",
+      "date_start": "",
+      "listing_position": "100"
     },
     {
-      "id": "99",
+      "id": "cdep_2024_2_102",
       "name": "Ene Gabriela-Corina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=102&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "101"
     },
     {
-      "id": "100",
+      "id": "cdep_2024_2_103",
       "name": "Făget Mădălin-Laurenţiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=103&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
-      "party": "UPR",
-      "date_start": ""
+      "party": "Neafiliaţi",
+      "date_start": "",
+      "listing_position": "102"
     },
     {
-      "id": "101",
+      "id": "cdep_2024_2_104",
       "name": "Fechet Mircea",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=104&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "103"
     },
     {
-      "id": "102",
+      "id": "cdep_2024_2_105",
       "name": "Feodor Silviu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=105&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "104"
     },
     {
-      "id": "103",
+      "id": "cdep_2024_2_106",
       "name": "Fifor Mihai-Viorel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=106&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "105"
     },
     {
-      "id": "104",
+      "id": "cdep_2024_2_107",
       "name": "Firczak Iulius Marian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=107&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "106"
     },
     {
-      "id": "105",
+      "id": "cdep_2024_2_108",
       "name": "Florea Gabriel-Florinel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=108&cam=2&leg=2024",
       "circumscriptie": "36 / TELEORMAN",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "107"
     },
     {
-      "id": "106",
+      "id": "cdep_2024_2_109",
       "name": "Furtună Mirela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=109&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "108"
     },
     {
-      "id": "107",
+      "id": "cdep_2024_2_110",
       "name": "Gal Călin-Graţian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=110&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "109"
     },
     {
-      "id": "108",
+      "id": "cdep_2024_2_111",
       "name": "Gál Károly",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=111&cam=2&leg=2024",
       "circumscriptie": "15 / COVASNA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "110"
     },
     {
-      "id": "109",
+      "id": "cdep_2024_2_112",
       "name": "Ganţ Ovidiu Victor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=112&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "111"
     },
     {
-      "id": "110",
+      "id": "cdep_2024_2_113",
       "name": "Gavrilă Anamaria",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=113&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "112"
     },
     {
-      "id": "111",
+      "id": "cdep_2024_2_114",
       "name": "Gavrilă Bianca-Eugenia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=114&cam=2&leg=2024",
       "circumscriptie": "1 / ALBA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "113"
     },
     {
-      "id": "112",
+      "id": "cdep_2024_2_115",
       "name": "Gavrilescu Graţiela Leocadia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=115&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "114"
     },
     {
-      "id": "113",
-      "name": "Geamănu Aurora-Adela",
-      "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=116&cam=2&leg=2024",
-      "circumscriptie": "17 / DOLJ",
-      "party": "PSD",
-      "date_start": ""
-    },
-    {
-      "id": "114",
+      "id": "cdep_2024_2_117",
       "name": "Georgescu Gheorghe-Daniel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=117&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "115"
     },
     {
-      "id": "115",
+      "id": "cdep_2024_2_118",
       "name": "Gheorghe Andrei Daniel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=118&cam=2&leg=2024",
       "circumscriptie": "25 / ILFOV",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "116"
     },
     {
-      "id": "116",
+      "id": "cdep_2024_2_119",
       "name": "Gheorghe Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=119&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "117"
     },
     {
-      "id": "117",
+      "id": "cdep_2024_2_120",
       "name": "Gheorghe Mihai-Claudiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=120&cam=2&leg=2024",
       "circumscriptie": "12 / CĂLĂRAŞI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "118"
     },
     {
-      "id": "118",
+      "id": "cdep_2024_2_121",
       "name": "Gheorghiu Andrei-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=121&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "119"
     },
     {
-      "id": "119",
+      "id": "cdep_2024_2_122",
       "name": "Ghera Giureci-Slobodan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=122&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "120"
     },
     {
-      "id": "120",
+      "id": "cdep_2024_2_123",
       "name": "Gherasim Laura",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=123&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "121"
     },
     {
-      "id": "121",
+      "id": "cdep_2024_2_124",
       "name": "Ghigiu Alexandru-Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=124&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "122"
     },
     {
-      "id": "122",
+      "id": "cdep_2024_2_125",
       "name": "Gima George",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=125&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "123"
     },
     {
-      "id": "123",
+      "id": "cdep_2024_2_126",
       "name": "Giurgiu Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=126&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "124"
     },
     {
-      "id": "124",
+      "id": "cdep_2024_2_127",
       "name": "Gliga Dumitriţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=127&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "125"
     },
     {
-      "id": "125",
+      "id": "cdep_2024_2_128",
       "name": "Goidescu Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=128&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "126"
     },
     {
-      "id": "126",
+      "id": "cdep_2024_2_129",
       "name": "Gorghiu Alina-Ştefania",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=129&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "127"
     },
     {
-      "id": "127",
+      "id": "cdep_2024_2_130",
       "name": "Govor Mircea-Vasile",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=130&cam=2&leg=2024",
       "circumscriptie": "32 / SATU-MARE",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "128"
     },
     {
-      "id": "128",
+      "id": "cdep_2024_2_131",
       "name": "Grindeanu Sorin-Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=131&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "129"
     },
     {
-      "id": "129",
+      "id": "cdep_2024_2_132",
       "name": "Grofu Daniel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=132&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "130"
     },
     {
-      "id": "130",
+      "id": "cdep_2024_2_133",
       "name": "Grosaru Ioana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=133&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "131"
     },
     {
-      "id": "131",
+      "id": "cdep_2024_2_134",
       "name": "Grosu Veronica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=134&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "132"
     },
     {
-      "id": "132",
+      "id": "cdep_2024_2_135",
       "name": "Groza Călin-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=135&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
-      "party": "UPR",
-      "date_start": ""
+      "party": "PSD",
+      "date_start": "",
+      "listing_position": "133"
     },
     {
-      "id": "133",
+      "id": "cdep_2024_2_136",
       "name": "Gurlui Silviu-Octavian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=136&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "134"
     },
     {
-      "id": "134",
+      "id": "cdep_2024_2_137",
       "name": "Guşă Andrei-Cosmin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=137&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "135"
     },
     {
-      "id": "135",
+      "id": "cdep_2024_2_138",
       "name": "Hagiu Augustin-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=138&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "136"
     },
     {
-      "id": "136",
+      "id": "cdep_2024_2_139",
       "name": "Hajdu Gábor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=139&cam=2&leg=2024",
       "circumscriptie": "21 / HARGHITA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "137"
     },
     {
-      "id": "137",
+      "id": "cdep_2024_2_140",
       "name": "Hangan Pollyanna-Hanellore",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=140&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "138"
     },
     {
-      "id": "138",
+      "id": "cdep_2024_2_141",
       "name": "Holban Georgeta-Carmen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=141&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "139"
     },
     {
-      "id": "139",
+      "id": "cdep_2024_2_142",
       "name": "Hristu Cosmin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=142&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "140"
     },
     {
-      "id": "140",
+      "id": "cdep_2024_2_143",
       "name": "Huţucă Bogdan-Iulian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=143&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "141"
     },
     {
-      "id": "141",
+      "id": "cdep_2024_2_144",
       "name": "Iagăr Monica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=144&cam=2&leg=2024",
       "circumscriptie": "32 / SATU-MARE",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "142"
     },
     {
-      "id": "142",
+      "id": "cdep_2024_2_145",
       "name": "Iancu Marius-Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=145&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "143"
     },
     {
-      "id": "143",
+      "id": "cdep_2024_2_147",
       "name": "Intotero Natalia-Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=147&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "144"
     },
     {
-      "id": "144",
+      "id": "cdep_2024_2_148",
       "name": "Ion Nicolae-Mirel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=148&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "145"
     },
     {
-      "id": "145",
+      "id": "cdep_2024_2_149",
       "name": "Ion Stelian-Cristian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=149&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "146"
     },
     {
-      "id": "146",
+      "id": "cdep_2024_2_150",
       "name": "Ionescu Monica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=150&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "147"
     },
     {
-      "id": "147",
+      "id": "cdep_2024_2_151",
       "name": "Ionescu Radu-Mihail",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=151&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "148"
     },
     {
-      "id": "148",
+      "id": "cdep_2024_2_152",
       "name": "Ionescu Tudor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=152&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "149"
     },
     {
-      "id": "149",
+      "id": "cdep_2024_2_153",
       "name": "Iordache Ion",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=153&cam=2&leg=2024",
       "circumscriptie": "20 / GORJ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "150"
     },
     {
-      "id": "150",
+      "id": "cdep_2024_2_154",
       "name": "Iosub Cosmin-Teodor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=154&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "151"
     },
     {
-      "id": "151",
+      "id": "cdep_2024_2_155",
       "name": "Irimia Ancuţa-Florina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=155&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "152"
     },
     {
-      "id": "152",
+      "id": "cdep_2024_2_156",
       "name": "Isac Marius-Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=156&cam=2&leg=2024",
       "circumscriptie": "11 / CARAŞ-SEVERIN",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "153"
     },
     {
-      "id": "153",
+      "id": "cdep_2024_2_157",
       "name": "Ivan Bogdan-Gruia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=157&cam=2&leg=2024",
       "circumscriptie": "6 / BISTRIŢA-NĂSĂUD",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "154"
     },
     {
-      "id": "154",
+      "id": "cdep_2024_2_158",
       "name": "Jianu Iosif-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=158&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "155"
     },
     {
-      "id": "155",
+      "id": "cdep_2024_2_159",
       "name": "Kántor Boglárka",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=159&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "156"
     },
     {
-      "id": "156",
+      "id": "cdep_2024_2_160",
       "name": "Kelemen Hunor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=160&cam=2&leg=2024",
       "circumscriptie": "21 / HARGHITA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "157"
     },
     {
-      "id": "157",
+      "id": "cdep_2024_2_161",
       "name": "Kolcsár Anquetil-Károly",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=161&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "158"
     },
     {
-      "id": "158",
+      "id": "cdep_2024_2_162",
       "name": "Koler Eduard-Virgil",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=162&cam=2&leg=2024",
       "circumscriptie": "27 / MEHEDINŢI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "159"
     },
     {
-      "id": "159",
+      "id": "cdep_2024_2_163",
       "name": "Könczei Csaba",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=163&cam=2&leg=2024",
       "circumscriptie": "15 / COVASNA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "160"
     },
     {
-      "id": "160",
+      "id": "cdep_2024_2_164",
       "name": "Kroncsiş Sebastian-Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=164&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "161"
     },
     {
-      "id": "161",
+      "id": "cdep_2024_2_165",
       "name": "Kulcsár-Terza József-György",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=165&cam=2&leg=2024",
       "circumscriptie": "15 / COVASNA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "162"
     },
     {
-      "id": "162",
+      "id": "cdep_2024_2_166",
       "name": "Ladányi László-Zsolt",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=166&cam=2&leg=2024",
       "circumscriptie": "21 / HARGHITA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "163"
     },
     {
-      "id": "163",
+      "id": "cdep_2024_2_167",
       "name": "Lazăr Teodor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=167&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "164"
     },
     {
-      "id": "164",
+      "id": "cdep_2024_2_168",
       "name": "Lăpuşan Remus-Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=168&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "165"
     },
     {
-      "id": "165",
+      "id": "cdep_2024_2_169",
       "name": "Lăzăroi Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=169&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "166"
     },
     {
-      "id": "166",
+      "id": "cdep_2024_2_170",
       "name": "Lipă Elisabeta",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=170&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "167"
     },
     {
-      "id": "167",
+      "id": "cdep_2024_2_171",
       "name": "Longher Ghervazen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=171&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "168"
     },
     {
-      "id": "168",
+      "id": "cdep_2024_2_172",
       "name": "Lőrincz Ştefan-Iulian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=172&cam=2&leg=2024",
       "circumscriptie": "43 / DIASPORA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "169"
     },
     {
-      "id": "169",
+      "id": "cdep_2024_2_173",
       "name": "Lovin Ramona",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=173&cam=2&leg=2024",
       "circumscriptie": "43 / DIASPORA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "170"
     },
     {
-      "id": "170",
+      "id": "cdep_2024_2_174",
       "name": "Lungu Romeo-Daniel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=174&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "171"
     },
     {
-      "id": "171",
+      "id": "cdep_2024_2_175",
       "name": "Macovei Ilie Simona-Elena",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=175&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "172"
     },
     {
-      "id": "172",
+      "id": "cdep_2024_2_176",
       "name": "Magyar Loránd-Bálint",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=176&cam=2&leg=2024",
       "circumscriptie": "32 / SATU-MARE",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "173"
     },
     {
-      "id": "173",
+      "id": "cdep_2024_2_177",
       "name": "Manole Petre-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=177&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "174"
     },
     {
-      "id": "174",
+      "id": "cdep_2024_2_178",
       "name": "Manta Claudiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=178&cam=2&leg=2024",
       "circumscriptie": "20 / GORJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "175"
     },
     {
-      "id": "175",
+      "id": "cdep_2024_2_179",
       "name": "Marinescu Radu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=179&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "176"
     },
     {
-      "id": "176",
+      "id": "cdep_2024_2_180",
       "name": "Markó Attila-Gábor",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=180&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "177"
     },
     {
-      "id": "177",
+      "id": "cdep_2024_2_181",
       "name": "Marussi George-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=181&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "178"
     },
     {
-      "id": "178",
+      "id": "cdep_2024_2_334",
       "name": "Matache Oana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=334&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "PSD",
-      "date_start": "23.12.2025"
+      "date_start": "23.12.2025",
+      "listing_position": "179"
     },
     {
-      "id": "179",
+      "id": "cdep_2024_2_182",
       "name": "Matei Aneta",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=182&cam=2&leg=2024",
       "circumscriptie": "19 / GIURGIU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "180"
     },
     {
-      "id": "180",
+      "id": "cdep_2024_2_183",
       "name": "Matei Sergiu-Lucian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=183&cam=2&leg=2024",
       "circumscriptie": "25 / ILFOV",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "181"
     },
     {
-      "id": "181",
+      "id": "cdep_2024_2_184",
       "name": "Matichescu Mirela-Florenţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=184&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "182"
     },
     {
-      "id": "182",
+      "id": "cdep_2024_2_185",
       "name": "Matieş Călin-Gheorghe",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=185&cam=2&leg=2024",
       "circumscriptie": "1 / ALBA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "183"
     },
     {
-      "id": "183",
+      "id": "cdep_2024_2_186",
       "name": "Mărgărit Mitică-Marius",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=186&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "184"
     },
     {
-      "id": "184",
+      "id": "cdep_2024_2_187",
       "name": "Merka Adrian-Miroslav",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=187&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "185"
     },
     {
-      "id": "185",
+      "id": "cdep_2024_2_188",
       "name": "Miclău Samuel-Virgil",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=188&cam=2&leg=2024",
       "circumscriptie": "11 / CARAŞ-SEVERIN",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "186"
     },
     {
-      "id": "186",
+      "id": "cdep_2024_2_189",
       "name": "Mihaiu Radu-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=189&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "187"
     },
     {
-      "id": "187",
+      "id": "cdep_2024_2_190",
       "name": "Mihalcea Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=190&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "188"
     },
     {
-      "id": "188",
+      "id": "cdep_2024_2_191",
       "name": "Mihalcea Remus-Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=191&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "189"
     },
     {
-      "id": "189",
+      "id": "cdep_2024_2_192",
       "name": "Mihalcea Silvia-Claudia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=192&cam=2&leg=2024",
       "circumscriptie": "11 / CARAŞ-SEVERIN",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "190"
     },
     {
-      "id": "190",
+      "id": "cdep_2024_2_193",
       "name": "Mihăescu Mugur",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=193&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "191"
     },
     {
-      "id": "191",
+      "id": "cdep_2024_2_194",
       "name": "Mihuţi Bogdan-Florian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=194&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "192"
     },
     {
-      "id": "192",
+      "id": "cdep_2024_2_195",
       "name": "Miklós Zoltán",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=195&cam=2&leg=2024",
       "circumscriptie": "15 / COVASNA",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "193"
     },
     {
-      "id": "193",
+      "id": "cdep_2024_2_196",
       "name": "Mina Marian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=196&cam=2&leg=2024",
       "circumscriptie": "19 / GIURGIU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "194"
     },
     {
-      "id": "194",
+      "id": "cdep_2024_2_198",
       "name": "Miruţă Radu-Dinel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=198&cam=2&leg=2024",
       "circumscriptie": "20 / GORJ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "195"
     },
     {
-      "id": "195",
+      "id": "cdep_2024_2_199",
       "name": "Mititelu Eduard-Tatian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=199&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "196"
     },
     {
-      "id": "196",
+      "id": "cdep_2024_2_200",
       "name": "Mitrea Dumitrina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=200&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "197"
     },
     {
-      "id": "197",
+      "id": "cdep_2024_2_201",
       "name": "Mîndrescu Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=201&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "198"
     },
     {
-      "id": "198",
+      "id": "cdep_2024_2_202",
       "name": "Mîndroc Cătălin-Viorel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=202&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "199"
     },
     {
-      "id": "199",
+      "id": "cdep_2024_2_203",
       "name": "Mocanu Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=203&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "200"
     },
     {
-      "id": "200",
+      "id": "cdep_2024_2_204",
       "name": "Moiseev Alexandrin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=204&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "201"
     },
     {
-      "id": "201",
+      "id": "cdep_2024_2_205",
       "name": "Moisin Radu-Marin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=205&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "202"
     },
     {
-      "id": "202",
+      "id": "cdep_2024_2_206",
       "name": "Molnar Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=206&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "203"
     },
     {
-      "id": "203",
+      "id": "cdep_2024_2_207",
       "name": "Morar Lucian-Ioan-Titus",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=207&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "204"
     },
     {
-      "id": "204",
+      "id": "cdep_2024_2_208",
       "name": "Moş Patricia-Simina-Arina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=208&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "205"
     },
     {
-      "id": "205",
+      "id": "cdep_2024_2_209",
       "name": "Moşteanu Liviu-Ionuţ",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=209&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "206"
     },
     {
-      "id": "206",
+      "id": "cdep_2024_2_210",
       "name": "Muncaciu Sorin-Titus",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=210&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "207"
     },
     {
-      "id": "207",
+      "id": "cdep_2024_2_211",
       "name": "Munteanu Valeriu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=211&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "208"
     },
     {
-      "id": "208",
+      "id": "cdep_2024_2_212",
       "name": "Murad Mohammad",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=212&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "209"
     },
     {
-      "id": "209",
+      "id": "cdep_2024_2_213",
       "name": "Murariu Oana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=213&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "210"
     },
     {
-      "id": "210",
+      "id": "cdep_2024_2_214",
       "name": "Muraru Iulian-Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=214&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "211"
     },
     {
-      "id": "211",
+      "id": "cdep_2024_2_215",
       "name": "Muşat Doru-Lucian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=215&cam=2&leg=2024",
       "circumscriptie": "33 / SĂLAJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "212"
     },
     {
-      "id": "212",
+      "id": "cdep_2024_2_216",
       "name": "Nacov Gheorghe",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=216&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "213"
     },
     {
-      "id": "213",
+      "id": "cdep_2024_2_217",
       "name": "Nagy Szabolcs",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=217&cam=2&leg=2024",
       "circumscriptie": "32 / SATU-MARE",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "214"
     },
     {
-      "id": "214",
+      "id": "cdep_2024_2_218",
       "name": "Nagy Vasile",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=218&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "215"
     },
     {
-      "id": "215",
+      "id": "cdep_2024_2_219",
       "name": "Nassar Rodica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=219&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "216"
     },
     {
-      "id": "216",
+      "id": "cdep_2024_2_332",
       "name": "Năcuţă Sorin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=332&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "PNL",
-      "date_start": "3.02.2025"
+      "date_start": "3.02.2025",
+      "listing_position": "217"
     },
     {
-      "id": "217",
-      "name": "Năsui Claudiu-Iulius-Gavril",
-      "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=220&cam=2&leg=2024",
-      "circumscriptie": "42 / BUCUREŞTI",
-      "party": "USR",
-      "date_start": ""
-    },
-    {
-      "id": "218",
+      "id": "cdep_2024_2_221",
       "name": "Neacşu Andreea-Firuţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=221&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "218"
     },
     {
-      "id": "219",
+      "id": "cdep_2024_2_222",
       "name": "Neacşu Marian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=222&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "219"
     },
     {
-      "id": "220",
+      "id": "cdep_2024_2_223",
       "name": "Neagu Petre-Emanoil",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=223&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "220"
     },
     {
-      "id": "221",
+      "id": "cdep_2024_2_224",
       "name": "Neamţu George-Mihail",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=224&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "221"
     },
     {
-      "id": "222",
+      "id": "cdep_2024_2_225",
       "name": "Neaţă Eugen",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=225&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "222"
     },
     {
-      "id": "223",
+      "id": "cdep_2024_2_226",
       "name": "Neculaescu Laurenţiu Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=226&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "223"
     },
     {
-      "id": "224",
+      "id": "cdep_2024_2_227",
       "name": "Negoescu Mihai-Bogdan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=227&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "224"
     },
     {
-      "id": "225",
+      "id": "cdep_2024_2_228",
       "name": "Negrea Petru-Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=228&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "225"
     },
     {
-      "id": "226",
+      "id": "cdep_2024_2_229",
       "name": "Nicolae Dan-Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=229&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "226"
     },
     {
-      "id": "227",
+      "id": "cdep_2024_2_230",
       "name": "Oancea Silviu-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=230&cam=2&leg=2024",
       "circumscriptie": "23 / IALOMIŢA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "227"
     },
     {
-      "id": "228",
+      "id": "cdep_2024_2_231",
       "name": "Oltenaşu Sorin-George",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=231&cam=2&leg=2024",
       "circumscriptie": "23 / IALOMIŢA",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "228"
     },
     {
-      "id": "229",
+      "id": "cdep_2024_2_232",
       "name": "Oprea Octavian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=232&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "229"
     },
     {
-      "id": "230",
+      "id": "cdep_2024_2_233",
       "name": "Pambuccian Varujan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=233&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "230"
     },
     {
-      "id": "231",
+      "id": "cdep_2024_2_234",
       "name": "Pandea Ciprian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=234&cam=2&leg=2024",
       "circumscriptie": "12 / CĂLĂRAŞI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "231"
     },
     {
-      "id": "232",
+      "id": "cdep_2024_2_235",
       "name": "Paraschiv Ciprian-Constantin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=235&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "232"
     },
     {
-      "id": "233",
+      "id": "cdep_2024_2_236",
       "name": "Paraschivescu Ovidiu-Romulus",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=236&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "233"
     },
     {
-      "id": "234",
+      "id": "cdep_2024_2_237",
       "name": "Pascalini Nini-Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=237&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "234"
     },
     {
-      "id": "235",
+      "id": "cdep_2024_2_238",
       "name": "Pascariu Mihai-Cosmin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=238&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "235"
     },
     {
-      "id": "236",
+      "id": "cdep_2024_2_239",
       "name": "Păun Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=239&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "236"
     },
     {
-      "id": "237",
+      "id": "cdep_2024_2_240",
       "name": "Păunescu Silviu-Titus",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=240&cam=2&leg=2024",
       "circumscriptie": "14 / CONSTANŢA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "237"
     },
     {
-      "id": "238",
+      "id": "cdep_2024_2_241",
       "name": "Petreţchi Nicolae-Miroslav",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=241&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "238"
     },
     {
-      "id": "239",
+      "id": "cdep_2024_2_242",
       "name": "Peţa-Ştefănescu Eliza-Mădălina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=242&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "239"
     },
     {
-      "id": "240",
+      "id": "cdep_2024_2_243",
       "name": "Pirtea Marilen - Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=243&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "240"
     },
     {
-      "id": "241",
+      "id": "cdep_2024_2_244",
       "name": "Pistru-Popa Simona-Geanina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=244&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "241"
     },
     {
-      "id": "242",
+      "id": "cdep_2024_2_245",
       "name": "Pîclişan Gheorghe-Petru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=245&cam=2&leg=2024",
       "circumscriptie": "7 / BOTOŞANI",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "242"
     },
     {
-      "id": "243",
+      "id": "cdep_2024_2_246",
       "name": "Plopeanu Rodica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=246&cam=2&leg=2024",
       "circumscriptie": "10 / BUZĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "243"
     },
     {
-      "id": "244",
+      "id": "cdep_2024_2_247",
       "name": "Plujar Andrei George",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=247&cam=2&leg=2024",
       "circumscriptie": "11 / CARAŞ-SEVERIN",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "244"
     },
     {
-      "id": "245",
+      "id": "cdep_2024_2_248",
       "name": "Ponta Victor-Viorel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=248&cam=2&leg=2024",
       "circumscriptie": "16 / DÂMBOVIŢA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "245"
     },
     {
-      "id": "246",
+      "id": "cdep_2024_2_249",
       "name": "Popa Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=249&cam=2&leg=2024",
       "circumscriptie": "9 / BRĂILA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "246"
     },
     {
-      "id": "247",
+      "id": "cdep_2024_2_250",
       "name": "Popa Cristian-Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=250&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "247"
     },
     {
-      "id": "248",
+      "id": "cdep_2024_2_251",
       "name": "Popa Dorin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=251&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "248"
     },
     {
-      "id": "249",
+      "id": "cdep_2024_2_252",
       "name": "Popa George-Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=252&cam=2&leg=2024",
       "circumscriptie": "4 / BACĂU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "249"
     },
     {
-      "id": "250",
+      "id": "cdep_2024_2_253",
       "name": "Popa Maricel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=253&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "250"
     },
     {
-      "id": "251",
+      "id": "cdep_2024_2_254",
       "name": "Popa Ştefan-Ovidiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=254&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "251"
     },
     {
-      "id": "252",
+      "id": "cdep_2024_2_255",
       "name": "Popescu Antonio-Gabi",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=255&cam=2&leg=2024",
       "circumscriptie": "40 / VÂLCEA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "252"
     },
     {
-      "id": "253",
+      "id": "cdep_2024_2_256",
       "name": "Popovici Florin-Cornel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=256&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "253"
     },
     {
-      "id": "254",
+      "id": "cdep_2024_2_257",
       "name": "Porumboiu Gabriela",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=257&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "254"
     },
     {
-      "id": "255",
+      "id": "cdep_2024_2_333",
       "name": "Priceputu Vasilică",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=333&cam=2&leg=2024",
       "circumscriptie": "9 / BRĂILA",
       "party": "PSD",
-      "date_start": "10.11.2025"
+      "date_start": "10.11.2025",
+      "listing_position": "255"
     },
     {
-      "id": "256",
+      "id": "cdep_2024_2_258",
       "name": "Priescu Ionelia-Florenţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=258&cam=2&leg=2024",
       "circumscriptie": "20 / GORJ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "256"
     },
     {
-      "id": "257",
+      "id": "cdep_2024_2_259",
       "name": "Prişcă Răzvan Sorin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=259&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "257"
     },
     {
-      "id": "258",
+      "id": "cdep_2024_2_260",
       "name": "Prună Cristina-Mădălina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=260&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "258"
     },
     {
-      "id": "259",
+      "id": "cdep_2024_2_261",
       "name": "Puşcaşu Lucian-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=261&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "259"
     },
     {
-      "id": "260",
+      "id": "cdep_2024_2_262",
       "name": "Puşcaşu Petre",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=262&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "260"
     },
     {
-      "id": "261",
+      "id": "cdep_2024_2_263",
       "name": "Radu Fabian-Cristian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=263&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "261"
     },
     {
-      "id": "262",
+      "id": "cdep_2024_2_264",
       "name": "Rafila Alexandru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=264&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "262"
     },
     {
-      "id": "263",
+      "id": "cdep_2024_2_265",
       "name": "Răducanu Sebastian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=265&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "263"
     },
     {
-      "id": "264",
+      "id": "cdep_2024_2_266",
       "name": "Răducea Gheorghe-Valentin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=266&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "264"
     },
     {
-      "id": "265",
+      "id": "cdep_2024_2_267",
       "name": "Rigman Ciprian-Doru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=267&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "265"
     },
     {
-      "id": "266",
+      "id": "cdep_2024_2_268",
       "name": "Rinder Ana-Smaranda",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=268&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "266"
     },
     {
-      "id": "267",
+      "id": "cdep_2024_2_269",
       "name": "Rodeanu Bogdan-Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=269&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "267"
     },
     {
-      "id": "268",
+      "id": "cdep_2024_2_270",
       "name": "Rogobete Alexandru-Florin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=270&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "268"
     },
     {
-      "id": "269",
+      "id": "cdep_2024_2_271",
       "name": "Roman Florin-Claudiu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=271&cam=2&leg=2024",
       "circumscriptie": "1 / ALBA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "269"
     },
     {
-      "id": "270",
+      "id": "cdep_2024_2_272",
       "name": "Roşca Mircea",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=272&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "270"
     },
     {
-      "id": "271",
+      "id": "cdep_2024_2_273",
       "name": "Rusu Sebastian-Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=273&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "271"
     },
     {
-      "id": "272",
+      "id": "cdep_2024_2_274",
       "name": "Samoilă Ion",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=274&cam=2&leg=2024",
       "circumscriptie": "12 / CĂLĂRAŞI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "272"
     },
     {
-      "id": "273",
+      "id": "cdep_2024_2_275",
       "name": "Sandu Viorica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=275&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "273"
     },
     {
-      "id": "274",
+      "id": "cdep_2024_2_276",
       "name": "Scarlat George",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=276&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "274"
     },
     {
-      "id": "275",
+      "id": "cdep_2024_2_277",
       "name": "Seres Dénes",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=277&cam=2&leg=2024",
       "circumscriptie": "33 / SĂLAJ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "275"
     },
     {
-      "id": "276",
+      "id": "cdep_2024_2_278",
       "name": "Sighiartău Robert-Ionatan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=278&cam=2&leg=2024",
       "circumscriptie": "6 / BISTRIŢA-NĂSĂUD",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "276"
     },
     {
-      "id": "277",
+      "id": "cdep_2024_2_279",
       "name": "Simion George-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=279&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "277"
     },
     {
-      "id": "278",
+      "id": "cdep_2024_2_280",
       "name": "Simu Aurora-Tasica",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=280&cam=2&leg=2024",
       "circumscriptie": "13 / CLUJ",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "278"
     },
     {
-      "id": "279",
+      "id": "cdep_2024_2_281",
       "name": "Solomon Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=281&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "279"
     },
     {
-      "id": "280",
+      "id": "cdep_2024_2_282",
       "name": "Stancu Ionel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=282&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "280"
     },
     {
-      "id": "281",
+      "id": "cdep_2024_2_283",
       "name": "Stănescu Vetuţa",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=283&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "281"
     },
     {
-      "id": "282",
+      "id": "cdep_2024_2_284",
       "name": "Stoenică Irina-Florentina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=284&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "282"
     },
     {
-      "id": "283",
+      "id": "cdep_2024_2_285",
       "name": "Stoica Alin-Bogdan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=285&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "283"
     },
     {
-      "id": "284",
+      "id": "cdep_2024_2_286",
       "name": "Stoica Bogdan-Alin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=286&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "284"
     },
     {
-      "id": "285",
+      "id": "cdep_2024_2_287",
       "name": "Stoica Diana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=287&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "285"
     },
     {
-      "id": "286",
+      "id": "cdep_2024_2_288",
       "name": "Stoica Ştefan-Bucur",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=288&cam=2&leg=2024",
       "circumscriptie": "17 / DOLJ",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "286"
     },
     {
-      "id": "287",
+      "id": "cdep_2024_2_289",
       "name": "Stroe Ionuţ-Marian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=289&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "287"
     },
     {
-      "id": "288",
+      "id": "cdep_2024_2_290",
       "name": "Suciu Vasile-Daniel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=290&cam=2&leg=2024",
       "circumscriptie": "6 / BISTRIŢA-NĂSĂUD",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "288"
     },
     {
-      "id": "289",
+      "id": "cdep_2024_2_291",
       "name": "Szabó Ödön",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=291&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "289"
     },
     {
-      "id": "290",
+      "id": "cdep_2024_2_292",
       "name": "Szőke Ecaterina-Mariana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=292&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "290"
     },
     {
-      "id": "291",
+      "id": "cdep_2024_2_293",
       "name": "Şendroiu Vlad-Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=293&cam=2&leg=2024",
       "circumscriptie": "37 / TIMIŞ",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "291"
     },
     {
-      "id": "292",
+      "id": "cdep_2024_2_294",
       "name": "Şerban Ciprian-Constantin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=294&cam=2&leg=2024",
       "circumscriptie": "29 / NEAMŢ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "292"
     },
     {
-      "id": "293",
+      "id": "cdep_2024_2_295",
       "name": "Şerban George Cătălin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=295&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "293"
     },
     {
-      "id": "294",
+      "id": "cdep_2024_2_296",
       "name": "Şerban Gianina",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=296&cam=2&leg=2024",
       "circumscriptie": "25 / ILFOV",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "294"
     },
     {
-      "id": "295",
+      "id": "cdep_2024_2_297",
       "name": "Ştirbu Gigel-Sorinel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=297&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "295"
     },
     {
-      "id": "296",
+      "id": "cdep_2024_2_298",
       "name": "Tanasă Dan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=298&cam=2&leg=2024",
       "circumscriptie": "8 / BRAŞOV",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "296"
     },
     {
-      "id": "297",
+      "id": "cdep_2024_2_299",
       "name": "Tanasă Ştefan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=299&cam=2&leg=2024",
       "circumscriptie": "24 / IAŞI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "297"
     },
     {
-      "id": "298",
+      "id": "cdep_2024_2_300",
       "name": "Teslariu Andrei-Ionuţ",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=300&cam=2&leg=2024",
       "circumscriptie": "39 / VASLUI",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "298"
     },
     {
-      "id": "299",
+      "id": "cdep_2024_2_301",
       "name": "Tilea Dumitru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=301&cam=2&leg=2024",
       "circumscriptie": "36 / TELEORMAN",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "299"
     },
     {
-      "id": "300",
+      "id": "cdep_2024_2_302",
       "name": "Tîlvăr Angel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=302&cam=2&leg=2024",
       "circumscriptie": "41 / VRANCEA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "300"
     },
     {
-      "id": "301",
+      "id": "cdep_2024_2_303",
       "name": "Toader Bogdan-Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=303&cam=2&leg=2024",
       "circumscriptie": "31 / PRAHOVA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "301"
     },
     {
-      "id": "302",
+      "id": "cdep_2024_2_304",
       "name": "Toader Elena-Laura",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=304&cam=2&leg=2024",
       "circumscriptie": "38 / TULCEA",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "302"
     },
     {
-      "id": "303",
+      "id": "cdep_2024_2_305",
       "name": "Toma Ilie",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=305&cam=2&leg=2024",
       "circumscriptie": "22 / HUNEDOARA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "303"
     },
     {
-      "id": "304",
+      "id": "cdep_2024_2_306",
       "name": "Tomoescu Ion-Alin",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=306&cam=2&leg=2024",
       "circumscriptie": "27 / MEHEDINŢI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "304"
     },
     {
-      "id": "305",
+      "id": "cdep_2024_2_307",
       "name": "Trif Bogdan Gheorghe",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=307&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "305"
     },
     {
-      "id": "306",
+      "id": "cdep_2024_2_308",
       "name": "Turcan Raluca",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=308&cam=2&leg=2024",
       "circumscriptie": "34 / SIBIU",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "306"
     },
     {
-      "id": "307",
+      "id": "cdep_2024_2_309",
       "name": "Tuşa Adriana Diana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=309&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "307"
     },
     {
-      "id": "308",
+      "id": "cdep_2024_2_310",
       "name": "Ţintă Ştefan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=310&cam=2&leg=2024",
       "circumscriptie": "23 / IALOMIŢA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "308"
     },
     {
-      "id": "309",
+      "id": "cdep_2024_2_311",
       "name": "Ţiplea Dumitru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=311&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "309"
     },
     {
-      "id": "310",
+      "id": "cdep_2024_2_312",
       "name": "Ţiu Mihai-Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=312&cam=2&leg=2024",
       "circumscriptie": "30 / OLT",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "310"
     },
     {
-      "id": "311",
+      "id": "cdep_2024_2_313",
       "name": "Ţoiu Oana-Silvia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=313&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "311"
     },
     {
-      "id": "312",
+      "id": "cdep_2024_2_314",
       "name": "Ungureanu Emanuel-Dumitru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=314&cam=2&leg=2024",
       "circumscriptie": "35 / SUCEAVA",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "312"
     },
     {
-      "id": "313",
+      "id": "cdep_2024_2_315",
       "name": "Vadim-Tudor Lidia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=315&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "313"
     },
     {
-      "id": "314",
+      "id": "cdep_2024_2_316",
       "name": "Vass Levente",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=316&cam=2&leg=2024",
       "circumscriptie": "28 / MUREŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "314"
     },
     {
-      "id": "315",
+      "id": "cdep_2024_2_317",
       "name": "Văduva Dumitru",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=317&cam=2&leg=2024",
       "circumscriptie": "25 / ILFOV",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "315"
     },
     {
-      "id": "316",
+      "id": "cdep_2024_2_335",
       "name": "Vărşan Ciprian-Nicolae",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=335&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "AUR",
-      "date_start": "22.04.2026"
+      "date_start": "22.04.2026",
+      "listing_position": "316"
     },
     {
-      "id": "317",
+      "id": "cdep_2024_2_318",
       "name": "Vârgă Mariana",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=318&cam=2&leg=2024",
       "circumscriptie": "42 / BUCUREŞTI",
       "party": "UPR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "317"
     },
     {
-      "id": "318",
+      "id": "cdep_2024_2_319",
       "name": "Vedinaş Verginia",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=319&cam=2&leg=2024",
       "circumscriptie": "41 / VRANCEA",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "318"
     },
     {
-      "id": "319",
+      "id": "cdep_2024_2_320",
       "name": "Vela Ion-Marcel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=320&cam=2&leg=2024",
       "circumscriptie": "11 / CARAŞ-SEVERIN",
       "party": "PNL",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "319"
     },
     {
-      "id": "320",
+      "id": "cdep_2024_2_321",
       "name": "Velcescu Florin-Bogdan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=321&cam=2&leg=2024",
       "circumscriptie": "3 / ARGEŞ",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "320"
     },
     {
-      "id": "321",
+      "id": "cdep_2024_2_322",
       "name": "Vexler Silviu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=322&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "321"
     },
     {
-      "id": "322",
+      "id": "cdep_2024_2_323",
       "name": "Vidra Vlad-Andrei",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=323&cam=2&leg=2024",
       "circumscriptie": "5 / BIHOR",
       "party": "SOS RO",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "322"
     },
     {
-      "id": "323",
+      "id": "cdep_2024_2_324",
       "name": "Vulpescu Ioan",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=324&cam=2&leg=2024",
       "circumscriptie": "25 / ILFOV",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "323"
     },
     {
-      "id": "324",
+      "id": "cdep_2024_2_325",
       "name": "Vulpoiu Dorel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=325&cam=2&leg=2024",
       "circumscriptie": "18 / GALAŢI",
       "party": "AUR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "324"
     },
     {
-      "id": "325",
+      "id": "cdep_2024_2_326",
       "name": "Vuşcan Voicu",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=326&cam=2&leg=2024",
       "circumscriptie": "1 / ALBA",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "325"
     },
     {
-      "id": "326",
+      "id": "cdep_2024_2_327",
       "name": "Weber Mihai",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=327&cam=2&leg=2024",
       "circumscriptie": "20 / GORJ",
       "party": "PSD",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "326"
     },
     {
-      "id": "327",
+      "id": "cdep_2024_2_328",
       "name": "Wiener Adrian",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=328&cam=2&leg=2024",
       "circumscriptie": "2 / ARAD",
       "party": "USR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "327"
     },
     {
-      "id": "328",
+      "id": "cdep_2024_2_329",
       "name": "Zahoranszki Brigitta-Eva",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=329&cam=2&leg=2024",
       "circumscriptie": "26 / MARAMUREŞ",
       "party": "UDMR",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "328"
     },
     {
-      "id": "329",
+      "id": "cdep_2024_2_330",
       "name": "Zakarias Zoltán",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=330&cam=2&leg=2024",
       "circumscriptie": "21 / HARGHITA",
       "party": "Neafiliaţi",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "329"
     },
     {
-      "id": "330",
+      "id": "cdep_2024_2_331",
       "name": "Zisopol Dragoş Gabriel",
       "profile_url": "https://www.cdep.ro:443/ords/pls/parlam/structura2015.mp?idm=331&cam=2&leg=2024",
       "circumscriptie": null,
       "party": "Minoritati",
-      "date_start": ""
+      "date_start": "",
+      "listing_position": "330"
     }
   ]
 }

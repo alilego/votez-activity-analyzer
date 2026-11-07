@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import sys
 import unittest
+import io
+from contextlib import redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from openai_runtime import create_chat_completion, resolve_openai_service_tier
+from openai_runtime import GPT5_MINI_COMPLETION_TOKEN_BUDGET, create_chat_completion, resolve_openai_service_tier
 
 
 class _FakeCompletions:
@@ -89,6 +92,44 @@ class TestOpenaiRuntime(unittest.TestCase):
 
         self.assertEqual(result, {"ok": True})
         self.assertNotIn("temperature", client.chat.completions.calls[0])
+
+    def test_gpt5_mini_reserves_reasoning_budget_for_legacy_limits(self):
+        for model in ("gpt-5-mini", "gpt-5-mini-2025-08-07"):
+            with self.subTest(model=model):
+                client = _FakeClient("openai", [{"ok": True}], "flex")
+                create_chat_completion(client, model=model, messages=[], max_tokens=3072)
+                request = client.chat.completions.calls[0]
+                self.assertEqual(request["max_completion_tokens"], GPT5_MINI_COMPLETION_TOKEN_BUDGET)
+                self.assertEqual(request["reasoning_effort"], "low")
+
+    def test_gpt5_mini_preserves_explicit_completion_limit_and_effort(self):
+        client = _FakeClient("openai", [{"ok": True}], "flex")
+        create_chat_completion(client, model="gpt-5-mini", messages=[],
+                               max_completion_tokens=8192, reasoning_effort="high")
+        request = client.chat.completions.calls[0]
+        self.assertEqual(request["max_completion_tokens"], 8192)
+        self.assertEqual(request["reasoning_effort"], "high")
+
+    def test_gpt5_mini_does_not_reduce_larger_requested_budget(self):
+        client = _FakeClient("openai", [{"ok": True}], "flex")
+        create_chat_completion(client, model="gpt-5-mini", messages=[], max_tokens=65536)
+        self.assertEqual(client.chat.completions.calls[0]["max_completion_tokens"], 65536)
+
+    def test_empty_reasoning_response_preserves_diagnostics(self):
+        response = SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason="length", message=SimpleNamespace(content="", refusal=None))],
+            usage=SimpleNamespace(prompt_tokens=9000, completion_tokens=3072,
+                                  completion_tokens_details=SimpleNamespace(reasoning_tokens=3072)),
+        )
+        client = _FakeClient("openai", [response], "flex")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = create_chat_completion(client, model="gpt-5-mini", messages=[],
+                                            max_completion_tokens=3072)
+        self.assertIs(result, response)
+        self.assertEqual(client._last_completion_diagnostics["finish_reason"], "length")
+        self.assertEqual(client._last_completion_diagnostics["reasoning_tokens"], 3072)
+        self.assertIn("completion diagnostics", output.getvalue())
 
     def test_create_chat_completion_retries_resource_unavailable_with_auto(self):
         err = _FakeError(

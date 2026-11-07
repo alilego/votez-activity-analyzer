@@ -8,6 +8,37 @@ DEFAULT_OPENAI_SERVICE_TIER = "flex"
 FALLBACK_OPENAI_SERVICE_TIER = "auto"
 OPENAI_SERVICE_TIER_ENV = "OPENAI_SERVICE_TIER"
 OPENAI_MAX_COMPLETION_TOKENS_PREFIXES = ("gpt-5",)
+GPT5_MINI_COMPLETION_TOKEN_BUDGET = 32_768
+
+
+def _is_gpt5_mini(model: str) -> bool:
+    model = model.strip().lower()
+    return model == "gpt-5-mini" or model.startswith("gpt-5-mini-")
+
+
+def openai_completion_token_budget(model: str, visible_output_budget: int) -> int:
+    """Allow room for GPT-5 mini reasoning in legacy visible-output budgets."""
+    if _is_gpt5_mini(model):
+        return max(visible_output_budget, GPT5_MINI_COMPLETION_TOKEN_BUDGET)
+    return visible_output_budget
+
+
+def chat_completion_diagnostics(response: Any) -> dict[str, Any]:
+    """Return completion metadata without prompts, content, or credentials."""
+    def pick(obj, key, default=None):
+        return obj.get(key, default) if isinstance(obj, dict) else getattr(obj, key, default)
+
+    choices = pick(response, "choices", []) or []
+    choice = choices[0] if choices else None
+    usage = pick(response, "usage")
+    details = pick(usage, "completion_tokens_details")
+    return {
+        "finish_reason": pick(choice, "finish_reason"),
+        "prompt_tokens": pick(usage, "prompt_tokens"),
+        "completion_tokens": pick(usage, "completion_tokens"),
+        "reasoning_tokens": pick(details, "reasoning_tokens"),
+        "refused": bool(pick(pick(choice, "message"), "refusal")),
+    }
 
 
 def resolve_openai_service_tier(provider: str, configured_tier: str | None = None) -> str | None:
@@ -33,7 +64,7 @@ def create_chat_completion(client: Any, **request_kwargs: Any) -> Any:
     seen_retry_keys: set[str] = set()
     while True:
         try:
-            return client.chat.completions.create(**request)
+            response = client.chat.completions.create(**request)
         except Exception as exc:
             retry_key, retry_request, retry_message = _build_retry_request(
                 exc,
@@ -45,13 +76,26 @@ def create_chat_completion(client: Any, **request_kwargs: Any) -> Any:
             seen_retry_keys.add(retry_key)
             print(retry_message)
             request = retry_request
+            continue
+
+        diagnostics = chat_completion_diagnostics(response)
+        client._last_completion_diagnostics = diagnostics
+        choices = getattr(response, "choices", None)
+        content = getattr(getattr(choices[0], "message", None), "content", None) if choices else None
+        if diagnostics["finish_reason"] == "length" or (choices and not str(content or "").strip()):
+            print(f"  LLM completion diagnostics: {diagnostics}")
+        return response
 
 
 def _normalize_openai_request(request: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(request)
     model = str(normalized.get("model", "")).strip().lower()
     if _openai_model_uses_max_completion_tokens(model) and "max_tokens" in normalized:
-        normalized["max_completion_tokens"] = normalized.pop("max_tokens")
+        visible_budget = normalized.pop("max_tokens")
+        # An explicitly supplied completion limit already includes reasoning.
+        normalized.setdefault("max_completion_tokens", openai_completion_token_budget(model, visible_budget))
+    if _is_gpt5_mini(model):
+        normalized.setdefault("reasoning_effort", "low")
     if _openai_model_uses_default_temperature_only(model) and "temperature" in normalized:
         normalized.pop("temperature")
     return normalized

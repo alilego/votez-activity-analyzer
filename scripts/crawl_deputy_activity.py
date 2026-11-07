@@ -18,6 +18,8 @@ pipeline's non-crawler data tables such as members, interventions, or runs.
 
 from __future__ import annotations
 
+from member_identity import source_member_id as official_source_member_id, guard_member_identity
+
 import argparse
 import difflib
 import hashlib
@@ -242,13 +244,7 @@ ACTIVITY_MIGRATIONS = (
     "ALTER TABLE dep_act_member_motions ADD COLUMN member_normalized_name TEXT",
     "ALTER TABLE dep_act_questions_interpellations ADD COLUMN member_normalized_name TEXT",
     "ALTER TABLE dep_act_political_declarations ADD COLUMN member_normalized_name TEXT",
-    # Backfill existing rows — safe to run repeatedly (no-op when already populated)
-    "UPDATE dep_act_member_activity_crawl SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_activity_crawl.member_id) WHERE member_normalized_name IS NULL",
-    "UPDATE dep_act_member_laws SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_laws.member_id) WHERE member_normalized_name IS NULL",
-    "UPDATE dep_act_member_decision_projects SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_decision_projects.member_id) WHERE member_normalized_name IS NULL",
-    "UPDATE dep_act_member_motions SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_member_motions.member_id) WHERE member_normalized_name IS NULL",
-    "UPDATE dep_act_questions_interpellations SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_questions_interpellations.member_id) WHERE member_normalized_name IS NULL",
-    "UPDATE dep_act_political_declarations SET member_normalized_name = (SELECT normalized_name FROM members WHERE member_id = dep_act_political_declarations.member_id) WHERE member_normalized_name IS NULL",
+    # Never backfill identity from a potentially reassigned legacy member_id.
     "ALTER TABLE dep_act_laws ADD COLUMN adopted_law_identifier TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN motive_pdf_url TEXT",
     "ALTER TABLE dep_act_laws ADD COLUMN initiators_text TEXT",
@@ -709,6 +705,27 @@ def parse_profile_activity(html_text: str, base_url: str) -> dict[str, ActivityL
                     ),
                     raw_text=value_text,
                 )
+
+    # Current profiles render the summary as labelled lines in a paragraph.
+    # Read each line separately so navigation links cannot supply a count or URL.
+    for paragraph in re.findall(r"<p\b[^>]*>(.*?)</p\s*>", html_text, re.I | re.S):
+        for line in re.split(r"<br\b[^>]*>", paragraph, flags=re.I):
+            extractor = PageTextExtractor()
+            extractor.feed(line)
+            label, separator, value = extractor.text.partition(":")
+            if not separator:
+                continue
+            for key, folded_label in folded_labels.items():
+                if out[key].url or _activity_label_key(label) != folded_label:
+                    continue
+                url = _first_http_link(extractor.links, base_url)
+                if url:
+                    out[key] = ActivityLink(
+                        url=url,
+                        count=_first_int(value),
+                        promulgated_count=_promulgated_count(value) if key == "legislative_proposals" else None,
+                        raw_text=value.strip(),
+                    )
 
     if not out["electronic_votes"].url:
         for row in rows:
@@ -1201,7 +1218,7 @@ def _is_political_declaration_detail_url(url: str) -> bool:
         return False
     ids = _query_value(url, ("ids",))
     idm = _query_value(url, ("idm",))
-    return bool(ids and idm and "," in idm)
+    return bool(ids and idm and re.fullmatch(r"\d+[.,]\d+", idm))
 
 
 def _record_link_score(kind: str, url: str, link_text: str, row_text: str) -> int:
@@ -1287,7 +1304,21 @@ def _is_probable_data_row(kind: str, row: Row, source_url: str) -> bool:
     if len(text) < 8 or not row.links:
         return False
     if any(pattern in folded for pattern in SKIP_ROW_PATTERNS):
-        return False
+        # Numbered data rows can mention Parliament in their stage or title.
+        # Verify a real detail link before bypassing the navigation filter.
+        numbered_data = (row.cells and re.fullmatch(r"\d+[.)]?", row.cells[0].text)
+                        and any(
+                            (kind == "laws" and "upl_pck2015.proiect" in link.href.casefold()
+                             and _query_value(link.href, ("idp",)))
+                            or (kind == "questions" and "interpelari2015.detalii" in link.href.casefold()
+                                and _query_value(link.href, ("idi",)))
+                            for link in row.links))
+        declaration_ids = {
+            _stable_record_id(kind, link.href, row.text) for link in row.links
+            if kind == "political_declarations" and _is_political_declaration_detail_url(link.href)
+        }
+        if not numbered_data and len(declaration_ids) != 1:
+            return False
     if not re.search(r"\d", text) and kind not in {"motions", "political_declarations"}:
         return False
     link = _select_record_link(kind, row, source_url)
@@ -1374,6 +1405,61 @@ def _page_text_and_links(html_text: str) -> tuple[str, str, list[Link]]:
     parser.feed(html_text)
     parser.close()
     return parser.text, parser.title, parser.links
+
+
+def _political_declaration_result_count(html_text: str) -> int | None:
+    for row in _parse_rows(html_text):
+        for index, cell in enumerate(row.cells[:-1]):
+            if _activity_label_key(cell.text) == "inregistrari gasite":
+                return _first_int(row.cells[index + 1].text)
+    return None
+
+
+def load_political_declaration_listing(html_text: str, source_url: str, fetcher: Fetcher, *,
+                                     profile_count: int | None = None, retry_incomplete: bool = True) -> list[ListingRecord]:
+    """Read every results page, keeping the original written-transcript series.
+
+    CDEP's steno2024 listing emits pagination links to steno2015.lista;
+    following those literally switches to spoken interventions.
+    """
+    original = urllib.parse.urlparse(source_url)
+    if not re.search(r"/steno(?:2015|2024)\.lista$", original.path):
+        return parse_listing_records(html_text, source_url, "political_declarations")
+    original_query = urllib.parse.parse_qs(original.query)
+    expected_count = _political_declaration_result_count(html_text)
+    if expected_count is None:
+        expected_count = profile_count
+    records = {}
+    pages = [(source_url, html_text)]
+    seen_offsets = {int(original_query.get("pags", ["1"])[0])}
+    for page_url, page_html in pages:
+        for record in parse_listing_records(page_html, page_url, "political_declarations"):
+            records.setdefault(record.record_id, record)
+        _, _, links = _page_text_and_links(page_html)
+        for link in links:
+            parsed = urllib.parse.urlparse(urllib.parse.urljoin(page_url, link.href))
+            query = urllib.parse.parse_qs(parsed.query)
+            offset = query.get("pags", [""])[0]
+            if (parsed.hostname != original.hostname
+                    or not re.search(r"/steno(?:2015|2024)\.lista$", parsed.path)
+                    or any(query.get(key) != original_query.get(key) for key in ("idv", "leg"))
+                    or query.get("idl", ["1"]) != original_query.get("idl", ["1"])
+                    or not offset.isdigit() or int(offset) < 1 or int(offset) in seen_offsets):
+                continue
+            seen_offsets.add(int(offset))
+            if len(seen_offsets) > 1000:
+                raise ValueError("Written declaration listing exceeded 1000 pages")
+            url = urllib.parse.urlunparse(parsed._replace(path=original.path))
+            time.sleep(fetcher.sleep_seconds)
+            pages.append((url, fetcher.fetch(url)))
+    if expected_count is not None and len(records) < expected_count:
+        if retry_incomplete:
+            print(f"Incomplete declaration response ({len(records)}/{expected_count}); retrying published listing once.", flush=True)
+            time.sleep(fetcher.sleep_seconds)
+            return load_political_declaration_listing(fetcher.fetch(source_url), source_url, fetcher,
+                profile_count=profile_count, retry_incomplete=False)
+        raise ValueError(f"Incomplete written declaration listing: found {len(records)} of {expected_count} published results at {source_url}")
+    return list(records.values())
 
 
 def _paragraphs_from_html(html_text: str) -> list[str]:
@@ -1767,7 +1853,7 @@ def _load_deputies(path: Path) -> list[dict[str, Any]]:
     for row in rows:
         if not isinstance(row, dict):
             continue
-        source_member_id = str(row.get("id", "")).strip()
+        source_member_id = official_source_member_id(row, "deputat")
         name = str(row.get("name", "")).strip()
         profile_url = str(row.get("profile_url", "")).strip()
         if not source_member_id or not name or not profile_url:
@@ -1846,6 +1932,8 @@ def repair_activity_join_foreign_keys(conn: sqlite3.Connection) -> None:
 
 def ensure_activity_schema(conn: sqlite3.Connection) -> None:
     """Create only the tables owned by this crawler."""
+    from motion_signatures import ensure_schema as ensure_motion_schema
+    ensure_motion_schema(conn)
     rename_legacy_activity_tables(conn)
     repair_activity_join_foreign_keys(conn)
     conn.executescript(ACTIVITY_SCHEMA_SQL)
@@ -1892,6 +1980,7 @@ def require_members_present(
 ) -> None:
     if not selected:
         return
+    guard_member_identity(conn, selected)
     wanted = [member["member_id"] for member in selected]
     placeholders = ",".join("?" for _ in wanted)
     try:
@@ -2551,13 +2640,16 @@ def _extract_pdf_text_ocr(
     language: str = DEFAULT_OCR_LANGUAGE,
     max_pages: int = DEFAULT_LAW_INITIATOR_OCR_PAGES,
     from_tail: bool = True,
+    include_head: bool = False,
 ) -> str:
     """
     OCR up to `max_pages` pages. When `from_tail=True` (default), OCRs the
     last N pages, because the initiator signature sits at the end of the
     *Expunerea de motive* / *Forma inițiatorului* PDF; OCRing the tail
     avoids drowning the signature in body text that would otherwise
-    produce false-positive token matches against member names.
+    produce false-positive token matches against member names. With
+    ``include_head=True``, long documents split the same page budget between
+    the start and end so early signatures are not lost behind appendices.
     """
     import pypdfium2 as pdfium  # type: ignore[import-not-found]
 
@@ -2570,7 +2662,10 @@ def _extract_pdf_text_ocr(
         if total_pages <= 0:
             return ""
         effective = min(total_pages, max(1, max_pages))
-        if from_tail:
+        if include_head and effective >= 2 and total_pages > effective:
+            head_count = (effective + 1) // 2
+            page_range = list(range(head_count)) + list(range(total_pages-(effective-head_count), total_pages))
+        elif from_tail:
             page_range = range(total_pages - effective, total_pages)
         else:
             page_range = range(effective)
@@ -2599,6 +2694,7 @@ def extract_pdf_text_local(
             language=language,
             max_pages=max_pages,
             from_tail=True,
+            include_head=True,
         )
     if _embedded_pdf_missing_initiator_name_signals(direct_text):
         return _extract_pdf_text_ocr(
@@ -2606,6 +2702,7 @@ def extract_pdf_text_local(
             language=language,
             max_pages=max_pages,
             from_tail=True,
+            include_head=True,
         )
     return direct_text
 
@@ -3200,7 +3297,14 @@ def _find_initiator_anchor(
     The 4–5 anchors are new: they catch short Expunere de motive signature
     blocks (one initiator per law) that have no list-of-initiators header.
     """
+    def membership_request(candidate):
+        window = _fold(cleaned_full[max(0, candidate.start()-300):candidate.end()+350])
+        return bool(re.search(r"solicit|rugaminte|\brog\b", window) and re.search(
+            r"(?:retrag\w*|adaug\w*|doband\w*).{0,120}(?:initiator|semnatur|calitat)", window))
+
     for prose_in in reversed(list(_PROSE_IN_NUMELE_INITIATORILOR_RE.finditer(cleaned_full))):
+        if membership_request(prose_in):
+            continue
         if _initiator_header_tail_is_support_letter_prose(cleaned_full, prose_in.end()):
             continue
         if _initiator_header_followed_by_lista_without_name_signals(
@@ -3209,6 +3313,8 @@ def _find_initiator_anchor(
             continue
         return prose_in, "em_in_numele_initiatorilor"
     for nm in reversed(list(_NUMELE_INITIATORILOR_RE.finditer(cleaned_full))):
+        if membership_request(nm):
+            continue
         if _initiator_header_tail_is_support_letter_prose(cleaned_full, nm.end()):
             continue
         if _initiator_header_followed_by_lista_without_name_signals(cleaned_full, nm.end()):
@@ -3219,15 +3325,15 @@ def _find_initiator_anchor(
         re.compile(r"(?iu)\binitiator\s*:"),
     ):
         m = rx.search(cleaned_full)
-        if m:
+        if m and not membership_request(m):
             return m, "em_initiatori_colon"
     # Signature-block anchors (new). Prefer the very last occurrence so the
     # match points at the signature at the bottom of the document, not at a
     # "Deputat NAME" mention in the body.
-    sig1_matches = list(_SIGNATURE_INITIATOR_THEN_DEPUTAT_RE.finditer(cleaned_full))
+    sig1_matches = [m for m in _SIGNATURE_INITIATOR_THEN_DEPUTAT_RE.finditer(cleaned_full) if not membership_request(m)]
     if sig1_matches:
         return sig1_matches[-1], "em_signature_initiator_deputat"
-    sig2_matches = list(_SIGNATURE_DEPUTAT_CIRCUMSCRIPTIE_RE.finditer(cleaned_full))
+    sig2_matches = [m for m in _SIGNATURE_DEPUTAT_CIRCUMSCRIPTIE_RE.finditer(cleaned_full) if not membership_request(m)]
     if sig2_matches:
         return sig2_matches[-1], "em_signature_deputat_circumscriptie"
     best_with_signals: re.Match[str] | None = None
@@ -3235,6 +3341,8 @@ def _find_initiator_anchor(
     fallback: re.Match[str] | None = None
     fallback_start = -1
     for cand in _INITIATOR_HEADER_RE.finditer(cleaned_full):
+        if membership_request(cand):
+            continue
         start = cand.start()
         prefix = cleaned_full[max(0, start - 8) : start]
         if re.search(r"(?i)numele\s+$", prefix):
@@ -3458,7 +3566,10 @@ def extract_initiators_section_with_source(text: str) -> tuple[str, str]:
     )
     if end_match:
         section = section[: 40 + end_match.start()]
-    header_end = match.end() - match.start()
+    proposal_table = re.search(r"(?i)\bpropuner(?:e|ea)\s+legislativ[aă]\b", section)
+    if proposal_table:
+        section = section[:proposal_table.start()]
+    header_end = min(match.end() - match.start(), len(section))
     body = section[header_end:] if header_end < len(section) else ""
     pre_sustinatori = _slice_before_sustinatori_header(body)
     body_for_printed_table = (
@@ -3490,7 +3601,7 @@ def extract_initiators_section_with_source(text: str) -> tuple[str, str]:
         for label in handwritten_before_sus:
             seen_fold.add(_fold(label))
 
-    header = match.group(0).strip()
+    header = section[:header_end].strip()
     lines_out: list[str] = []
     if merged:
         lines_out.append(header)
@@ -3510,7 +3621,8 @@ def extract_initiators_section_with_source(text: str) -> tuple[str, str]:
     # → "Expunere de motive" window); matching against this narrow slice is
     # still safe because it never contains body prose — Fix 1 only forbids
     # falling back to body text when **no anchor** is found at all.
-    return _clean_text(section), source
+    safe_section = _slice_before_sustinatori_header(section)
+    return _clean_text(safe_section if safe_section is not None else section), source
 
 
 def extract_initiators_section(text: str) -> str:
@@ -3632,16 +3744,8 @@ def _fuzzy_member_matches_initiator_lines(
     if not variant_fold or len(variant_fold) < 5:
         return False
     blob = " ".join(lines_fold)
-    if variant_fold in blob:
+    if re.search(rf"(?<!\w){re.escape(variant_fold)}(?!\w)", blob):
         return True
-    for lf in lines_fold:
-        if len(lf) < 6:
-            continue
-        sm = difflib.SequenceMatcher(None, variant_fold, lf)
-        if len(variant_fold) >= 12 and len(lf) >= 12 and sm.ratio() >= 0.78:
-            return True
-        if min(len(variant_fold), len(lf)) >= 8 and sm.ratio() >= 0.84:
-            return True
     # Split on whitespace AND on hyphens, separately tracking the
     # member's surname (first whitespace-separated token). Romanian
     # compound given names like `Remus-Gabriel`, `Doru-Lucian`,
@@ -3656,7 +3760,7 @@ def _fuzzy_member_matches_initiator_lines(
     # line "lapusan remus-gabriel".
     def _keep(sub: str) -> bool:
         return (
-            len(sub) >= 4
+            len(sub) >= 2
             and sub not in _PARTY_TOKENS_FOLDED
             and sub not in ("deputat", "senator", "domnul", "doamna")
         )
@@ -3702,7 +3806,7 @@ def _fuzzy_member_matches_initiator_lines(
     # otherwise members sharing only a compound given name with the
     # real initiator would still pass.
     def _token_fuzzy_hit(piece: str, line: str) -> bool:
-        if piece in line:
+        if re.search(rf"(?<!\w){re.escape(piece)}(?!\w)", line):
             return True
         for w in re.findall(r"[a-zăâîșț0-9-]+", line):
             if len(w) < 4:
@@ -3712,6 +3816,8 @@ def _fuzzy_member_matches_initiator_lines(
         return False
 
     for lf in lines_fold:
+        if any(len(p) <= 3 and not _token_fuzzy_hit(p, lf) for p in given_subparts):
+            continue
         line_hits = 0
         surname_matched = not surname_set
         for p in parts:
@@ -3745,7 +3851,7 @@ def match_initiator_member_ids(
             matched.append(member_id)
             matched_ids.add(member_id)
             continue
-        if any(_fold(variant) and _fold(variant) in folded_text for variant in variants):
+        if any(_fold(variant) and re.search(rf"(?<!\w){re.escape(_fold(variant))}(?!\w)", folded_text) for variant in variants):
             matched.append(member_id)
             matched_ids.add(member_id)
     lines_fold = [_fold(ln) for ln in _initiator_snippet_log_name_lines(initiators_text)]
@@ -3821,6 +3927,27 @@ def single_signature_fuzzy_match(
     window = _clean_text(signature_window)
     if not window or len(window) > 1200:
         return []
+    folded_window = _fold(window)
+    if re.search(r"\binitiator\s*[:,]", folded_window) and re.search(r"\b(?:deputat|senator)\b", folded_window):
+        # Resolve a one-letter name error only with the other full-name tokens
+        # exact. Shared given names alone must never select a member.
+        tokens = re.findall(r"[a-z]+", folded_window)
+        candidates = set()
+        for member_id, name, normalized_name in member_rows:
+            name_tokens = sorted(re.findall(r"[a-z]+", _fold(normalized_name or name)))
+            if not 2 <= len(name_tokens) <= 4:
+                continue
+            for start in range(len(tokens) - len(name_tokens) + 1):
+                signature_tokens = sorted(tokens[start:start + len(name_tokens)])
+                differences = [(a, b) for a, b in zip(name_tokens, signature_tokens) if a != b]
+                if not differences:
+                    candidates.add(member_id)
+                elif len(differences) == 1:
+                    a, b = differences[0]
+                    if len(a) >= 5 and len(a) == len(b) and sum(x != y for x, y in zip(a, b)) == 1:
+                        candidates.add(member_id)
+        if candidates:
+            return sorted(candidates) if len(candidates) == 1 else []
     clusters = _signature_window_token_clusters(window)
     if not clusters:
         return []
@@ -3923,6 +4050,7 @@ def hydrate_law_initiators_for_records(
     consecutive_failure_pause_seconds: float = 0.0,
     consecutive_failure_abort_after: int = 0,
     sleep_fn: Any | None = None,
+    retry_missing_pdf: bool = False,
 ) -> StoreResult:
     # `sleep_fn` defaults to `time.sleep`; it is injectable so tests can
     # avoid real waits while still verifying throttle/pause behaviour.
@@ -4025,7 +4153,7 @@ def hydrate_law_initiators_for_records(
                 print(
                     f"{prefix}Law initiators OCR {index}/{len(records)}: "
                     f"{log_context} OCR/text extraction on cached PDF started "
-                    f"({len(pdf_bytes)} bytes, last {ocr_max_pages} page(s))",
+                    f"({len(pdf_bytes)} bytes, up to {ocr_max_pages} sampled page(s))",
                     flush=True,
                 )
                 (
@@ -4080,6 +4208,12 @@ def hydrate_law_initiators_for_records(
                 else:
                     single = parse_law_initiator_pdf_url(law_html, source_url)
                     pdf_urls = [single] if single else []
+                    if not pdf_urls and retry_missing_pdf:
+                        print(f"{prefix}Law initiators OCR {index}/{len(records)}: {log_context} no PDF link in response; retrying law page once", flush=True)
+                        sleeper(fetcher.sleep_seconds)
+                        law_html = fetcher.fetch(source_url)
+                        single = parse_law_initiator_pdf_url(law_html, source_url)
+                        pdf_urls = [single] if single else []
                 if not pdf_urls:
                     raise ValueError(
                         "Law initiator PDF link not found "
@@ -4101,17 +4235,20 @@ def hydrate_law_initiators_for_records(
                         flush=True,
                     )
                     pdf_bytes = fetcher.fetch_bytes(pdf_url)
-                    _write_bytes_atomic(cache_path, pdf_bytes)
+                    candidate_cache_path = cache_path if pdf_index == 1 else cache_path.with_name(
+                        f"{cache_path.stem}_candidate_{pdf_index}{cache_path.suffix}"
+                    )
+                    _write_bytes_atomic(candidate_cache_path, pdf_bytes)
                     total_bytes += len(pdf_bytes)
                     print(
                         f"{prefix}Law initiators OCR {index}/{len(records)}: "
-                        f"{log_context} cached {label} at {cache_path}",
+                        f"{log_context} cached {label} at {candidate_cache_path}",
                         flush=True,
                     )
                     print(
                         f"{prefix}Law initiators OCR {index}/{len(records)}: "
                         f"{log_context} OCR/text extraction on {label} started "
-                        f"({len(pdf_bytes)} bytes, last {ocr_max_pages} page(s))",
+                        f"({len(pdf_bytes)} bytes, up to {ocr_max_pages} sampled page(s))",
                         flush=True,
                     )
                     (
@@ -4126,6 +4263,8 @@ def hydrate_law_initiators_for_records(
                         ocr_max_pages=ocr_max_pages,
                     )
                     if initiators_text or member_ids:
+                        if candidate_cache_path != cache_path:
+                            _write_bytes_atomic(cache_path, pdf_bytes)
                         motive_pdf_url = pdf_url
                         break
             print(
@@ -4281,6 +4420,7 @@ def load_law_records_for_initiator_hydration(
     limit: int | None = None,
     law_initiator_pdf_dir: Path | None = None,
     prefer_without_cached_pdf_when_limited: bool = False,
+    exclude_law_ids: set[str] | None = None,
 ) -> list[ListingRecord]:
     if not member_ids:
         return []
@@ -4290,7 +4430,7 @@ def load_law_records_for_initiator_hydration(
         and prefer_without_cached_pdf_when_limited
         and law_initiator_pdf_dir is not None
     )
-    limit_sql = "LIMIT ?" if limit is not None and not apply_cache_aware_limit else ""
+    limit_sql = "LIMIT ?" if limit is not None and not apply_cache_aware_limit and not exclude_law_ids else ""
     missing_initiators_sql = (
         """
         AND NOT EXISTS (
@@ -4326,6 +4466,8 @@ def load_law_records_for_initiator_hydration(
     ).fetchall()
     records: list[ListingRecord] = []
     for row in rows:
+        if exclude_law_ids and str(row[0]) in exclude_law_ids:
+            continue
         columns: list[str] = []
         if row[6]:
             try:
@@ -4357,6 +4499,8 @@ def load_law_records_for_initiator_hydration(
             if len(selected) >= limit:
                 break
         return selected
+    if limit is not None and not limit_sql:
+        return records[:limit]
     return records
 
 
@@ -4723,17 +4867,29 @@ def _store_decision_projects(
     return result
 
 
+def _existing_question_recipients(conn: sqlite3.Connection) -> dict[str, str]:
+    # Registry member IDs can shift between refreshes; the question ID is stable.
+    return {str(key): str(row[2]) for row in conn.execute(
+        "SELECT question_id, source_url, recipient FROM dep_act_questions_interpellations WHERE recipient IS NOT NULL AND TRIM(recipient)<>''"
+    ) for key in row[:2]}
+
+
 def hydrate_question_records(
     *,
     listing_records: list[ListingRecord],
     fetcher: Fetcher,
     debug: bool = False,
+    existing_recipients: dict[str, str] | None = None,
 ) -> list[ListingRecord]:
     questions: list[ListingRecord] = []
     for index, record in enumerate(listing_records, start=1):
-        detail_html = fetcher.fetch(record.source_url)
-        recipient = parse_question_detail_recipient(detail_html)
-        if debug:
+        recipient = ((existing_recipients or {}).get(record.record_id)
+                     or (existing_recipients or {}).get(record.source_url))
+        detail_html = ""
+        if not recipient:
+            detail_html = fetcher.fetch(record.source_url)
+            recipient = parse_question_detail_recipient(detail_html)
+        if debug and detail_html:
             _print_question_detail_debug(
                 index=index,
                 record=record,
@@ -4869,22 +5025,72 @@ def _store_motions(
     return result
 
 
+def _written_declaration_cache_key(source_url: str, speaker: str):
+    parsed = urllib.parse.urlparse(source_url)
+    package = re.search(r"/(steno(?:2015|2024))\.(?:stenograma|sumar)_scris$", parsed.path)
+    session_id = urllib.parse.parse_qs(parsed.query).get("ids", [""])[0]
+    name = re.sub(r"^(domnul|doamna)\s+", "", _fold(speaker))
+    name_key = " ".join(sorted(re.findall(r"[a-z]+", name)))
+    if package and session_id and name_key:
+        return package.group(1), session_id, name_key
+    return None
+
+
+def _load_cached_written_declarations(input_dir: Path) -> dict:
+    """Reuse complete local transcripts only for unambiguous session/author keys."""
+    cache: dict = {}
+    for path in input_dir.glob("stenograma_*.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            for speech in payload.get("speeches", []):
+                key = _written_declaration_cache_key(payload.get("source_url", ""), speech.get("speaker", ""))
+                if key is None:
+                    continue
+                text_keys = sorted((k for k in speech if re.fullmatch(r"text\d*", k)),
+                                   key=lambda k: int(k[4:] or 1))
+                text = " ".join(str(speech[k]) for k in text_keys).strip()
+                if not text:
+                    continue
+                if key in cache and cache[key] != text:
+                    cache[key] = None  # An ambiguous author must be fetched normally.
+                else:
+                    cache[key] = text
+        except (OSError, ValueError, TypeError, AttributeError):
+            continue
+    return cache
+
+
 def hydrate_political_declaration_records(
     *,
     member_id: str,
     listing_records: list[ListingRecord],
     fetcher: Fetcher,
     debug: bool = False,
+    member_name: str = "",
+    existing_details: dict | None = None,
+    cached_stenograms: dict | None = None,
 ) -> list[PoliticalDeclarationRecord]:
     declarations: list[PoliticalDeclarationRecord] = []
+    reused_db = reused_stenograms = downloaded = 0
     for index, record in enumerate(listing_records, start=1):
-        detail_html = fetcher.fetch(record.source_url)
-        text_url, detail_title, full_text = parse_political_declaration_detail(
-            detail_html,
-            record.source_url,
-            fetcher=fetcher,
-        )
-        if debug:
+        existing = ((existing_details or {}).get(record.record_id)
+                    or (existing_details or {}).get(record.source_url))
+        key = _written_declaration_cache_key(record.source_url, member_name)
+        cached_text = (cached_stenograms or {}).get(key)
+        detail_html = ""
+        if existing:
+            text_url, detail_title, full_text = existing
+            reused_db += 1
+        elif cached_text:
+            text_url, detail_title, full_text = record.source_url, record.title, cached_text
+            reused_stenograms += 1
+        else:
+            detail_html = fetcher.fetch(record.source_url)
+            text_url, detail_title, full_text = parse_political_declaration_detail(
+                detail_html, record.source_url, fetcher=fetcher,
+            )
+            downloaded += 1
+        if debug and detail_html:
             _print_political_declaration_detail_debug(
                 index=index,
                 record=record,
@@ -4906,6 +5112,8 @@ def hydrate_political_declaration_records(
                 columns=record.columns,
             )
         )
+    if existing_details is not None or cached_stenograms is not None:
+        print(f"Declaration text: reused_db={reused_db}, reused_stenograms={reused_stenograms}, downloaded={downloaded}")
     return declarations
 
 
@@ -5169,12 +5377,15 @@ def crawl_member(
     debug_questions: bool = False,
     debug_motions: bool = False,
     debug_political_declarations: bool = False,
+    preserve_existing_details: bool = False,
+    declaration_text_cache: dict | None = None,
 ) -> tuple[dict[str, ActivityLink], dict[str, StoreResult], str | None]:
     profile_url = str(member["profile_url"])
     activity: dict[str, ActivityLink] = {}
     results: dict[str, StoreResult] = {}
     error: str | None = None
     try:
+        preserved_recipients = _existing_question_recipients(conn) if preserve_existing_details else None
         profile_html = fetcher.fetch(profile_url)
         activity = parse_profile_activity(profile_html, profile_url)
         if debug_profile:
@@ -5230,6 +5441,7 @@ def crawl_member(
                                 listing_records=records,
                                 fetcher=fetcher,
                                 debug=debug_questions,
+                                existing_recipients=preserved_recipients,
                             )
                             if dry_run:
                                 results[listing_kind] = StoreResult(
@@ -5249,7 +5461,12 @@ def crawl_member(
                     results[listing_kind] = StoreResult()
                     continue
             listing_html = fetcher.fetch(link.url)
-            records = parse_listing_records(listing_html, link.url, listing_kind)
+            if listing_kind == "political_declarations":
+                records = load_political_declaration_listing(listing_html, link.url, fetcher, profile_count=link.count)
+                if link.count is not None and len(records) < link.count:
+                    print(f"Declaration availability: profile_count={link.count}, published_results={len(records)}; all published results captured.")
+            else:
+                records = parse_listing_records(listing_html, link.url, listing_kind)
             if synthesized_activity_link:
                 link.count = len(records)
                 activity[activity_key] = link
@@ -5272,6 +5489,7 @@ def crawl_member(
                     listing_records=records,
                     fetcher=fetcher,
                     debug=debug_questions,
+                    existing_recipients=preserved_recipients,
                 )
             elif listing_kind == "political_declarations":
                 if debug_political_declarations:
@@ -5286,6 +5504,14 @@ def crawl_member(
                     listing_records=records,
                     fetcher=fetcher,
                     debug=debug_political_declarations,
+                    member_name=str(member.get("name", "")),
+                    existing_details=(
+                        {str(key): (row[2], row[3], row[4]) for row in conn.execute(
+                            "SELECT political_declaration_id, source_url, text_url, title, full_text FROM dep_act_political_declarations WHERE member_id=? AND full_text IS NOT NULL AND TRIM(full_text)<>'' AND full_text<>details_text",
+                            (member["member_id"],)) for key in row[:2]}
+                        if preserve_existing_details else None
+                    ),
+                    cached_stenograms=declaration_text_cache,
                 )
             if dry_run:
                 results[listing_kind] = StoreResult(
@@ -5305,6 +5531,18 @@ def crawl_member(
                     records=records,
                     update_existing=update_existing,
                 )
+                if listing_kind == "motions":
+                    from motion_signatures import store_signatures
+                    checked = getattr(fetcher, "verified_motion_ids", set())
+                    for record in records:
+                        if record.record_id in checked:
+                            continue
+                        # A profile link proves neither a vote nor signing-time
+                        # affiliation. Verify the official signatory page once.
+                        page = fetcher.fetch(record.source_url)
+                        store_signatures(conn, record.record_id, record.source_url, page)
+                        checked.add(record.record_id)
+                    fetcher.verified_motion_ids = checked
         vote_link = activity.get("electronic_votes", ActivityLink())
         if not _is_member_electronic_votes_url(vote_link.url):
             fallback_vote_url = _standard_electronic_votes_url(profile_url)
@@ -5380,6 +5618,7 @@ def run_law_initiator_hydration_phase(
     consecutive_failure_pause_seconds: float = 60.0,
     consecutive_failure_abort_after: int = 25,
     law_initiator_pdf_dir: Path = DEFAULT_LAW_INITIATOR_PDF_DIR,
+    exclude_law_ids: set[str] | None = None,
 ) -> None:
     def print_cache_gap_summary() -> None:
         missing_cache_count, total_laws = count_law_initiator_pdf_cache_gaps(
@@ -5401,6 +5640,7 @@ def run_law_initiator_hydration_phase(
         limit=law_limit,
         law_initiator_pdf_dir=law_initiator_pdf_dir,
         prefer_without_cached_pdf_when_limited=True,
+        exclude_law_ids=exclude_law_ids,
     )
     print(
         "Law initiator OCR hydration will process "
@@ -5462,6 +5702,7 @@ def run_law_initiator_hydration_phase(
         consecutive_failure_pause_after=consecutive_failure_pause_after,
         consecutive_failure_pause_seconds=consecutive_failure_pause_seconds,
         consecutive_failure_abort_after=consecutive_failure_abort_after,
+        retry_missing_pdf=True,
     )
     print(
         "Law initiator OCR hydration complete: "
@@ -5502,7 +5743,14 @@ def crawl_deputy_activity(
     export_activity: bool = False,
     only_export_activity: bool = False,
     activity_output_dir: Path = DEFAULT_ACTIVITY_OUTPUT_DIR,
+    hydrate_new_laws_only: bool = False,
+    preserve_existing_details: bool = False,
+    new_laws_baseline: Path | None = None,
 ) -> int:
+    if hydrate_new_laws_only and (not hydrate_law_initiators or (only_hydrate_law_initiators and new_laws_baseline is None)):
+        raise ValueError("--hydrate-new-laws-only requires --hydrate-law-initiators and either crawling or an explicit --new-laws-baseline")
+    if new_laws_baseline is not None and not hydrate_new_laws_only:
+        raise ValueError("--new-laws-baseline requires --hydrate-new-laws-only")
     deputies = _load_deputies(input_path)
     selected = _select_members(
         deputies,
@@ -5512,6 +5760,12 @@ def crawl_deputy_activity(
     )
     db_path.parent.mkdir(parents=True, exist_ok=True)
     fetcher = Fetcher(timeout=timeout, retries=retries, sleep_seconds=sleep_seconds)
+    declaration_text_cache = (
+        _load_cached_written_declarations(Path(__file__).resolve().parents[1] / "input" / "stenograme")
+        if preserve_existing_details else None
+    )
+    if preserve_existing_details:
+        print(f"Preserving completed activity details; {sum(bool(v) for v in declaration_text_cache.values())} complete declaration texts available locally.")
 
     with sqlite3.connect(db_path) as conn:
         conn.execute("PRAGMA busy_timeout = 60000;")
@@ -5519,6 +5773,23 @@ def crawl_deputy_activity(
         ensure_activity_schema(conn)
         require_members_present(conn, selected)
         conn.commit()
+        existing_law_ids = (
+            {str(row[0]) for row in conn.execute("SELECT law_id FROM dep_act_laws")}
+            if hydrate_new_laws_only else None
+        )
+        if new_laws_baseline is not None:
+            if new_laws_baseline.exists():
+                baseline_ids = json.loads(new_laws_baseline.read_text(encoding="utf-8"))
+                if not isinstance(baseline_ids, list) or any(not isinstance(value, str) for value in baseline_ids):
+                    raise ValueError("New-law baseline must be a JSON list of law IDs")
+                existing_law_ids = set(baseline_ids)
+            else:
+                new_laws_baseline.parent.mkdir(parents=True, exist_ok=True)
+                with new_laws_baseline.open("x", encoding="utf-8") as baseline_file:
+                    json.dump(sorted(existing_law_ids), baseline_file, indent=2)
+            print(f"New-law baseline: {new_laws_baseline}")
+        if hydrate_new_laws_only:
+            print(f"Initiator OCR scope: newly discovered laws only; excluding {len(existing_law_ids)} existing laws.")
 
         if only_export_activity:
             if dry_run:
@@ -5559,6 +5830,7 @@ def crawl_deputy_activity(
                     consecutive_failure_pause_seconds=hydrate_failure_pause_seconds,
                     consecutive_failure_abort_after=hydrate_failure_abort_after,
                     law_initiator_pdf_dir=DEFAULT_LAW_INITIATOR_PDF_DIR,
+                    exclude_law_ids=existing_law_ids,
                 )
                 if export_activity:
                     export_activity_snapshots(
@@ -5609,6 +5881,8 @@ def crawl_deputy_activity(
                 debug_questions=debug_questions,
                 debug_motions=debug_motions,
                 debug_political_declarations=debug_political_declarations,
+                preserve_existing_details=preserve_existing_details,
+                declaration_text_cache=declaration_text_cache,
             )
             if error:
                 failures += 1
@@ -5641,6 +5915,7 @@ def crawl_deputy_activity(
                 consecutive_failure_pause_seconds=hydrate_failure_pause_seconds,
                 consecutive_failure_abort_after=hydrate_failure_abort_after,
                 law_initiator_pdf_dir=DEFAULT_LAW_INITIATOR_PDF_DIR,
+                exclude_law_ids=existing_law_ids,
             )
 
         if export_activity and not dry_run:
@@ -5661,12 +5936,16 @@ def main() -> int:
     parser.add_argument("--input", default=str(DEFAULT_INPUT_PATH))
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--offset", type=int, default=0)
+    parser.add_argument("--preserve-existing-details", action="store_true",
+                        help="Reuse complete question/declaration details and exact local stenogram texts; fetch only missing details.")
     parser.add_argument(
         "--member-id",
         action="append",
         dest="member_ids",
         help="Filter by member_id (deputat_1), source id (1), or exact name. Repeatable.",
     )
+    parser.add_argument("--new-laws-baseline", type=Path,
+                        help="Save/reuse the JSON law-ID baseline for resuming the same new-law refresh.")
     parser.add_argument("--timeout", type=int, default=30)
     parser.add_argument("--retries", type=int, default=2)
     parser.add_argument("--sleep", type=float, default=0.5)
@@ -5702,6 +5981,10 @@ def main() -> int:
             "Skip normal crawling and only run law initiator OCR hydration for stored "
             "dep_act_laws rows that do not yet have any is_initiator association."
         ),
+    )
+    parser.add_argument(
+        "--hydrate-new-laws-only", action="store_true",
+        help="Only OCR laws inserted during this crawl; leave the existing backlog untouched.",
     )
     parser.add_argument(
         "--law-initiator-ocr-language",
@@ -5856,6 +6139,9 @@ def main() -> int:
             debug_motions=args.debug_motions,
             debug_political_declarations=args.debug_political_declarations,
             hydrate_law_initiators=args.hydrate_law_initiators,
+            hydrate_new_laws_only=args.hydrate_new_laws_only,
+            preserve_existing_details=args.preserve_existing_details,
+            new_laws_baseline=args.new_laws_baseline,
             only_hydrate_law_initiators=args.only_hydrate_law_initiators,
             law_initiator_ocr_language=args.law_initiator_ocr_language,
             law_initiator_ocr_pages=args.law_initiator_ocr_pages,

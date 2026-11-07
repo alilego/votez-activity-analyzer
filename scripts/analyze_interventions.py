@@ -14,11 +14,12 @@ Current slice:
 
 from __future__ import annotations
 
+from member_identity import source_member_id, guard_member_identity
+
 import argparse
 import hashlib
 import json
 import os
-import urllib.parse
 import re
 import sqlite3
 import unicodedata
@@ -226,21 +227,7 @@ def _token_key(text: str) -> str:
 
 
 def _extract_source_member_id(row: dict, chamber: str) -> str:
-    value = str(row.get("id", "")).strip()
-    if value:
-        return value
-    profile_url = str(row.get("profile_url", "")).strip()
-    if chamber == "senator" and profile_url:
-        parsed = urllib.parse.urlparse(profile_url)
-        qs = urllib.parse.parse_qs(parsed.query)
-        pid = qs.get("ParlamentarID", [])
-        if pid and pid[0].strip():
-            return pid[0].strip()
-    if profile_url:
-        return profile_url
-    # Last fallback keeps deterministic identity.
-    name = str(row.get("name", "")).strip()
-    return hashlib.sha1(name.encode("utf-8")).hexdigest()
+    return source_member_id(row, chamber)
 
 
 def _extract_non_negative_int(row: dict, keys: tuple[str, ...]) -> int:
@@ -457,7 +444,7 @@ def _build_intervention_id(stenogram_path: str, speech_index: int) -> str:
     return f"iv:{path_hash}:{speech_index}"
 
 
-def _load_registry_members() -> tuple[list[dict], dict[str, list[str]], dict[str, list[str]], dict[str, list[str]]]:
+def _load_registry_members(db_path: Path | None = None) -> tuple[list[dict], dict[str, list[str]], dict[str, list[str]], dict[str, list[str]]]:
     registries = [
         (Path("input/toti_deputatii.json"), "deputat"),
         (Path("input/toti_senatorii.json"), "senator"),
@@ -524,6 +511,24 @@ def _load_registry_members() -> tuple[list[dict], dict[str, list[str]], dict[str
             if len(name_parts) > 1:
                 rotated = " ".join(name_parts[1:] + [name_parts[0]])
                 alias_to_ids.setdefault(rotated, []).append(member_id)
+    if db_path is not None and db_path.exists():
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            guard_member_identity(conn, members)
+            known = {m['member_id'] for m in members}
+            for row in conn.execute('SELECT * FROM members'):
+                if row['member_id'] not in known:
+                    members.append(dict(row))
+                    known.add(row['member_id'])
+                    normalized_to_ids.setdefault(row['normalized_name'], []).append(row['member_id'])
+                    token_to_ids.setdefault(_token_key(row['normalized_name']), []).append(row['member_id'])
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE name='member_identity_aliases'").fetchone():
+                for mid, name in conn.execute('SELECT member_id,normalized_name FROM member_identity_aliases'):
+                    for mapping, key in ((normalized_to_ids,name),(token_to_ids,_token_key(name)),
+                                         (alias_to_ids,' '.join(name.split()[1:]+name.split()[:1]))):
+                        ids = mapping.setdefault(key,[])
+                        if mid not in ids:
+                            ids.append(mid)
     return members, normalized_to_ids, token_to_ids, alias_to_ids
 
 
@@ -570,6 +575,7 @@ def _persist_run_data(
         (run_id,),
     )
 
+    guard_member_identity(conn, members)
     for member in members:
         conn.execute(
             """
@@ -867,7 +873,7 @@ def main() -> int:
 
     try:
         selected = _load_selected_paths(list_path)
-        members, normalized_to_ids, token_to_ids, alias_to_ids = _load_registry_members()
+        members, normalized_to_ids, token_to_ids, alias_to_ids = _load_registry_members(db_path)
 
         sessions: list[SessionStats] = []
         session_chunks: list[dict] = []

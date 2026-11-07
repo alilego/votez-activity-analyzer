@@ -9,7 +9,9 @@ AI-powered analysis of Romanian parliamentary activity — classifies interventi
 
 ```bash
 python3 --version                     # must be 3.9+
-pip3 install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate             # repeat in each new terminal
+python3 -m pip install -r requirements.txt
 ```
 
 Installs: `sentence-transformers`, `faiss-cpu`, `openai` (used as the HTTP client for both OpenAI and Ollama), plus PDF/OCR helper libraries used by the deputy activity crawler.
@@ -46,6 +48,20 @@ export OPENAI_API_KEY=sk-...          # set your API key
 
 OpenAI runs default to Flex Processing (`service_tier=flex`) for lower-cost background-style workloads. To force standard processing instead, set `export OPENAI_SERVICE_TIER=auto`.
 
+For `gpt-5-mini`, requests use `reasoning_effort=low` and reserve at least 32,768
+completion tokens when converting the pipeline's legacy output budgets. This is
+a ceiling, not a requested response length: the completion budget includes hidden
+reasoning as well as visible JSON. A small ceiling can produce an empty response
+before the model starts its JSON. Explicit `max_completion_tokens` and reasoning
+effort passed by a caller are preserved. Failed topic-response files include the
+finish reason and token usage so this can be distinguished from invalid JSON or
+a refusal. See the [OpenAI reasoning guide](https://developers.openai.com/api/docs/guides/reasoning).
+
+Intervention classification uses four isolated session workers for OpenAI and one
+for Ollama. Each worker owns its API client and SQLite connection, and classifies
+only pending interventions from its assigned sessions. Set `VOTEZ_LLM_WORKERS=1`
+to run sequentially, or pass `--workers` directly to `scripts/llm_agent.py`.
+
 ### 3. Stenogram scraper (optional — fetches stenograms from cdep.ro)
 
 The [votez-scraper](../votez-scraper) project scrapes parliamentary stenograms from cdep.ro and writes JSON files that this pipeline consumes. Clone it as a sibling directory:
@@ -54,7 +70,7 @@ The [votez-scraper](../votez-scraper) project scrapes parliamentary stenograms f
 # from the parent directory of votez-activity-analyzer
 git clone <votez-scraper-repo-url> votez-scraper
 cd votez-scraper
-pip3 install -r requirements.txt      # scrapy + lxml
+python3 -m pip install -r requirements.txt  # scraper dependencies, in the same active .venv
 ```
 
 The integrated `full_update.py` script (see [Two main flows](#two-main-flows)) expects the scraper at `../votez-scraper` by default. You can override this with `--scraper-dir`.
@@ -64,6 +80,10 @@ If you already have stenogram JSON files, you can skip the scraper and place the
 The script also deploys all results to `../votez-frontend/` by default:
 - Analysis outputs (members, parties, topics, productivity, activity) → `data/activity_analizer/`
 - Scraper registry files (deputies/senators by party, circumscription) → `lib/`
+
+Exports are validated before frontend deployment. If validation or an earlier
+update step fails, the frontend files are left unchanged until the failed steps
+are repaired and resumed.
 
 The [votez-frontend](../votez-frontend) project should be cloned as a sibling directory. Override with `--frontend-dir` or skip with `--skip-deploy`.
 
@@ -238,13 +258,15 @@ rsync -a --delete --exclude='pdfs/' outputs/ ../votez-frontend/data/activity_ana
 
 Use this when the repository is already set up and you want to fetch the latest stenograms and refresh everything. Each step is safe to run repeatedly — already-processed data is automatically skipped.
 
-**Single command** — scrapes only new stenograms (the scraper is incremental), syncs them, and processes only what's new:
+**Single command** — discovers joint sittings, Chamber of Deputies sittings, and written political declarations; downloads unsaved sessions, syncs them, and processes only new/changed files. Existing activity records are refreshed too:
 
 With **local LLM** for both intervention analysis and adopted-law impact analysis:
 
 ```bash
 ollama serve                          # in a separate terminal, keep running
-python3 scripts/full_update.py --adopted-law-llm-provider ollama
+python3 scripts/full_update.py \
+    --adopted-law-llm-provider ollama \
+    --update-existing-crawler
 ```
 
 With **OpenAI API** (remote, paid). Adopted-law impact analysis defaults to OpenAI `gpt-5-mini` unless overridden:
@@ -252,7 +274,8 @@ With **OpenAI API** (remote, paid). Adopted-law impact analysis defaults to Open
 ```bash
 python3 scripts/full_update.py \
     --llm-provider openai \
-    --llm-model gpt-5-nano
+    --llm-model gpt-5-nano \
+    --update-existing-crawler
 ```
 
 **Skip individual steps / opt-in extras:**
@@ -287,22 +310,45 @@ python3 scripts/full_update.py --scrape-year 2026 --scrape-month 5
 
 | Data | Tracked by | Skip condition |
 |------|-----------|----------------|
-| Stenograms on cdep.ro | Scraper checks latest date in `output/stenograme/` | Only fetches days after the most recent existing stenogram |
+| Stenograms on cdep.ro | Saved session IDs in `output/stenograme/` | Known sessions are skipped; calendar days from the earliest stored year onward are revisited to recover gaps. Newly supported transcript series are backfilled. |
 | Stenogram files (sync) | Byte-level file comparison | Identical files are not re-copied to `input/stenograme/` |
 | Stenogram files (pipeline) | `processed_stenograms` table (SHA-256 hash) | Same file content already processed |
 | Session topics | `session_topics.topics_source` | Any `llm_v1:*` source exists for that session |
 | Intervention labels | `intervention_analysis.relevance_source` | `llm_agent_v1` row exists for that intervention |
-| Deputy activity pages | `dep_act_member_activity_crawl` | Row exists (unless `--update-existing-crawler` is passed) |
+| Existing deputy activity records | Crawler-owned tables | Pages are fetched on every crawl; existing records are left unchanged unless `--update-existing-crawler` is passed |
 | Law initiator PDFs | `outputs/pdfs/law_initiators/` cache | Cached PDF file exists on disk |
 | Adopted-law PDFs | `outputs/pdfs/adopted_laws/` cache | Cached PDF file exists on disk |
 | Adopted-law text | `dep_act_laws.adopted_law_text_json` | Non-empty text JSON exists unless `--force-adopted-law-extract` is passed |
 | Adopted-law impact analysis | `dep_act_laws.adopted_law_analysis_json` | Non-empty analysis JSON exists unless `--force-adopted-law-analysis` is passed |
 
-**Tip:** To check what would be processed without making any changes:
+If scraping fails, the update stops before syncing, analysis or deployment. Fix the error and rerun. Use `--skip-scrape` only when you explicitly want existing scraper output. “No new/changed stenograms” in the analysis step refers to local input files, not publication availability on CDEP.
 
-```bash
-python3 scripts/full_update.py --dry-run
-```
+`full_update.py --dry-run` is not a read-only preview: it still runs scraping, syncing, productivity export and crawling. It only previews the analysis step and skips adopted-law enrichment, the final export and deployment.
+
+To OCR initiators only for laws newly discovered during the activity crawl, add
+`--hydrate-law-initiators --hydrate-new-laws-only`. This leaves older laws without
+initiator extraction untouched. Existing law statuses are still refreshed by
+`--update-existing-crawler`; completed adopted-law analyses remain skipped.
+For an interruptible refresh, also pass `--new-laws-baseline state/laws-before-refresh.json`.
+The first run saves the pre-crawl IDs there; resuming with the same file keeps
+newly discovered but unfinished laws eligible for hydration. Use a new baseline
+file for a new refresh. The crawler also accepts this file with
+`--only-hydrate-law-initiators --hydrate-law-initiators --hydrate-new-laws-only`
+to finish just that refresh's hydration.
+
+Add `--preserve-existing-details` to reuse stored question recipients and complete
+declaration text, fetching only missing details. For newly listed declarations,
+complete local stenogram text is reused only when the transcript series, session
+ID and author match unambiguously; other records are fetched from CDEP normally.
+The crawler supports both table and paragraph activity summaries, and follows all
+written-declaration result pages while retaining the original transcript series.
+Completeness uses the listing's published-result total: profile totals can also
+include declarations whose text is not yet published. Preserved question details
+are matched by question ID across registry member-ID shifts.
+Initiator extraction excludes add/withdrawal membership letters and stops before
+supporter tables. OCR samples both ends of long PDFs within the configured page
+budget; unresolved signatures remain unattributed. Short names use word
+boundaries, and a single-name OCR correction requires a unique full-name match.
 
 <details>
 <summary><b>Manual step-by-step alternative</b> (without full_update.py)</summary>
@@ -872,9 +918,69 @@ outputs/activity/parties/activity_{party_slug}.json
 outputs/activity/adopted_laws/adopted_law_{law_slug}.json
 ```
 
+### Durable member identities and motion signatures
+
+Deputy keys use `deputat_cdep_{leg}_{cam}_{idm}` from the official profile URL,
+for example `deputat_cdep_2024_2_158`. CDep's `idm` identifies a membership
+within a legislature and chamber, not a lifetime person. The scraper's `id`
+contains `cdep_{leg}_{cam}_{idm}`; `listing_position` is only alphabetical order.
+Senators retain the official Senate profile UUID namespace. Neither importer nor
+crawler accepts a database containing positional deputy keys: repair it first.
+
+The repair verifies the current official roster, historical registry/profile
+links, and each motion's official signatory list. It also retains former deputies
+from the official roster without giving them a current party. Unambiguous recorded
+names recover activity links and source speakers recover speech links. Ambiguous
+activity rows are preserved in `member_identity_audit` and excluded from attribution;
+unresolved speech rows keep their text and analysis with a null member link.
+Original remapped and merged rows are retained in the same audit table. Run outputs
+under `state/run_*` remain historical snapshots; they are not current identity indexes.
+
+Save a previous registry snapshot before updating it (for an existing checkout,
+`git show HEAD:input/toti_deputatii.json` may supply that snapshot). Then:
+
+```bash
+# Dry run is the default. Both modes back up SQLite with its backup API first.
+.venv/bin/python scripts/repair_member_identities.py \
+  --historical-registry state/identity_repair/sources/historical_deputies.json \
+  --fetch-sources --dry-run --report state/identity_repair/dry_run.json
+
+# Review the JSON report, then apply in one transaction.
+.venv/bin/python scripts/repair_member_identities.py \
+  --historical-registry state/identity_repair/sources/historical_deputies.json \
+  --apply --report state/identity_repair/applied.json
+```
+
+The source cache holds official HTML with SHA-256 evidence in the report. Legal
+name aliases also require an archived official profile with the old name;
+`--fetch-sources` reuses these from the sibling scraper cache when available. A cache
+entry is reused; use a new `--sources` directory to fetch a fresh snapshot. Repair
+fails on contradictory identities, partial motion pages, unknown member-linked
+tables, foreign-key failures, or changes to protected content/classifications.
+A rerun is idempotent. Keep the backup, historical registry and source cache with
+the report. Run `process_deputies.py` in the updated scraper repository to upgrade the local
+registry IDs and regenerate the groups before syncing; then export without
+scraping or LLM analysis:
+
+```bash
+.venv/bin/python scripts/full_update.py --skip-scrape --skip-pipeline \
+  --skip-crawler --skip-adopted-law-enrichment
+```
+
+Motion exports use verified **signatures**, not votes. `signing_party_id` comes
+from the official motion's group headings; a member's current `party_id` is never
+a fallback. `support_basis`, `registered_on`, `signatories`, and `signature_coverage`
+make this explicit. Unverified signatures are excluded, with unresolved cases in
+the coverage report. The crawler covers deputies; Senate signatures are counted
+separately as outside that coverage. The legacy `motions_majority_supported` JSON
+field means the configured number of verified deputy signatories, with the existing
+threshold based on current party size; it is not a claim about a parliamentary vote
+or a historical majority. Member and party exports use the same verified signatures.
+Deployment removes obsolete generated member filenames after identity changes.
+
 Each **member** file contains the member's identity (`member_id`, `name`, `chamber`, `party_id`, `party_name`, `profile_url`) plus five activity blocks:
 
-- `motions[]` — each motion's stored columns, plus `co_supporting_parties: [{party_id, party_name, members_count}]`. The subject member is excluded from his own party's count (so the number reflects "how many **other** members of that party co-supported").
+- `motions[]` — each verified signed motion, its `signing_party_id`, plus `co_supporting_parties: [{party_id, party_name, members_count}]`. The subject member is excluded from his own party's count (so the number reflects "how many **other** members of that party co-supported").
 - `questions_and_interpellations[]` — every Q&I row for the member, including `identifier`, `recipient`, `text`, `source_url`, and the raw listing `columns`.
 - `political_declarations[]` — every written political declaration, including `title`, `full_text`, `text_url`, and the raw listing `columns`.
 - `decision_projects[]` — each project, enriched with `collaborating_parties: [{party_id, party_name, members_count, members: [{member_id, name}]}]` grouping every collaborator by party.

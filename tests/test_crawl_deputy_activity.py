@@ -78,6 +78,22 @@ def insert_test_member(conn: sqlite3.Connection, member_id: str = "deputat_1") -
 
 
 class TestDeputyActivityCrawler(unittest.TestCase):
+    def test_current_paragraph_activity_summary(self):
+        html = '''<nav><a href="/other">Declaraţii politice</a></nav>
+        <p>Luări de cuvânt: <a href="/speeches">26 puncte</a><br>
+        Declaraţii politice depuse în scris: <a href="/written">8</a><br />
+        Propuneri legislative iniţiate: <a href="/laws">61</a>, din care 15 promulgate legi<br>
+        Întrebari şi interpelări: <a href="/questions">7</a><br>
+        Moţiuni: <a href="/motions">1</a></p>'''
+        activity = parse_profile_activity(html, "https://www.cdep.ro/profile")
+        self.assertEqual(activity["political_declarations"].url, "https://www.cdep.ro/written")
+        self.assertEqual(activity["political_declarations"].count, 8)
+        self.assertEqual(activity["legislative_proposals"].count, 61)
+        self.assertEqual(activity["legislative_proposals"].promulgated_count, 15)
+        self.assertEqual(activity["questions"].count, 7)
+        self.assertEqual(activity["motions"].count, 1)
+        self.assertIsNone(activity["decision_projects"].url)
+
     def test_parse_profile_activity_links_and_counts(self):
         html = """
         <table>
@@ -3027,7 +3043,7 @@ class TestDeputyActivityCrawler(unittest.TestCase):
         )
         fetcher = MagicMock()
         fetcher.fetch.return_value = law_page_html
-        fetcher.fetch_bytes.return_value = b"%PDF-1.4 dummy"
+        fetcher.fetch_bytes.side_effect = [b"%PDF primary AD", b"%PDF secondary EM"]
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -3090,6 +3106,11 @@ class TestDeputyActivityCrawler(unittest.TestCase):
             self.assertEqual(len(fetched_pdf_urls), 2)
             self.assertIn("AD", fetched_pdf_urls[0])
             self.assertIn("EM", fetched_pdf_urls[1])
+            # An unsuccessful secondary candidate must not replace the
+            # primary PDF associated with motive_pdf_url.
+            self.assertEqual(next(cache_dir.glob('*_candidate_2.pdf')).read_bytes(), b'%PDF secondary EM')
+            primary = _law_initiator_pdf_cache_path(cache_dir, law_id='law:b200_2026', identifier='L 200/2026')
+            self.assertEqual(primary.read_bytes(), b'%PDF primary AD')
 
     def test_hydrate_law_initiators_uses_senat_search_when_source_url_is_search_page(self):
         search_page_html = """
@@ -3350,6 +3371,24 @@ class TestDeputyActivityCrawler(unittest.TestCase):
                     sleep_fn=lambda _s: None,
                 )
             self.assertEqual(fetcher.fetch.call_count, 5)
+
+    def test_missing_pdf_link_can_recover_on_one_page_retry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = init_db(Path(tmp) / 'state.sqlite')
+            with sqlite3.connect(db_path) as conn:
+                records = self._seed_hydration_laws(conn, 1)
+            fetcher = MagicMock(sleep_seconds=0)
+            fetcher.fetch.side_effect = ['<html>Incomplete response</html>',
+                '<table><tr><td>Expunerea de motive</td><td><a href="/em.pdf">PDF</a></td></tr></table>']
+            fetcher.fetch_bytes.return_value = b'%PDF test'
+            with patch('crawl_deputy_activity._extract_and_match_law_initiators_from_pdf_bytes',
+                       return_value=('Initiator: Test', 'test', [], None)):
+                with sqlite3.connect(db_path) as conn:
+                    result = hydrate_law_initiators_for_records(conn,records=records,fetcher=fetcher,
+                        member_rows=[],senator_member_rows=[],retry_missing_pdf=True,
+                        law_initiator_pdf_dir=Path(tmp)/'pdfs',sleep_fn=lambda _:None)
+            self.assertEqual(fetcher.fetch.call_count, 2)
+            self.assertEqual(result.stored, 1)
 
     def test_hydrate_per_fetch_sleep_is_applied_between_laws(self):
         """The hydration loop throttles between law fetches — the exact

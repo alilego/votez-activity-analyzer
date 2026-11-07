@@ -56,7 +56,7 @@ from model_profiles import (
     model_supports_large_session_single_pass,
 )
 from mcp_server import MCPServer
-from openai_runtime import create_chat_completion, resolve_openai_service_tier
+from openai_runtime import create_chat_completion, openai_completion_token_budget, resolve_openai_service_tier
 from prompt_logger import EXTERNAL_OUTPUTS_DIR, save_prompt
 
 # ---------------------------------------------------------------------------
@@ -191,6 +191,8 @@ def _topics_max_output_tokens(client, default: int = TOPICS_MAX_OUTPUT_TOKENS) -
     model = str(getattr(client, "_model", "") or "").strip().lower()
     if provider == "openai" and model.startswith(GPT5_NANO_MODEL_PREFIXES):
         return GPT5_NANO_MAX_OUTPUT_TOKENS
+    if provider == "openai":
+        return openai_completion_token_budget(model, default)
     return default
 
 
@@ -223,6 +225,7 @@ def _save_failed_llm_output(
     stage: str,
     error: str,
     raw_text: str,
+    response_diagnostics: dict | None = None,
 ) -> Path:
     """Persist malformed or unrecoverable LLM output for post-mortem debugging."""
     RUN_OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -242,6 +245,7 @@ def _save_failed_llm_output(
         f"stage        : {stage}\n"
         f"error        : {error}\n"
         f"saved_at     : {ts}\n\n"
+        f"response     : {json.dumps(response_diagnostics or {}, ensure_ascii=False)}\n\n"
         "=== RAW LLM OUTPUT ===\n"
         f"{raw_text}\n"
     )
@@ -809,7 +813,7 @@ def _call_reduce_once(
             try:
                 payload = _parse_topics_payload(raw)
             except (json.JSONDecodeError, ValueError) as exc:
-                print(f"  {label}: parse failed, attempting JSON repair: {exc}")
+                print(f"  {label}: response could not be parsed: {exc}")
                 try:
                     path = _save_failed_llm_output(
                         run_id=run_id,
@@ -819,6 +823,7 @@ def _call_reduce_once(
                         stage=f"{label.lower().replace(' ', '_')}_parse_failed_raw",
                         error=str(exc),
                         raw_text=raw,
+                        response_diagnostics=getattr(client, "_last_completion_diagnostics", None),
                     )
                     print(f"  Saved failed raw output: {path}")
                 except Exception:
@@ -1026,7 +1031,7 @@ def _call_single_pass(
             try:
                 payload = _parse_topics_payload(raw)
             except (json.JSONDecodeError, ValueError) as exc:
-                print(f"  Single-pass parse failed, attempting JSON repair: {exc}")
+                print(f"  Single-pass response could not be parsed: {exc}")
                 try:
                     path = _save_failed_llm_output(
                         run_id=run_id,
@@ -1036,6 +1041,7 @@ def _call_single_pass(
                         stage="single_pass_parse_failed_raw",
                         error=str(exc),
                         raw_text=raw,
+                        response_diagnostics=getattr(client, "_last_completion_diagnostics", None),
                     )
                     print(f"  Saved failed raw output: {path}")
                 except Exception:
